@@ -30,8 +30,4 @@ np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\data_zeisel.txt", data_array_zeise
 np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\cell_names_zeisel.txt", cell_names_zeisel, delimiter=" ", fmt="%s")
 np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\_transcript_names_zeisel.txt", transcript_names_zeisel, delimiter=" ", fmt="%s")
 
-# Load Cluster Results
-np.loadtxt("C:\Users\Bettina\ml\scRNAseq\data\cluster_labels_uso.txt", dtype={'names': ('cluster', 'cell_name'), 'formats': ('i2', 'S8')}, skiprows=1)
-
-# Split according to clusters
 
