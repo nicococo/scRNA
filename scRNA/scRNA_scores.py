@@ -75,7 +75,7 @@ if __name__ == "__main__":
     data_array_uso = data_uso['data']
     num_genes = len(transcript_names_uso)
 
-    genes_to_keep = 2000
+    genes_to_keep = 3000
 
     # Split according to clusters (Clusters 1-5 in one dataset, Clusters 6-11 in the other)
     # Load Cluster Results
@@ -122,36 +122,29 @@ if __name__ == "__main__":
     #plt.pcolor(K_lin_uso_cluster2)
     #plt.show()
 
-    pdb.set_trace()
-    labels = np.concatenate([np.array([0] * len(np.transpose(data_rand1_uso))), np.array([1] * len(np.transpose(data_rand2_uso)))])
-    data_for_svm = np.concatenate([data_rand1_uso, data_rand2_uso])
-    clf = SVC()
-    clf.fit(np.transpose(data_for_svm), labels)
-    accuracies = cross_validation(data_for_svm, labels)
+    labels_rand = np.concatenate([np.array([0] * len(np.transpose(data_rand1_uso))), np.array([1] * len(np.transpose(data_rand2_uso)))])
+    data_for_svm_rand = np.concatenate([np.transpose(data_rand1_uso), np.transpose(data_rand2_uso)])
+    accuracies_rand = cross_validation(data_for_svm_rand, labels_rand)
+
+    labels_cluster = np.concatenate([np.array([0] * len(data_cluster1_uso)), np.array([1] * len(data_cluster2_uso))])
+    data_for_svm_cluster = np.concatenate([data_cluster1_uso, data_cluster2_uso])
+    accuracies_cluster = cross_validation(data_for_svm_cluster, labels_cluster)
+
+
 
     print '--------------------------------------------------------------------------'
-
     print ''
-
-    print '  -KTA for Random Split of Usoskin: '
-
-    print 'Use kta_align_general and center both kernels before.'
+    #print 'Use kta_align_general and center both kernels before.'
     #K_lin_uso_rand1 = center_kernel(K_lin_uso_rand1)
     #K_lin_uso_rand2 = center_kernel(K_lin_uso_rand2)
-    print '  -K_lin_uso_rand1. and K_lin_uso_rand2: ', kta_align_general(K_lin_uso_rand1, K_lin_uso_rand2)
-
+    print 'KTA for Random Split of Usoskin: ', kta_align_general(K_lin_uso_rand1, K_lin_uso_rand2)
+    #print 'Use kta_align_general and center both kernels before.'
+    #K_lin_uso_cluster1 = center_kernel(K_lin_uso_cluster1)
+    #K_lin_uso_cluster2 = center_kernel(K_lin_uso_cluster2)
+    print 'KTA for Split of Usoskin according to clusters (Clusters 1-5 in one dataset, Clusters 6-11 in the other): ', kta_align_general(K_lin_uso_cluster1, K_lin_uso_cluster2)
     print ''
-
-    print '-KTA for Split of Usoskin according to clusters (Clusters 1-5 in one dataset, Clusters 6-11 in the other): '
-
-    print 'Use kta_align_general and center both kernels before.'
-    K_lin_uso_cluster1 = center_kernel(K_lin_uso_cluster1)
-    K_lin_uso_cluster2 = center_kernel(K_lin_uso_cluster2)
-    print '  -K_lin_uso_cluster1. and K_lin_uso_cluster2: ', kta_align_general(K_lin_uso_cluster1, K_lin_uso_cluster2)
-
-    print("Prediction random split in Usososkin - Mean accuracy: ", np.mean(accuracies))
-
-
+    print 'SVM Prediction random split in Usososkin - Mean accuracy: ', np.mean(accuracies_rand)
+    print 'SVM Prediction Cluster split in Usososkin - Mean accuracy: ', np.mean(accuracies_cluster)
     print ''
     print '--------------------------------------------------------------------------'
 
