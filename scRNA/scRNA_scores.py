@@ -75,7 +75,7 @@ def cross_validation(data, labels, plot_var):
         clf_now = SVC(probability=True)
         clf_now.fit(np.transpose(x_train), y_train)
         accs_all.append(clf_now.score(np.transpose(x_test), y_test))
-        pdb.set_trace()
+        # pdb.set_trace()
         probas_ = clf_now.predict_proba(np.transpose(x_test))
         fpr, tpr, thresholds = roc_curve(y_test, probas_[:, 1])
         roc_auc = auc(fpr, tpr)
