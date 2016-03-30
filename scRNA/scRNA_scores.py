@@ -119,7 +119,7 @@ if __name__ == "__main__":
     data_array_uso = data_uso['data']
     num_genes = len(transcript_names_uso)
 
-    genes_to_keep = 100
+    genes_to_keep = 3000
 
     # Split according to clusters (Clusters 1-5 in one dataset, Clusters 6-11 in the other)
     # Load Cluster Results
@@ -151,12 +151,19 @@ if __name__ == "__main__":
 
     for cluster_1 in range(11):
         for cluster_2 in range(11):
-            data_cluster_uso_pair_1 = new_data_uso[cluster_labels==cluster_1+1,]
-            data_cluster_uso_pair_2 = new_data_uso[cluster_labels==cluster_2+1,]
+            if cluster_1 == cluster_2:
+                data_cluster_uso_pair_1_raw = new_data_uso[cluster_labels==cluster_1+1,]
+                data_cluster_uso_pair_2_raw = new_data_uso[cluster_labels==cluster_2+1,]
+                indices_cells = np.random.permutation(sum(cluster_labels==cluster_1+1))
+                data_cluster_uso_pair_1_now = data_cluster_uso_pair_1_raw[indices_cells[:len(indices_cells)/2],]
+                data_cluster_uso_pair_2_now = data_cluster_uso_pair_2_raw[indices_cells[len(indices_cells)/2:],]
+            else:
+                data_cluster_uso_pair_1_now = new_data_uso[cluster_labels==cluster_1+1,]
+                data_cluster_uso_pair_2_now = new_data_uso[cluster_labels==cluster_2+1,]
 
             # To avoid memory error use only little bit of data for now
-            data_cluster_uso_pair_1 = data_cluster_uso_pair_1[:,indices[:genes_to_keep]]
-            data_cluster_uso_pair_2 = data_cluster_uso_pair_2[:,indices[:genes_to_keep]]
+            data_cluster_uso_pair_1 = data_cluster_uso_pair_1_now[:,indices[:genes_to_keep]]
+            data_cluster_uso_pair_2 = data_cluster_uso_pair_2_now[:,indices[:genes_to_keep]]
 
             K_lin_uso_cluster_pair_1 = data_cluster_uso_pair_1.T.dot(data_cluster_uso_pair_1)
             K_lin_uso_cluster_pair_2 = data_cluster_uso_pair_2.T.dot(data_cluster_uso_pair_2)
@@ -164,8 +171,12 @@ if __name__ == "__main__":
 
             labels_cluster_pair = np.concatenate([np.array([0] * len(data_cluster_uso_pair_1)), np.array([1] * len(data_cluster_uso_pair_2))])
             data_for_svm_cluster_pair = np.concatenate([data_cluster_uso_pair_1, data_cluster_uso_pair_2])
-            pdb.set_trace()
-            accs_now, aucs_now = cross_validation(np.transpose(data_for_svm_cluster_pair), labels_cluster_pair, True)
+
+            if np.amin([len(labels_cluster_pair),10, sum(labels_cluster_pair),len(labels_cluster_pair)-sum(labels_cluster_pair)])>1:
+                accs_now, aucs_now = cross_validation(np.transpose(data_for_svm_cluster_pair), labels_cluster_pair, False)
+            else:
+                accs_now = 0.5
+                aucs_now = 0.5
             pairwise_accuracies[cluster_1][cluster_2] = np.mean(accs_now)
             pairwise_aucs[cluster_1][cluster_2] =np.mean(aucs_now)
 
@@ -265,9 +276,9 @@ if __name__ == "__main__":
     print ''
 
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_rand, confidence=0.95)
-    print 'Mean SVM accuracy for random split of Usoskin:                       ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(auc_lci),',', '{:.3f}'.format(auc_uci), '].'
+    print 'Mean SVM AUCs for random split of Usoskin:                       ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(auc_lci),',', '{:.3f}'.format(auc_uci), '].'
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_cluster_12, confidence=0.95)
-    print 'Mean SVM accuracies for split of Usoskin according to clusters:'
+    print 'Mean SVM AUCs for split of Usoskin according to clusters:'
     print '     Clusters 1-2 in one dataset, Clusters 3-11 in the other:        ',  '{:.3f}'.format(auc_mean), '- 95% CI [',  '{:.3f}'.format(auc_lci),',', '{:.3f}'.format(auc_uci), '].'
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_cluster_34, confidence=0.95)
     print '     Clusters 3-5 in one dataset, Clusters 1-2,6-11 in the other:    ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(auc_lci),',', '{:.3f}'.format(auc_uci), '].'
