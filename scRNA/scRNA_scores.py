@@ -1,12 +1,14 @@
-import numpy as np
 import pdb
-from sklearn.svm import SVC
-from sklearn.cross_validation import KFold, StratifiedKFold
+
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy as sp
 import scipy.stats
 from scipy import interp
+from sklearn.cross_validation import StratifiedKFold
 from sklearn.metrics import roc_curve, auc
+from sklearn.svm import SVC
+
 
 # Code and examples of Kernel Target Alignments (Christianini et al, NIPS 2001 and JMLR 2002).
 # Author: Nico Goernitz, TU Berlin, 2016
@@ -72,8 +74,9 @@ def cross_validation(data, labels, plot_var):
         x_train, x_test, y_train, y_test = data[:, train], data[:, test], labels[train], labels[test]
         clf_now = SVC(probability=True)
         clf_now.fit(np.transpose(x_train), y_train)
-        probas_ = clf_now.predict_proba(np.transpose(x_test))
         accs_all.append(clf_now.score(np.transpose(x_test), y_test))
+        pdb.set_trace()
+        probas_ = clf_now.predict_proba(np.transpose(x_test))
         fpr, tpr, thresholds = roc_curve(y_test, probas_[:, 1])
         roc_auc = auc(fpr, tpr)
         aucs_all.append(roc_auc)
@@ -161,8 +164,8 @@ if __name__ == "__main__":
 
             labels_cluster_pair = np.concatenate([np.array([0] * len(data_cluster_uso_pair_1)), np.array([1] * len(data_cluster_uso_pair_2))])
             data_for_svm_cluster_pair = np.concatenate([data_cluster_uso_pair_1, data_cluster_uso_pair_2])
-            # pdb.set_trace()
-            accs_now, aucs_now = cross_validation(np.transpose(data_for_svm_cluster_pair), labels_cluster_pair, False)
+            pdb.set_trace()
+            accs_now, aucs_now = cross_validation(np.transpose(data_for_svm_cluster_pair), labels_cluster_pair, True)
             pairwise_accuracies[cluster_1][cluster_2] = np.mean(accs_now)
             pairwise_aucs[cluster_1][cluster_2] =np.mean(aucs_now)
 
