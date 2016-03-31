@@ -29,7 +29,7 @@ def normalize_kernel(K):
         C = np.eye(N)
     else:
         b = 1. / a
-        C =  b.dot(b.T)
+        C = b.dot(b.T)
     return K * C
 
 def center_kernel(K):
@@ -61,7 +61,7 @@ def intersect(a, b):
 
 
 def cross_validation(data, labels, plot_var):
-    if len(labels)==np.shape(data)[0]:
+    if len(labels) == np.shape(data)[0]:
         data = np.transpose(data)
     kf = StratifiedKFold(labels, n_folds=np.amin([len(labels),10, sum(labels),len(labels)-sum(labels)]), shuffle=True)
     accs_all = []
@@ -72,7 +72,7 @@ def cross_validation(data, labels, plot_var):
 
     for i, (train, test) in enumerate(kf):
         x_train, x_test, y_train, y_test = data[:, train], data[:, test], labels[train], labels[test]
-        clf_now = SVC(probability=True)
+        clf_now = SVC(probability=True, kernel='linear')
         clf_now.fit(np.transpose(x_train), y_train)
         accs_all.append(clf_now.score(np.transpose(x_test), y_test))
         # pdb.set_trace()
@@ -98,7 +98,7 @@ def cross_validation(data, labels, plot_var):
         plt.ylabel('True Positive Rate')
         plt.title('Receiver operating characteristic example')
         plt.legend(loc="lower right")
-        plt.show()
+        # plt.show()
 
     return accs_all, aucs_all
 
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     data_array_uso = data_uso['data']
     num_genes = len(transcript_names_uso)
 
-    genes_to_keep = 3000
+    genes_to_keep = 10000
 
     # Split according to clusters (Clusters 1-5 in one dataset, Clusters 6-11 in the other)
     # Load Cluster Results
@@ -151,34 +151,41 @@ if __name__ == "__main__":
 
     for cluster_1 in range(11):
         for cluster_2 in range(11):
-            if cluster_1 == cluster_2:
-                data_cluster_uso_pair_1_raw = new_data_uso[cluster_labels==cluster_1+1,]
-                data_cluster_uso_pair_2_raw = new_data_uso[cluster_labels==cluster_2+1,]
-                indices_cells = np.random.permutation(sum(cluster_labels==cluster_1+1))
-                data_cluster_uso_pair_1_now = data_cluster_uso_pair_1_raw[indices_cells[:len(indices_cells)/2],]
-                data_cluster_uso_pair_2_now = data_cluster_uso_pair_2_raw[indices_cells[len(indices_cells)/2:],]
-            else:
-                data_cluster_uso_pair_1_now = new_data_uso[cluster_labels==cluster_1+1,]
-                data_cluster_uso_pair_2_now = new_data_uso[cluster_labels==cluster_2+1,]
+             print(cluster_1+1, cluster_2+1)
+             if cluster_2 >= cluster_1:
+                if cluster_1 == cluster_2:
+                    data_cluster_uso_pair_1_raw = new_data_uso[cluster_labels==cluster_1+1,]
+                    data_cluster_uso_pair_2_raw = new_data_uso[cluster_labels==cluster_2+1,]
+                    indices_cells = np.random.permutation(sum(cluster_labels==cluster_1+1))
+                    data_cluster_uso_pair_1_now = data_cluster_uso_pair_1_raw[indices_cells[:len(indices_cells)/2],]
+                    data_cluster_uso_pair_2_now = data_cluster_uso_pair_2_raw[indices_cells[len(indices_cells)/2:],]
+                else:
+                    data_cluster_uso_pair_1_now = new_data_uso[cluster_labels==cluster_1+1,]
+                    data_cluster_uso_pair_2_now = new_data_uso[cluster_labels==cluster_2+1,]
 
-            # To avoid memory error use only little bit of data for now
-            data_cluster_uso_pair_1 = data_cluster_uso_pair_1_now[:,indices[:genes_to_keep]]
-            data_cluster_uso_pair_2 = data_cluster_uso_pair_2_now[:,indices[:genes_to_keep]]
+                # To avoid memory error use only little bit of data for now
+                data_cluster_uso_pair_1 = data_cluster_uso_pair_1_now[:,indices[:genes_to_keep]]
+                data_cluster_uso_pair_2 = data_cluster_uso_pair_2_now[:,indices[:genes_to_keep]]
 
-            K_lin_uso_cluster_pair_1 = data_cluster_uso_pair_1.T.dot(data_cluster_uso_pair_1)
-            K_lin_uso_cluster_pair_2 = data_cluster_uso_pair_2.T.dot(data_cluster_uso_pair_2)
-            pairwise_KTAs[cluster_1][cluster_2] = kta_align_general(K_lin_uso_cluster_pair_1, K_lin_uso_cluster_pair_2)
+                K_lin_uso_cluster_pair_1 = data_cluster_uso_pair_1.T.dot(data_cluster_uso_pair_1)
+                K_lin_uso_cluster_pair_2 = data_cluster_uso_pair_2.T.dot(data_cluster_uso_pair_2)
+                pairwise_KTAs[cluster_1][cluster_2] = kta_align_general(K_lin_uso_cluster_pair_1, K_lin_uso_cluster_pair_2)
 
-            labels_cluster_pair = np.concatenate([np.array([0] * len(data_cluster_uso_pair_1)), np.array([1] * len(data_cluster_uso_pair_2))])
-            data_for_svm_cluster_pair = np.concatenate([data_cluster_uso_pair_1, data_cluster_uso_pair_2])
+                labels_cluster_pair = np.concatenate([np.array([0] * len(data_cluster_uso_pair_1)), np.array([1] * len(data_cluster_uso_pair_2))])
+                data_for_svm_cluster_pair = np.concatenate([data_cluster_uso_pair_1, data_cluster_uso_pair_2])
 
-            if np.amin([len(labels_cluster_pair),10, sum(labels_cluster_pair),len(labels_cluster_pair)-sum(labels_cluster_pair)])>1:
-                accs_now, aucs_now = cross_validation(np.transpose(data_for_svm_cluster_pair), labels_cluster_pair, False)
-            else:
-                accs_now = 0.5
-                aucs_now = 0.5
-            pairwise_accuracies[cluster_1][cluster_2] = np.mean(accs_now)
-            pairwise_aucs[cluster_1][cluster_2] =np.mean(aucs_now)
+                if np.amin([len(labels_cluster_pair),10, sum(labels_cluster_pair),len(labels_cluster_pair)-sum(labels_cluster_pair)])>1:
+                    accs_now, aucs_now = cross_validation(np.transpose(data_for_svm_cluster_pair), labels_cluster_pair, False)
+                else:
+                    print('Warning: too few training samples!')
+                    accs_now = 0.5
+                    aucs_now = 0.5
+                pairwise_accuracies[cluster_1][cluster_2] = np.mean(accs_now)
+                pairwise_aucs[cluster_1][cluster_2] =np.mean(aucs_now)
+             else:
+                pairwise_accuracies[cluster_1][cluster_2] = pairwise_accuracies[cluster_2][cluster_1]
+                pairwise_aucs[cluster_1][cluster_2] = pairwise_aucs[cluster_2][cluster_1]
+                pairwise_KTAs[cluster_1][cluster_2] = pairwise_KTAs[cluster_2][cluster_1]
 
 
     # Random split of Uso
@@ -248,13 +255,13 @@ if __name__ == "__main__":
 
     print '--------------------------------------------------------------------------'
     print ''
-    #print 'Use kta_align_general and center both kernels before.'
-    #K_lin_uso_rand1 = center_kernel(K_lin_uso_rand1)
-    #K_lin_uso_rand2 = center_kernel(K_lin_uso_rand2)
+    # print 'Use kta_align_general and center both kernels before.'
+    # K_lin_uso_rand1 = center_kernel(K_lin_uso_rand1)
+    # K_lin_uso_rand2 = center_kernel(K_lin_uso_rand2)
     print 'KTA for random split of Usoskin:                                     ', '{:.3f}'.format(kta_align_general(K_lin_uso_rand1, K_lin_uso_rand2))
-    #print 'Use kta_align_general and center both kernels before.'
-    #K_lin_uso_cluster1 = center_kernel(K_lin_uso_cluster1)
-    #K_lin_uso_cluster2 = center_kernel(K_lin_uso_cluster2)
+    # print 'Use kta_align_general and center both kernels before.'
+    # K_lin_uso_cluster1 = center_kernel(K_lin_uso_cluster1)
+    # K_lin_uso_cluster2 = center_kernel(K_lin_uso_cluster2)
     print 'KTAs for split of Usoskin according to clusters:'
     print '     Clusters 1-2 in one dataset, Clusters 3-11 in the other:        ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster1, K_lin_uso_cluster2))
     print '     Clusters 3-5 in one dataset, Clusters 1-2, 6-11 in the other:   ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster3, K_lin_uso_cluster4))
