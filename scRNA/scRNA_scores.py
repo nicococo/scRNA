@@ -6,19 +6,24 @@ import scipy as sp
 import scipy.stats
 from scipy import interp
 from sklearn.cross_validation import StratifiedKFold
+from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import roc_curve, auc
 from sklearn.svm import SVC
+from sklearn import preprocessing
+import time
 
-
+# Code for scRNAseq data analysis.
+# Author: Bettina Mieth, TU Berlin, 2016
 # Code and examples of Kernel Target Alignments (Christianini et al, NIPS 2001 and JMLR 2002).
 # Author: Nico Goernitz, TU Berlin, 2016
-# Adjusted for scRNAseq data by Bettina Mieth
+
 
 def center_kernel(K):
     # Mean free in feature space
     N = K.shape[0]
     a = np.ones((N, N)) / np.float(N)
     return K - a.dot(K) - K.dot(a) + a.dot(K.dot(a))
+
 
 def normalize_kernel(K):
     # A kernel K is normalized, iff K_ii = 1 \forall i
@@ -32,11 +37,6 @@ def normalize_kernel(K):
         C = b.dot(b.T)
     return K * C
 
-def center_kernel(K):
-    # Mean free in feature space
-    N = K.shape[0]
-    a = np.ones((N, N)) / np.float(N)
-    return K - a.dot(K) - K.dot(a) + a.dot(K.dot(a))
 
 def kta_align_general(K1, K2):
     # Computes the (empirical) alignment of two kernels K1 and K2
@@ -63,20 +63,25 @@ def intersect(a, b):
 def cross_validation(data, labels, plot_var):
     if len(labels) == np.shape(data)[0]:
         data = np.transpose(data)
-    kf = StratifiedKFold(labels, n_folds=np.amin([len(labels),10, sum(labels),len(labels)-sum(labels)]), shuffle=True)
+    kf = StratifiedKFold(labels, n_folds=np.amin([len(labels),10, sum(labels),len(labels)-sum(labels)]))
     accs_all = []
     aucs_all = []
+    gridsearch_best_acc = []
+    gridsearch_best_C = []
 
     mean_tpr = 0.0
     mean_fpr = np.linspace(0, 1, 100)
 
     for i, (train, test) in enumerate(kf):
-        x_train, x_test, y_train, y_test = data[:, train], data[:, test], labels[train], labels[test]
-        clf_now = SVC(probability=True, kernel='linear')
-        clf_now.fit(np.transpose(x_train), y_train)
-        accs_all.append(clf_now.score(np.transpose(x_test), y_test))
-        # pdb.set_trace()
-        probas_ = clf_now.predict_proba(np.transpose(x_test))
+        x_train_raw, x_test_raw, y_train, y_test = data[:, train], data[:, test], labels[train], labels[test]
+        x_train = preprocessing.scale(np.transpose(x_train_raw))
+        x_test = preprocessing.scale(np.transpose(x_test_raw))
+        clf = GridSearchCV(estimator=SVC(probability=True, kernel='linear'), param_grid=dict(C=np.logspace(-10, 0, 10)), n_jobs=-1, cv=StratifiedKFold(y_train))
+        clf.fit(x_train, y_train)
+        gridsearch_best_acc.append(clf.best_score_)
+        gridsearch_best_C.append(clf.best_estimator_.C)
+        accs_all.append(clf.score(x_test, y_test))
+        probas_ = clf.predict_proba(x_test)
         fpr, tpr, thresholds = roc_curve(y_test, probas_[:, 1])
         roc_auc = auc(fpr, tpr)
         aucs_all.append(roc_auc)
@@ -98,7 +103,7 @@ def cross_validation(data, labels, plot_var):
         plt.ylabel('True Positive Rate')
         plt.title('Receiver operating characteristic example')
         plt.legend(loc="lower right")
-        # plt.show()
+        plt.show()
 
     return accs_all, aucs_all
 
@@ -119,40 +124,45 @@ if __name__ == "__main__":
     data_array_uso = data_uso['data']
     num_genes = len(transcript_names_uso)
 
-    genes_to_keep = 10000
+    genes_to_keep = 1000
 
     # Split according to clusters (Clusters 1-5 in one dataset, Clusters 6-11 in the other)
     # Load Cluster Results
-    cluster_labels_inf = np.loadtxt("C:\Users\Bettina\ml\scRNAseq\data\cluster_labels_uso_new.txt",
+    cluster_labels_inf = np.loadtxt("C:\Users\Bettina\ml\scRNAseq\data\cluster_labels_k_6.txt",
                                     dtype={'names': ('cluster', 'cell_name'), 'formats': ('i2', 'S8')}, skiprows=1)
+    # cluster_labels_inf = np.loadtxt("C:\Users\Bettina\ml\scRNAseq\data\cluster_labels_uso_new.txt",
+    #                                dtype={'names': ('cluster', 'cell_name'), 'formats': ('i2', 'S8')}, skiprows=1)
 
     cluster_labels = cluster_labels_inf['cluster']
+    num_clusters = max(cluster_labels)
     cells_to_keep = cluster_labels_inf['cell_name']
     new_data_uso = np.asarray([data_array_uso[:,cell_names_uso.tolist().index(cell)] for cell in cells_to_keep])
 
-    data_cluster1_uso = new_data_uso[cluster_labels<3,]
-    data_cluster2_uso = new_data_uso[cluster_labels>2,]
+    data_cluster1_uso = new_data_uso[cluster_labels==1,]
+    data_cluster2_uso = new_data_uso[cluster_labels>1,]
 
-    data_cluster3_uso = new_data_uso[(cluster_labels >= 3) & (cluster_labels <= 5)]
-    data_cluster4_uso = new_data_uso[(cluster_labels < 3) | (cluster_labels > 5)]
+    data_cluster3_uso = new_data_uso[(cluster_labels == 2)]
+    data_cluster4_uso = new_data_uso[(cluster_labels < 2) | (cluster_labels > 2)]
 
-    data_cluster5_uso = new_data_uso[(cluster_labels >= 6) & (cluster_labels <= 7)]
-    data_cluster6_uso = new_data_uso[(cluster_labels < 6) | (cluster_labels > 7)]
+    data_cluster5_uso = new_data_uso[(cluster_labels == 3)]
+    data_cluster6_uso = new_data_uso[(cluster_labels < 3) | (cluster_labels > 3)]
 
-    data_cluster7_uso = new_data_uso[(cluster_labels >= 8)]
-    data_cluster8_uso = new_data_uso[(cluster_labels < 8)]
+    data_cluster7_uso = new_data_uso[(cluster_labels >= 4)]
+    data_cluster8_uso = new_data_uso[(cluster_labels < 4)]
 
-    pairwise_KTAs = [[None for i in range(11)] for j in range(11)]
-    pairwise_accuracies = [[None for i in range(11)] for j in range(11)]
-    pairwise_aucs = [[None for i in range(11)] for j in range(11)]
+    pairwise_KTAs = [[None for i in range(num_clusters)] for j in range(num_clusters)]
+    pairwise_KTAs_center = [[None for i in range(num_clusters)] for j in range(num_clusters)]
+    pairwise_KTAs_center_norma = [[None for i in range(num_clusters)] for j in range(num_clusters)]
+    pairwise_accuracies = [[None for i in range(num_clusters)] for j in range(num_clusters)]
+    pairwise_aucs = [[None for i in range(num_clusters)] for j in range(num_clusters)]
 
     # To avoid memory error use only little bit of data for now
     indices = np.random.permutation(num_genes)
 
-    for cluster_1 in range(11):
-        for cluster_2 in range(11):
-             print(cluster_1+1, cluster_2+1)
-             if cluster_2 >= cluster_1:
+    for cluster_1 in range(num_clusters):
+        for cluster_2 in range(num_clusters):
+            print(cluster_1+1, cluster_2+1)
+            if cluster_2 >= cluster_1:
                 if cluster_1 == cluster_2:
                     data_cluster_uso_pair_1_raw = new_data_uso[cluster_labels==cluster_1+1,]
                     data_cluster_uso_pair_2_raw = new_data_uso[cluster_labels==cluster_2+1,]
@@ -170,11 +180,15 @@ if __name__ == "__main__":
                 K_lin_uso_cluster_pair_1 = data_cluster_uso_pair_1.T.dot(data_cluster_uso_pair_1)
                 K_lin_uso_cluster_pair_2 = data_cluster_uso_pair_2.T.dot(data_cluster_uso_pair_2)
                 pairwise_KTAs[cluster_1][cluster_2] = kta_align_general(K_lin_uso_cluster_pair_1, K_lin_uso_cluster_pair_2)
+                K_lin_uso_cluster_pair_1_center = center_kernel(K_lin_uso_cluster_pair_1)
+                K_lin_uso_cluster_pair_2_center = center_kernel(K_lin_uso_cluster_pair_2)
+                pairwise_KTAs_center[cluster_1][cluster_2] = kta_align_general(K_lin_uso_cluster_pair_1_center, K_lin_uso_cluster_pair_2_center)
+                pairwise_KTAs_center_norma[cluster_1][cluster_2] = kta_align_general(normalize_kernel(K_lin_uso_cluster_pair_1_center), normalize_kernel(K_lin_uso_cluster_pair_2_center))
 
                 labels_cluster_pair = np.concatenate([np.array([0] * len(data_cluster_uso_pair_1)), np.array([1] * len(data_cluster_uso_pair_2))])
                 data_for_svm_cluster_pair = np.concatenate([data_cluster_uso_pair_1, data_cluster_uso_pair_2])
 
-                if np.amin([len(labels_cluster_pair),10, sum(labels_cluster_pair),len(labels_cluster_pair)-sum(labels_cluster_pair)])>1:
+                if np.amin([len(labels_cluster_pair),10, sum(labels_cluster_pair),len(labels_cluster_pair)-sum(labels_cluster_pair)])>2:
                     accs_now, aucs_now = cross_validation(np.transpose(data_for_svm_cluster_pair), labels_cluster_pair, False)
                 else:
                     print('Warning: too few training samples!')
@@ -182,10 +196,12 @@ if __name__ == "__main__":
                     aucs_now = 0.5
                 pairwise_accuracies[cluster_1][cluster_2] = np.mean(accs_now)
                 pairwise_aucs[cluster_1][cluster_2] =np.mean(aucs_now)
-             else:
+            else:
                 pairwise_accuracies[cluster_1][cluster_2] = pairwise_accuracies[cluster_2][cluster_1]
                 pairwise_aucs[cluster_1][cluster_2] = pairwise_aucs[cluster_2][cluster_1]
                 pairwise_KTAs[cluster_1][cluster_2] = pairwise_KTAs[cluster_2][cluster_1]
+                pairwise_KTAs_center[cluster_1][cluster_2] = pairwise_KTAs_center[cluster_2][cluster_1]
+                pairwise_KTAs_center_norma[cluster_1][cluster_2] = pairwise_KTAs_center_norma[cluster_2][cluster_1]
 
 
     # Random split of Uso
@@ -255,19 +271,26 @@ if __name__ == "__main__":
 
     print '--------------------------------------------------------------------------'
     print ''
-    # print 'Use kta_align_general and center both kernels before.'
-    # K_lin_uso_rand1 = center_kernel(K_lin_uso_rand1)
-    # K_lin_uso_rand2 = center_kernel(K_lin_uso_rand2)
     print 'KTA for random split of Usoskin:                                     ', '{:.3f}'.format(kta_align_general(K_lin_uso_rand1, K_lin_uso_rand2))
-    # print 'Use kta_align_general and center both kernels before.'
-    # K_lin_uso_cluster1 = center_kernel(K_lin_uso_cluster1)
-    # K_lin_uso_cluster2 = center_kernel(K_lin_uso_cluster2)
     print 'KTAs for split of Usoskin according to clusters:'
-    print '     Clusters 1-2 in one dataset, Clusters 3-11 in the other:        ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster1, K_lin_uso_cluster2))
-    print '     Clusters 3-5 in one dataset, Clusters 1-2, 6-11 in the other:   ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster3, K_lin_uso_cluster4))
-    print '     Clusters 6-7 in one dataset, Clusters 1-5, 8-11 in the other:   ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster5, K_lin_uso_cluster6))
-    print '     Clusters 8-11 in one dataset, Clusters 1-7 in the other:        ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster7, K_lin_uso_cluster8))
-
+    print '     Cluster 1 in one dataset, Clusters 2-6 in the other:            ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster1, K_lin_uso_cluster2))
+    print '     Cluster 2 in one dataset, Clusters 1, 3-6 in the other:         ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster3, K_lin_uso_cluster4))
+    print '     Clusters 3 in one dataset, Clusters 1-2, 4-6 in the other:      ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster5, K_lin_uso_cluster6))
+    print '     Clusters 4-6 in one dataset, Clusters 1-3 in the other:         ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster7, K_lin_uso_cluster8))
+    print ''
+    print 'centered KTA for random split of Usoskin:                            ', '{:.3f}'.format(kta_align_general(center_kernel(K_lin_uso_rand1), center_kernel(K_lin_uso_rand2)))
+    print 'centered KTAs for split of Usoskin according to clusters:'
+    print '     Cluster 1 in one dataset, Clusters 2-6 in the other:            ', '{:.3f}'.format(kta_align_general(center_kernel(K_lin_uso_cluster1), center_kernel(K_lin_uso_cluster2)))
+    print '     Cluster 2 in one dataset, Clusters 1, 3-6 in the other:         ', '{:.3f}'.format(kta_align_general(center_kernel(K_lin_uso_cluster3), center_kernel(K_lin_uso_cluster4)))
+    print '     Clusters 3 in one dataset, Clusters 1-2, 4-6 in the other:      ', '{:.3f}'.format(kta_align_general(center_kernel(K_lin_uso_cluster5), center_kernel(K_lin_uso_cluster6)))
+    print '     Clusters 4-6 in one dataset, Clusters 1-3 in the other:         ', '{:.3f}'.format(kta_align_general(center_kernel(K_lin_uso_cluster7), center_kernel(K_lin_uso_cluster8)))
+    print ''
+    print 'centered and normalized KTA for random split of Usoskin:             ', '{:.3f}'.format(kta_align_general(normalize_kernel(center_kernel(K_lin_uso_rand1)), normalize_kernel(center_kernel(K_lin_uso_rand2))))
+    print 'centered and normalized KTAs for split of Usoskin according to clusters:'
+    print '     Cluster 1 in one dataset, Clusters 2-6 in the other:            ', '{:.3f}'.format(kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster1)), normalize_kernel(center_kernel(K_lin_uso_cluster2))))
+    print '     Cluster 2 in one dataset, Clusters 1, 3-6 in the other:   ',    '{:.3f}'.format(kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster3)), normalize_kernel(center_kernel(K_lin_uso_cluster4))))
+    print '     Clusters 3 in one dataset, Clusters 1-2, 4-6 in the other:      ', '{:.3f}'.format(kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster5)), normalize_kernel(center_kernel(K_lin_uso_cluster6))))
+    print '     Clusters 4-6 in one dataset, Clusters 1-3 in the other:         ', '{:.3f}'.format(kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster7)), normalize_kernel(center_kernel(K_lin_uso_cluster8))))
     print ''
     [acc_mean, acc_lci, acc_uci] = mean_confidence_interval(accuracies_rand, confidence=0.95)
     print 'Mean SVM accuracy for random split of Usoskin:                       ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(acc_lci),',', '{:.3f}'.format(acc_uci), '].'
@@ -296,31 +319,41 @@ if __name__ == "__main__":
     print ''
 
     print 'Pairwise comparison of clusters - KTA scores (Usoskin): '
-
-    #print(pairwise_KTAs)
-    print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row])
-      for row in pairwise_KTAs]))
-    # pdb.set_trace()
+    print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_KTAs]))
     print ''
+
+    print 'Pairwise comparison of clusters - KTA scores centered (Usoskin): '
+    print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_KTAs_center]))
+    print ''
+
+    print 'Pairwise comparison of clusters - KTA scores centered and normalized (Usoskin): '
+    print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_KTAs_center_norma]))
+    print ''
+
     print 'Pairwise comparison of clusters - Mean SVM accuracy (Usososkin): '
-    # print(pairwise_accuracies)
     print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_accuracies]))
     print ''
+
     print 'Pairwise comparison of clusters - Mean SVM AUCs (Usososkin): '
     print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_aucs]))
     print ''
     print '--------------------------------------------------------------------------'
 
-
     image_plot = plt.imshow(pairwise_accuracies)
     plt.figure(1)
-    sp1 = plt.subplot(1, 3, 1)
+    sp1 = plt.subplot(1, 5, 1)
     sp1.set_title('KTA')
     plt.imshow(pairwise_KTAs, interpolation='nearest')
-    sp2 = plt.subplot(1,3, 2)
-    sp2.set_title('SVM accuracies')
+    sp2 = plt.subplot(1, 5, 2)
+    sp2.set_title('KTA centered')
+    plt.imshow(pairwise_KTAs_center, interpolation='nearest')
+    sp3 = plt.subplot(1, 5, 3)
+    sp3.set_title('KTA centered and normalized')
+    plt.imshow(pairwise_KTAs_center_norma, interpolation='nearest')
+    sp4 = plt.subplot(1,5, 4)
+    sp4.set_title('SVM accuracies')
     plt.imshow(pairwise_accuracies, interpolation='nearest')
-    sp3 = plt.subplot(1,3, 3)
-    sp3.set_title('SVM AUCs')
+    sp5 = plt.subplot(1,5, 5)
+    sp5.set_title('SVM AUCs')
     plt.imshow(pairwise_aucs, interpolation='nearest')
     plt.show()
