@@ -6,6 +6,8 @@ def plot_abundances(data):
     dmean = np.mean(data, axis=1)
     dstd = np.std(data, axis=1)
     dmax = np.max(data, axis=1)
+    print dmax
+
 
     plt.figure(figsize=(20, 5.5))
     plt.subplot(1, 3, 1)
@@ -35,6 +37,7 @@ def plot_abundances(data):
 if __name__ == "__main__":
     PATH = '/Users/nicococo/Documents/scRNA-data/'
     datasets = ['Ting', 'Zeisel', 'Usoskin']
+
     foo = np.load('{0}{1}.npz'.format(PATH, datasets[2]))
     cells = foo['cells']
     transcripts = foo['transcripts']
@@ -45,5 +48,16 @@ if __name__ == "__main__":
     print cells.shape
     print transcripts.shape
     print data.shape
+    print encoding
 
     plot_abundances(data)
+
+    foo = np.load('pfizer_data.npz')
+    transcripts = foo['transcripts']
+    data = foo['rpm_data']  # transcripts x cells
+    filtered_inds = foo['filtered_inds']  # filtered inds of cells with enough coverage
+
+    print transcripts.shape
+    print data.shape
+
+    plot_abundances(data[:, filtered_inds])
