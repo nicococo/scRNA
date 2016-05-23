@@ -28,11 +28,14 @@ def load_counts(fname):
     return data, transcripts, transcripts_header
 
 
-def filter_low_coverage_cells(X, threshold=0):
+def filter_low_coverage_cells(X, threshold=100000):
     # Assume X \in N^{Transcripts x Cells}
     transcripts, cells = X.shape
     inds = np.where(np.sum(X, axis=0) > threshold)[0]
     print 'Filtered {0}/{1} cells.'.format(cells-inds.size, cells)
+
+    print '#Reads per cell (sorted): ', np.sort(np.sum(X, axis=0))
+
     return inds
 
 
