@@ -104,7 +104,7 @@ def mtl_distance(data, gene_ids, metric='euclidean', mixture=0.75):
 
     # filter genes
     remain_inds = np.arange(0, num_transcripts)
-    res = gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2)
+    res = gene_filter(A, perc_consensus_genes=0.94, non_zero_threshold=2)
     remain_inds = np.intersect1d(remain_inds, res)
 
     # transform data
@@ -126,6 +126,32 @@ def mtl_distance(data, gene_ids, metric='euclidean', mixture=0.75):
     # reconstruct given dataset using the Pfizer dictionary
     H = np.random.randn(10, data.shape[1])
     Y = data[inds1, :].copy()
+    # TODO: some NMF MU steps
+    for i in range(200):
+        print 'Iteration: ', i
+        print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
+        print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
+        H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
+
+    # convex combination of vanilla distance and nmf distance
+    dist1 = distances(data, [], metric=metric)
+    dist2 = distances(W.dot(H), [], metric=metric)
+    return mixture*dist2 + (1.-mixture)*dist1
+
+
+def mtl_toy_distance(data, gene_ids, src_data, metric='euclidean', mixture=0.75):
+    # transform data
+    X = data_transformation(src_data[gene_ids, :])
+    nmf = decomp.NMF(alpha=1.1, init='nndsvdar', l1_ratio=0.9, max_iter=1000,
+        n_components=10, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+    W = nmf.fit_transform(X)
+    H = nmf.components_
+    print nmf.reconstruction_err_
+    print H
+
+    # reconstruct given dataset using the Pfizer dictionary
+    H = np.random.randn(10, data.shape[1])
+    Y = data.copy()
     # TODO: some NMF MU steps
     for i in range(200):
         print 'Iteration: ', i
