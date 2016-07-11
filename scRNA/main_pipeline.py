@@ -8,9 +8,9 @@ from utils import *
 
 
 if __name__ == "__main__":
-    # dataset = 'Ting'
+    dataset = 'Ting'
     # dataset = 'Pfizer'
-    dataset = 'Usoskin'
+    # dataset = 'Usoskin'
 
     data, gene_ids = load_dataset(dataset)
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     np.random.seed(1)
     ks = range(3, 7+1)
-    n_cluster = 11
+    n_cluster = 7
     max_pca_comp = np.ceil(cp.num_cells*0.07).astype(np.int)
     min_pca_comp = np.floor(cp.num_cells*0.04).astype(np.int)
 
@@ -44,14 +44,14 @@ if __name__ == "__main__":
 
     cp.set_data_transformation(sc.data_transformation)
 
-    cp.add_distance_calculation(partial(sc.mtl_distance, metric='euclidean', mixture=0.75))
-    # cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
+    # cp.add_distance_calculation(partial(sc.mtl_distance, metric='euclidean', mixture=0.75))
+    cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
     # cp.add_distance_calculation(partial(sc.distances, metric='pearson'))
     # cp.add_distance_calculation(partial(sc.distances, metric='spearman'))
     # cp.add_distance_calculation(partial(sc.distances, metric='chebychev'))
 
-    # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
-    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
+    # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
 
     cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_cluster))
     # cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=np.min(ks)-1))

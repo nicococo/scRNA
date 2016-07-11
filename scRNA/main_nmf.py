@@ -48,7 +48,7 @@ if __name__ == "__main__":
     A = data[:, remain_inds]
 
     remain_inds = np.arange(0, num_transcripts)
-    res = sc.gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2)
+    res = sc.gene_filter(data, perc_consensus_genes=0.98, non_zero_threshold=1)
     remain_inds = np.intersect1d(remain_inds, res)
     X = sc.data_transformation(A[remain_inds, :])
     print X.shape, np.min(X), np.max(X)
@@ -84,31 +84,47 @@ if __name__ == "__main__":
     O = H.copy()
     O /= np.repeat(np.sum(O, axis=0).reshape((1, O.shape[1])), O.shape[0], axis=0)
     plt.imshow(O.T.dot(O), cmap='rainbow')
+
     plt.figure(3)
     plt.subplot(1, 2, 1)
     plt.imshow(X[:1000, :])
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlabel('Cells')
+    plt.ylabel('Transcripts')
+    plt.title('Data')
+
     plt.subplot(1, 2, 2)
     plt.imshow(W.dot(H)[:1000, :])
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlabel('Cells')
+    plt.ylabel('Transcripts')
+    plt.title('Reconstruction')
 
 
     plt.figure(4)
+    #
+    # plt.subplot(1, 2, 1)
+    # model = manifold.TSNE(n_components=2, perplexity=37, init='pca')
+    # np.set_printoptions(suppress=True)
+    # out = model.fit_transform(dists)
+    # print out.shape
+    #
+    # plt.scatter(out[:, 0], out[:, 1], s=20, c=labels)
 
-    plt.subplot(1, 2, 1)
+
+    # plt.subplot(1, 2, 2)
     model = manifold.TSNE(n_components=2, perplexity=37, init='pca')
-    np.set_printoptions(suppress=True)
-    out = model.fit_transform(dists)
-    print out.shape
-
-    plt.scatter(out[:, 0], out[:, 1], s=20, c=labels)
-
-
-    plt.subplot(1, 2, 2)
-    model = manifold.TSNE(n_components=2, perplexity=37, init='pca')
-    np.set_printoptions(suppress=True)
     out = model.fit_transform(W.dot(H).T)
     print out.shape
 
     plt.scatter(out[:, 0], out[:, 1], s=20, c=labels)
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    plt.title('t-SNE (colonic dataset)')
 
     plt.show()
 
