@@ -50,9 +50,9 @@ def kta_align_general(K1, K2):
 
 
 def split_data(org_data):
-    inds = np.random.permutation(len(np.transpose(org_data)))
-    new_data_1 = org_data[:, inds[:(len(inds)/2)]]
-    new_data_2 = org_data[:, inds[(len(inds)/2):]]
+    inds = np.random.permutation(len(org_data))
+    new_data_1 = org_data[inds[:(len(inds)/2)],]
+    new_data_2 = org_data[inds[(len(inds)/2):],]
     return [new_data_1, new_data_2]
 
 
@@ -117,47 +117,54 @@ def mean_confidence_interval(data, confidence=0.95):
 
 if __name__ == "__main__":
 
-    # load Uso data
-    data_uso = np.load('C:\Users\Bettina\ml\scRNAseq\data\Usoskin.npz')
-    cell_names_uso = data_uso['cells']
-    transcript_names_uso = data_uso['transcripts']
-    data_array_uso = data_uso['data']
-    num_genes = len(transcript_names_uso)
+    # load Pfizer + Uso data
+    # Pfizer + Usoskin
+    data_pfizer_uso = np.loadtxt('C:\Users\Bettina\ml\scRNAseq\data\Pfizer Uso data\data_pfizer_uso.txt')
+    cell_names_pfizer_uso = np.loadtxt('C:\Users\Bettina\ml\scRNAseq\data\Pfizer Uso data\cell_names_pfizer_uso.txt', dtype='string')
+    transcript_names_pfizer_uso = np.loadtxt('C:\Users\Bettina\ml\scRNAseq\data\Pfizer Uso data\\transcript_names_pfizer_uso.txt', dtype='string')
+    data_array_pfizer_uso = np.transpose(np.nan_to_num(data_pfizer_uso))
+    num_genes = len(transcript_names_pfizer_uso)
+    genes_to_keep = 3000
 
-    genes_to_keep = 15000
+    # Split in Pfizer and Usoskin
+    data_array_pfizer = data_array_pfizer_uso[0:417,]
+    data_array_uso = data_array_pfizer_uso[417:,]
+
 
     # Split according to clusters (Clusters 1-5 in one dataset, Clusters 6-11 in the other)
     # Load Cluster Results
-    cluster_labels_inf = np.loadtxt("C:\Users\Bettina\ml\scRNAseq\data\cluster_labels_k_6.txt",
+    cluster_labels_inf = np.loadtxt("C:/Users/Bettina/ml/scRNAseq/Results/SC3 results/Pfizer + Uso data/cluster_4_labels_pfizer_uso_after_scaling.txt",
                                     dtype={'names': ('cluster', 'cell_name'), 'formats': ('i2', 'S8')}, skiprows=1)
-    # cluster_labels_inf = np.loadtxt("C:\Users\Bettina\ml\scRNAseq\data\cluster_labels_uso_new.txt",
-    #                                dtype={'names': ('cluster', 'cell_name'), 'formats': ('i2', 'S8')}, skiprows=1)
 
-    cluster_labels = cluster_labels_inf['cluster']
+    cluster_labels_raw = cluster_labels_inf['cluster']
+    cells_to_keep_raw = cluster_labels_inf['cell_name']
+    cells_to_keep = cells_to_keep_raw[cells_to_keep_raw!='NA']
+    cluster_labels = cluster_labels_raw[cells_to_keep_raw!='NA']
+
+    new_data_pfizer_uso = np.asarray([data_array_pfizer_uso[cell_names_pfizer_uso.tolist().index(cell),] for cell in cells_to_keep])
     num_clusters = max(cluster_labels)
-    cells_to_keep = cluster_labels_inf['cell_name']
-    new_data_uso = np.asarray([data_array_uso[:,cell_names_uso.tolist().index(cell)] for cell in cells_to_keep])
 
-    data_cluster1_uso = new_data_uso[cluster_labels==1,]
-    data_cluster2_uso = new_data_uso[cluster_labels>1,]
+    data_cluster1_uso = new_data_pfizer_uso[cluster_labels==1,]
+    data_cluster2_uso = new_data_pfizer_uso[cluster_labels>1,]
 
-    data_cluster3_uso = new_data_uso[(cluster_labels == 2)]
-    data_cluster4_uso = new_data_uso[(cluster_labels < 2) | (cluster_labels > 2)]
+    data_cluster3_uso = new_data_pfizer_uso[(cluster_labels == 2)]
+    data_cluster4_uso = new_data_pfizer_uso[(cluster_labels < 2) | (cluster_labels > 2)]
 
-    data_cluster5_uso = new_data_uso[(cluster_labels == 3)]
-    data_cluster6_uso = new_data_uso[(cluster_labels < 3) | (cluster_labels > 3)]
+    data_cluster5_uso = new_data_pfizer_uso[(cluster_labels == 3)]
+    data_cluster6_uso = new_data_pfizer_uso[(cluster_labels < 3) | (cluster_labels > 3)]
 
-    data_cluster7_uso = new_data_uso[(cluster_labels >= 4)]
-    data_cluster8_uso = new_data_uso[(cluster_labels < 4)]
+    data_cluster7_uso = new_data_pfizer_uso[(cluster_labels == 4)]
+    data_cluster8_uso = new_data_pfizer_uso[(cluster_labels < 4)]
 
     # To avoid memory error use only little bit of data for now
     indices = np.random.permutation(num_genes)
 
     # Random split of Uso
-    [data_rand1_uso, data_rand2_uso] = split_data(np.transpose(new_data_uso))
-
-    data_rand1_uso = data_rand1_uso[indices[:genes_to_keep],]
-    data_rand2_uso = data_rand2_uso[indices[:genes_to_keep],]
+    [data_rand1_pfizer_uso, data_rand2_pfizer_uso] = split_data(data_array_pfizer_uso)
+    data_rand1 = data_rand1_pfizer_uso[:,indices[:genes_to_keep]]
+    data_rand2 = data_rand2_pfizer_uso[:,indices[:genes_to_keep]]
+    data_pfizer = data_array_pfizer[:, indices[:genes_to_keep]]
+    data_uso = data_array_uso[:, indices[:genes_to_keep]]
     data_cluster1_uso = data_cluster1_uso[:, indices[:genes_to_keep]]
     data_cluster2_uso = data_cluster2_uso[:, indices[:genes_to_keep]]
     data_cluster3_uso = data_cluster3_uso[:, indices[:genes_to_keep]]
@@ -168,8 +175,11 @@ if __name__ == "__main__":
     data_cluster8_uso = data_cluster8_uso[:, indices[:genes_to_keep]]
 
     # setup kernels (all linear, but other kernels are applicable too)
-    K_lin_uso_rand1 = np.transpose(data_rand1_uso).T.dot(np.transpose(data_rand1_uso))
-    K_lin_uso_rand2 = np.transpose(data_rand2_uso).T.dot(np.transpose(data_rand2_uso))
+    K_lin_rand1 = np.transpose(data_rand1).T.dot(np.transpose(data_rand1))
+    K_lin_rand2 = np.transpose(data_rand2).T.dot(np.transpose(data_rand2))
+
+    K_lin_pfizer = data_pfizer.T.dot(data_pfizer)
+    K_lin_uso = data_uso.T.dot(data_uso)
 
     K_lin_uso_cluster1 = data_cluster1_uso.T.dot(data_cluster1_uso)
     K_lin_uso_cluster2 = data_cluster2_uso.T.dot(data_cluster2_uso)
@@ -183,13 +193,17 @@ if __name__ == "__main__":
     K_lin_uso_cluster7 = data_cluster7_uso.T.dot(data_cluster7_uso)
     K_lin_uso_cluster8 = data_cluster8_uso.T.dot(data_cluster8_uso)
 
-    labels_rand = np.concatenate([np.array([0] * len(np.transpose(data_rand1_uso))), np.array([1] * len(np.transpose(data_rand2_uso)))])
-    data_for_svm_rand = np.concatenate([np.transpose(data_rand1_uso), np.transpose(data_rand2_uso)])
+    labels_rand = np.concatenate([np.array([0] * len(np.transpose(data_rand1))), np.array([1] * len(np.transpose(data_rand2)))])
+    data_for_svm_rand = np.concatenate([np.transpose(data_rand1), np.transpose(data_rand2)])
     accuracies_rand, aucs_rand = cross_validation(np.transpose(data_for_svm_rand), labels_rand, True)
+
+    labels_datasets = np.concatenate([np.array([0] * len(data_pfizer)), np.array([1] * len(data_uso))])
+    data_for_svm_cluster = np.concatenate([data_pfizer, data_uso])
+    accuracies_datasets, aucs_datasets = cross_validation(np.transpose(data_for_svm_cluster), labels_datasets, True)
 
     labels_cluster = np.concatenate([np.array([0] * len(data_cluster1_uso)), np.array([1] * len(data_cluster2_uso))])
     data_for_svm_cluster = np.concatenate([data_cluster1_uso, data_cluster2_uso])
-    accuracies_cluster_12, aucs_cluster_12 = cross_validation(np.transpose(data_for_svm_cluster), labels_cluster, True)
+    accuracies_cluster_12, aucs_cluster_12 = cross_validation(data_for_svm_cluster, labels_cluster, False)
 
     labels_cluster = np.concatenate([np.array([0] * len(data_cluster3_uso)), np.array([1] * len(data_cluster4_uso))])
     data_for_svm_cluster = np.concatenate([data_cluster3_uso, data_cluster4_uso])
@@ -205,70 +219,81 @@ if __name__ == "__main__":
 
     print '--------------------------------------------------------------------------'
     print ''
-    print 'KTA for random split of Usoskin:                                     ', '{:.3f}'.format(kta_align_general(K_lin_uso_rand1, K_lin_uso_rand2))
-    print 'KTAs for split of Usoskin according to clusters:'
-    print '     Cluster 1 in one dataset, Clusters 2-6 in the other:            ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster1, K_lin_uso_cluster2))
-    print '     Cluster 2 in one dataset, Clusters 1, 3-6 in the other:         ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster3, K_lin_uso_cluster4))
-    print '     Clusters 3 in one dataset, Clusters 1-2, 4-6 in the other:      ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster5, K_lin_uso_cluster6))
-    print '     Clusters 4-6 in one dataset, Clusters 1-3 in the other:         ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster7, K_lin_uso_cluster8))
+    print 'KTA for random split of Pfizer + Usoskin:                                ', '{:.3f}'.format(kta_align_general(K_lin_rand1, K_lin_rand2))
+    print 'KTAs for split in Pfizer and Usoskin'
+    print '     Pfizer vs. Usoskin:                                                 ', '{:.3f}'.format(kta_align_general(K_lin_pfizer, K_lin_uso))
+    print '     Cluster 1 in one dataset, Clusters 2-4 in the other:                ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster1, K_lin_uso_cluster2))
+    print '     Cluster 2 in one dataset, Clusters 1, 3-4 in the other:             ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster3, K_lin_uso_cluster4))
+    print '     Clusters 3 in one dataset, Clusters 1-2, 4 in the other:            ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster5, K_lin_uso_cluster6))
+    print '     Clusters 4 in one dataset, Clusters 1-3 in the other:               ', '{:.3f}'.format(kta_align_general(K_lin_uso_cluster7, K_lin_uso_cluster8))
     print ''
-    print 'centered KTA for random split of Usoskin:                            ', '{:.3f}'.format(
-        kta_align_general(center_kernel(K_lin_uso_rand1), center_kernel(K_lin_uso_rand2)))
-    print 'centered KTAs for split of Usoskin according to clusters:'
-    print '     Cluster 1 in one dataset, Clusters 2-6 in the other:            ', '{:.3f}'.format(
-        kta_align_general(center_kernel(K_lin_uso_cluster1), center_kernel(K_lin_uso_cluster2)))
-    print '     Cluster 2 in one dataset, Clusters 1, 3-6 in the other:         ', '{:.3f}'.format(
+    print 'centered KTA for random split of Pfizer + Usoskin:                       ', '{:.3f}'.format(
+        kta_align_general(center_kernel(K_lin_rand1), center_kernel(K_lin_rand2)))
+    print 'centered KTAs for split in Pfizer and Usoskin:'
+    print '     Pfizer vs. Usoskin:                                                 ', '{:.3f}'.format(
+        kta_align_general(center_kernel(K_lin_pfizer), center_kernel(K_lin_uso)))
+    print '     Cluster 1 in one dataset, Clusters 2-4 in the other:                ', '{:.3f}'.format(
+       kta_align_general(center_kernel(K_lin_uso_cluster1), center_kernel(K_lin_uso_cluster2)))
+    print '     Cluster 2 in one dataset, Clusters 1, 2-4 in the other:             ', '{:.3f}'.format(
         kta_align_general(center_kernel(K_lin_uso_cluster3), center_kernel(K_lin_uso_cluster4)))
-    print '     Clusters 3 in one dataset, Clusters 1-2, 4-6 in the other:      ', '{:.3f}'.format(
+    print '     Clusters 3 in one dataset, Clusters 1-2, 4 in the other:            ', '{:.3f}'.format(
         kta_align_general(center_kernel(K_lin_uso_cluster5), center_kernel(K_lin_uso_cluster6)))
-    print '     Clusters 4-6 in one dataset, Clusters 1-3 in the other:         ', '{:.3f}'.format(
+    print '     Clusters 4 in one dataset, Clusters 1-3 in the other:               ', '{:.3f}'.format(
         kta_align_general(center_kernel(K_lin_uso_cluster7), center_kernel(K_lin_uso_cluster8)))
     print ''
-    print 'centered and normalized KTA for random split of Usoskin:             ', '{:.3f}'.format(
-        kta_align_general(normalize_kernel(center_kernel(K_lin_uso_rand1)), normalize_kernel(center_kernel(K_lin_uso_rand2))))
-    print 'centered and normalized KTAs for split of Usoskin according to clusters:'
-    print '     Cluster 1 in one dataset, Clusters 2-6 in the other:            ', '{:.3f}'.format(
+    print 'centered and normalized KTA for random split of Pfizer + Usoskin:        ', '{:.3f}'.format(
+        kta_align_general(normalize_kernel(center_kernel(K_lin_rand1)), normalize_kernel(center_kernel(K_lin_rand2))))
+    print 'centered and normalized KTAs for split in Pfizer and Usoskin:'
+    print '     Cluster 1 in one dataset, Clusters 2-6 in the other:                ', '{:.3f}'.format(
+        kta_align_general(normalize_kernel(center_kernel(K_lin_pfizer)), normalize_kernel(center_kernel(K_lin_uso))))
+    print '     Cluster 1 in one dataset, Clusters 2-4 in the other:                ', '{:.3f}'.format(
         kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster1)), normalize_kernel(center_kernel(K_lin_uso_cluster2))))
-    print '     Cluster 2 in one dataset, Clusters 1, 3-6 in the other:   ', '{:.3f}'.format(
+    print '     Cluster 2 in one dataset, Clusters 1, 3-4 in the other:             ', '{:.3f}'.format(
         kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster3)), normalize_kernel(center_kernel(K_lin_uso_cluster4))))
-    print '     Clusters 3 in one dataset, Clusters 1-2, 4-6 in the other:      ', '{:.3f}'.format(
+    print '     Clusters 3 in one dataset, Clusters 1-2, 4 in the other:            ', '{:.3f}'.format(
         kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster5)), normalize_kernel(center_kernel(K_lin_uso_cluster6))))
-    print '     Clusters 4-6 in one dataset, Clusters 1-3 in the other:         ', '{:.3f}'.format(
+    print '     Clusters 4 in one dataset, Clusters 1-3 in the other:               ', '{:.3f}'.format(
         kta_align_general(normalize_kernel(center_kernel(K_lin_uso_cluster7)), normalize_kernel(center_kernel(K_lin_uso_cluster8))))
     print ''
     [acc_mean, acc_lci, acc_uci] = mean_confidence_interval(accuracies_rand, confidence=0.95)
-    print 'Mean SVM accuracy for random split of Usoskin:                       ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
+    print 'Mean SVM accuracy for random split of Pfizer + Usoskin:                  ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
+        acc_lci), ',', '{:.3f}'.format(acc_uci), '].'
+    [acc_mean, acc_lci, acc_uci] = mean_confidence_interval(accuracies_datasets, confidence=0.95)
+    print 'Mean SVM accuracies for split Pfizer and Usoskin:'
+    print '     Pfizer vs. Usoskin:                                                 ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
         acc_lci), ',', '{:.3f}'.format(acc_uci), '].'
     [acc_mean, acc_lci, acc_uci] = mean_confidence_interval(accuracies_cluster_12, confidence=0.95)
-    print 'Mean SVM accuracies for split of Usoskin according to clusters:'
-    print '     Clusters 1-2 in one dataset, Clusters 3-11 in the other:        ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 1 in one dataset, Clusters 2-4 in the other:               ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
         acc_lci), ',', '{:.3f}'.format(acc_uci), '].'
     [acc_mean, acc_lci, acc_uci] = mean_confidence_interval(accuracies_cluster_34, confidence=0.95)
-    print '     Clusters 3-5 in one dataset, Clusters 1-2,6-11 in the other:    ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 2 in one dataset, Clusters 1,3-4 in the other:             ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
         acc_lci), ',', '{:.3f}'.format(acc_uci), '].'
     [acc_mean, acc_lci, acc_uci] = mean_confidence_interval(accuracies_cluster_56, confidence=0.95)
-    print '     Clusters 6-7 in one dataset, Clusters 1-5,8-11 in the other:    ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 3 in one dataset, Clusters 1-2,4 in the other:             ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
         acc_lci), ',', '{:.3f}'.format(acc_uci), '].'
     [acc_mean, acc_lci, acc_uci] = mean_confidence_interval(accuracies_cluster_78, confidence=0.95)
-    print '     Clusters 8-11 in one dataset, Clusters 1-7 in the other:        ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 4 in one dataset, Clusters 1-3 in the other:               ', '{:.3f}'.format(acc_mean), '- 95% CI [', '{:.3f}'.format(
         acc_lci), ',', '{:.3f}'.format(acc_uci), '].'
     print ''
 
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_rand, confidence=0.95)
-    print 'Mean SVM AUCs for random split of Usoskin:                       ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(auc_lci), ',', '{:.3f}'.format(
+    print 'Mean SVM AUCs for random split of Pfizer + Usoskin:                      ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(auc_lci), ',', '{:.3f}'.format(
         auc_uci), '].'
+    [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_datasets, confidence=0.95)
+    print 'Mean SVM AUCs for split in Pfizer and Usoskin:'
+    print '     Pfizer vs. Usoskin:                                                 ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
+        auc_lci), ',', '{:.3f}'.format(auc_uci), '].'
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_cluster_12, confidence=0.95)
-    print 'Mean SVM AUCs for split of Usoskin according to clusters:'
-    print '     Clusters 1-2 in one dataset, Clusters 3-11 in the other:        ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 1 in one dataset, Clusters 2-4 in the other:               ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
         auc_lci), ',', '{:.3f}'.format(auc_uci), '].'
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_cluster_34, confidence=0.95)
-    print '     Clusters 3-5 in one dataset, Clusters 1-2,6-11 in the other:    ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 2 in one dataset, Clusters 1,3-4 in the other:             ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
         auc_lci), ',', '{:.3f}'.format(auc_uci), '].'
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_cluster_56, confidence=0.95)
-    print '     Clusters 6-7 in one dataset, Clusters 1-5,8-11 in the other:    ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 3 in one dataset, Clusters 1-2,4 in the other:             ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
         auc_lci), ',', '{:.3f}'.format(auc_uci), '].'
     [auc_mean, auc_lci, auc_uci] = mean_confidence_interval(aucs_cluster_78, confidence=0.95)
-    print '     Clusters 8-11 in one dataset, Clusters 1-7 in the other:        ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
+    print '     Clusters 4 in one dataset, Clusters 1-3 in the other:               ', '{:.3f}'.format(auc_mean), '- 95% CI [', '{:.3f}'.format(
         auc_lci), ',', '{:.3f}'.format(auc_uci), '].'
     print ''
 
@@ -283,14 +308,14 @@ if __name__ == "__main__":
             print(cluster_1+1, cluster_2+1)
             if cluster_2 >= cluster_1:
                 if cluster_1 == cluster_2:
-                    data_cluster_uso_pair_1_raw = new_data_uso[cluster_labels==cluster_1+1,]
-                    data_cluster_uso_pair_2_raw = new_data_uso[cluster_labels==cluster_2+1,]
+                    data_cluster_uso_pair_1_raw = new_data_pfizer_uso[cluster_labels==cluster_1+1,]
+                    data_cluster_uso_pair_2_raw = new_data_pfizer_uso[cluster_labels==cluster_2+1,]
                     indices_cells = np.random.permutation(sum(cluster_labels==cluster_1+1))
                     data_cluster_uso_pair_1_now = data_cluster_uso_pair_1_raw[indices_cells[:len(indices_cells)/2],]
                     data_cluster_uso_pair_2_now = data_cluster_uso_pair_2_raw[indices_cells[len(indices_cells)/2:],]
                 else:
-                    data_cluster_uso_pair_1_now = new_data_uso[cluster_labels==cluster_1+1,]
-                    data_cluster_uso_pair_2_now = new_data_uso[cluster_labels==cluster_2+1,]
+                    data_cluster_uso_pair_1_now = new_data_pfizer_uso[cluster_labels==cluster_1+1,]
+                    data_cluster_uso_pair_2_now = new_data_pfizer_uso[cluster_labels==cluster_2+1,]
 
                 # To avoid memory error use only little bit of data for now
                 data_cluster_uso_pair_1 = data_cluster_uso_pair_1_now[:,indices[:genes_to_keep]]
@@ -322,23 +347,23 @@ if __name__ == "__main__":
                 pairwise_KTAs_center[cluster_1][cluster_2] = pairwise_KTAs_center[cluster_2][cluster_1]
                 pairwise_KTAs_center_norma[cluster_1][cluster_2] = pairwise_KTAs_center_norma[cluster_2][cluster_1]
 
-    print 'Pairwise comparison of clusters - KTA scores (Usoskin): '
+    print 'Pairwise comparison of clusters - KTA scores (Pfizer + Usoskin): '
     print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_KTAs]))
     print ''
 
-    print 'Pairwise comparison of clusters - KTA scores centered (Usoskin): '
+    print 'Pairwise comparison of clusters - KTA scores centered (Pfizer + Usoskin): '
     print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_KTAs_center]))
     print ''
 
-    print 'Pairwise comparison of clusters - KTA scores centered and normalized (Usoskin): '
+    print 'Pairwise comparison of clusters - KTA scores centered and normalized (Pfizer + Usoskin): '
     print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_KTAs_center_norma]))
     print ''
 
-    print 'Pairwise comparison of clusters - Mean SVM accuracy (Usososkin): '
+    print 'Pairwise comparison of clusters - Mean SVM accuracy (Pfizer + Usososkin): '
     print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_accuracies]))
     print ''
 
-    print 'Pairwise comparison of clusters - Mean SVM AUCs (Usososkin): '
+    print 'Pairwise comparison of clusters - Mean SVM AUCs (Pfizer + Usososkin): '
     print('\n'.join([' '.join(['{:.3f}'.format(item) for item in row]) for row in pairwise_aucs]))
     print ''
     print '--------------------------------------------------------------------------'
@@ -347,17 +372,17 @@ if __name__ == "__main__":
     plt.figure(1)
     sp1 = plt.subplot(1, 5, 1)
     sp1.set_title('KTA')
-    plt.imshow(pairwise_KTAs, interpolation='nearest')
+    plt.imshow(pairwise_KTAs,cmap='Greys', interpolation='nearest')
     sp2 = plt.subplot(1, 5, 2)
     sp2.set_title('KTA centered')
-    plt.imshow(pairwise_KTAs_center, interpolation='nearest')
+    plt.imshow(pairwise_KTAs_center,cmap='Greys', interpolation='nearest')
     sp3 = plt.subplot(1, 5, 3)
     sp3.set_title('KTA centered and normalized')
-    plt.imshow(pairwise_KTAs_center_norma, interpolation='nearest')
+    plt.imshow(pairwise_KTAs_center_norma,cmap='Greys', interpolation='nearest')
     sp4 = plt.subplot(1,5, 4)
     sp4.set_title('SVM accuracies')
-    plt.imshow(pairwise_accuracies, interpolation='nearest')
+    plt.imshow(pairwise_accuracies,cmap='Greys', interpolation='nearest')
     sp5 = plt.subplot(1,5, 5)
     sp5.set_title('SVM AUCs')
-    plt.imshow(pairwise_aucs, interpolation='nearest')
+    plt.imshow(pairwise_aucs,cmap='Greys', interpolation='nearest')
     plt.show()
