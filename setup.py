@@ -23,4 +23,4 @@ config = {
                    'Programming Language :: Python :: 2.7']
 }
 
-setup(**config)
+setup(**config, requires=['scipy', 'sklearn'])
