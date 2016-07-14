@@ -9,6 +9,12 @@ from sklearn.metrics import adjusted_rand_score
 import statsmodels.stats.api as sms
 from sklearn.cross_validation import train_test_split
 
+from functools import partial
+
+import sc3_pipeline_impl as sc
+from cluster_pipeline import ClusterPipeline
+from utils import *
+
 
 def generate_toy_data(num_genes=5000, num_cells= 400,num_clusters= 5,dirichlet_parameter_cluster_size=1, shape_power_law=0.1,upper_bound_counts=300000,
                       dirichlet_parameter_counts=1):
@@ -24,7 +30,6 @@ def generate_toy_data(num_genes=5000, num_cells= 400,num_clusters= 5,dirichlet_p
     # abundances in more equal parts for each cell)
 
     # Generate Cluster sizes
-    pdb.set_trace()
     cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
     while min(cluster_sizes) == 1:
         cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
@@ -76,12 +81,12 @@ def TSNE_plot(data, labels):
     plt.show()
 
 
-def cell_filter(data, num_expr_genes=2000, non_zero_threshold=2):
+def cell_filter(data, num_expr_genes=20, non_zero_threshold=2):
     res = np.sum(data >= non_zero_threshold, axis=0)
     return np.where(np.isfinite(res) & (res >= num_expr_genes))[0]
 
 
-def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
+def gene_filter(data, perc_consensus_genes=0.98, non_zero_threshold=0):
     num_transcripts, num_cells = data.shape
     res_l = np.sum(data >= non_zero_threshold, axis=1)
     res_h = np.sum(data > 0 , axis=1)
@@ -92,6 +97,54 @@ def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
 
 def data_transformation(data):
     return np.log2(data + 1.)
+
+
+def SC3_clustering(target_data, source_data, num_clusters=5, ks = range(3, 7 + 1)):
+    cp = ClusterPipeline(target_data)
+
+    max_pca_comp = np.ceil(cp.num_cells * 0.07).astype(np.int)
+    min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
+
+    cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=2, num_expr_genes=20))
+    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
+
+    cp.set_data_transformation(sc.data_transformation)
+    cp.add_distance_calculation(partial(sc.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=1))
+
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
+    # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
+
+    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=num_clusters))
+    cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=num_clusters))
+    cp.apply(pc_range=[min_pca_comp, max_pca_comp])
+
+    SC3_labels = cp.cluster_labels
+
+    return SC3_labels
+
+
+def SC3_MTL_clustering(target_data, source_data, num_clusters=5, ks = range(3, 7 + 1)):
+    cp = ClusterPipeline(target_data)
+
+    max_pca_comp = np.ceil(cp.num_cells * 0.07).astype(np.int)
+    min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
+
+    cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=2, num_expr_genes=20))
+    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
+
+    cp.set_data_transformation(sc.data_transformation)
+    cp.add_distance_calculation(partial(sc.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=0.75))
+
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
+    # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
+
+    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=num_clusters))
+    cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=num_clusters))
+    cp.apply(pc_range=[min_pca_comp, max_pca_comp])
+
+    SC3_MTL_labels = cp.cluster_labels
+
+    return SC3_MTL_labels
 
 
 def NMF_clustering(data, num_clusters):
@@ -203,28 +256,30 @@ def split_source_target(toy_data, true_toy_labels, proportion_source, mode):
 if __name__ == "__main__":
 
     # Toy experiment parameters
-    reps = 1  # 100
+    reps = 5  # 100
 
     # Data generation parameters
     num_genes = 5000  # 20000
     num_cells = 400  # 400
     true_num_clusters = 5  # 5
-    dirichlet_parameter_cluster_size = 1  # 1, between 0 and inf, smaller values make cluster sizes more similar
-    shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
+    dirichlet_parameter_cluster_size = 0.1  # 1, between 0 and inf, smaller values make cluster sizes more similar
+    shape_power_law = 0.01  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
     upper_bound_counts = 1000000  # 1000000
-    dirichlet_parameter_counts = 1  # 1, between 0 and inf, inverse noise parameter: smaller values make counts within cluster more similar (splitting the total
+    dirichlet_parameter_counts = 0.1  # 1, between 0 and inf, noise parameter: smaller values make counts within cluster more similar (splitting the total
     # abundances in more equal parts for each cell)
 
     # Parameters for splitting data in source and target set
     proportion_source = 0.2  # How much of data will be source data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
     mode = 3  # 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters, 4 = have only non-overlapping clusters
 
-    #  NMF parameters
-    NMF_num_clusters = 10
+    #  Clustering parameters
+    NMF_num_clusters = 5
+    SC3_num_clusters = 5
 
     # Run toy experiments
     ARIs_SC3 = np.zeros(reps)
     ARIs_NMF = np.zeros(reps)
+    ARIs_SC3_MTL = np.zeros(reps)
     ARIs_MTL_NMF = np.zeros(reps)
 
     for repetition in range(reps):
@@ -239,9 +294,12 @@ if __name__ == "__main__":
         toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data, true_toy_labels, proportion_source, mode)
 
         # Run SC3 on target data
-        # TODO
-        # SC3_labels = SC3_clustering(toy_data_target, num_clusters=SC3_num_clusters)
-        # ARIs_SC3[repetition] = adjusted_rand_score(true_toy_labels_target, SC3_labels)
+        SC3_labels = SC3_clustering(toy_data_target, toy_data_source, num_clusters=SC3_num_clusters)
+        ARIs_SC3[repetition] = adjusted_rand_score(true_toy_labels_target, SC3_labels)
+
+        # Run SC3 with MTL distances
+        SC3_MTL_labels = SC3_MTL_clustering(toy_data_target, toy_data_source, num_clusters=SC3_num_clusters)
+        ARIs_SC3_MTL[repetition] = adjusted_rand_score(true_toy_labels_target,SC3_MTL_labels)
 
         # Run NMF on target data
         NMF_labels = NMF_clustering(toy_data_target, num_clusters=NMF_num_clusters)
@@ -252,10 +310,17 @@ if __name__ == "__main__":
         # MTL_NMF_labels = MTL_NMF_clustering(toy_data_target, toy_data_source, num_clusters=MTL_NMF_num_clusters)
         # ARIs_MTL_NMF[repetition] = adjusted_rand_score(true_toy_labels_target, MTL_NMF_labels)
 
+
+
+
+
+
+
     # print ARIs
-    print "Mean ARI: ", str(np.round(np.mean(ARIs_SC3), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_SC3).tconfint_mean(), decimals=3))
-    print "Mean ARI: ", str(np.round(np.mean(ARIs_NMF), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_NMF).tconfint_mean(), decimals=3))
-    print "Mean ARI: ", str(np.round(np.mean(ARIs_MTL_NMF), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_MTL_NMF).tconfint_mean(), decimals=3))
+    print "Mean ARI of SC3: ", str(np.round(np.mean(ARIs_SC3), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_SC3).tconfint_mean(), decimals=3))
+    print "Mean ARI of NMF: ", str(np.round(np.mean(ARIs_NMF), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_NMF).tconfint_mean(), decimals=3))
+    print "Mean ARI of MTL SC3: ", str(np.round(np.mean(ARIs_SC3_MTL), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_SC3_MTL).tconfint_mean(), decimals=3))
+    print "Mean ARI of MTL NMF: ", str(np.round(np.mean(ARIs_MTL_NMF), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_MTL_NMF).tconfint_mean(), decimals=3))
 
 
 
