@@ -19,6 +19,7 @@ if __name__ == "__main__":
     #     gene_id_map[gene_names[i, 1]] = gene_names[i, 0]
 
     # dataset = 'Ting'
+    print("Starting...")
     dataset = 'Pfizer'
     # dataset = 'Usoskin'
     data, gene_ids = load_dataset(dataset)
