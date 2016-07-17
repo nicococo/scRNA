@@ -6,10 +6,10 @@ except ImportError:
 config = {
     'description': 'scRNA - scRNA-seq clustering toolbox',
     'url': 'https://github.com/nicococo/scRNA',
-    'author': 'Nico Goernitz',
+    'author': 'Nico Goernitz & Bettina Mieth',
     'author_email': 'nico.goernitz@tu-berlin.de',
     'version': '0.1',
-    'install_requires': ['nose', 'cvxopt','scikit-learn'],
+    'install_requires': ['nose', 'cvxopt','scikit-learn','numpy','functools', 'scipy'],
     'packages': ['scRNA'],
     'scripts': [],
     'name': 'scRNA',
@@ -23,4 +23,4 @@ config = {
                    'Programming Language :: Python :: 2.7']
 }
 
-setup(**config, requires=['scipy', 'sklearn'])
+setup(**config)
