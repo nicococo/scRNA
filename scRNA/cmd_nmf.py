@@ -8,7 +8,7 @@ from utils import *
 
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
-parser.add_argument("--fname", help="Target dataset filename", type=str)
+parser.add_argument("--fname", help="Target dataset filename", required=True, type=str)
 parser.add_argument("--fout", help="Result filename", default='out.npz', type=str)
 
 parser.add_argument("--cf_min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)

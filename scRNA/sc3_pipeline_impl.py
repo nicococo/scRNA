@@ -255,8 +255,10 @@ def intermediate_kmeans_clustering(X, k=5, cutoff=15):
     dims = X.shape[1]
     if cutoff == -1:
         cutoff = dims
+    print '1'
     kmeans = cluster.KMeans(n_clusters=k, n_init=250, max_iter=10000,
                             init='k-means++', n_jobs=-1)
+    print '2'
     rinds = np.random.permutation(np.arange(dims))
     rinds = rinds[:cutoff]
     labels = kmeans.fit_predict(X[:, rinds])
@@ -302,7 +304,7 @@ def consensus_clustering(X, n_components=5):
     labels = spc.fcluster(hclust, n_components, criterion='maxclust')
     print np.sort(np.unique(labels)), labels
 
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
     #spc.dendrogram(hclust, truncate_mode='lastp', p=40, show_contracted=True)
 
     inds = np.argsort(labels)
