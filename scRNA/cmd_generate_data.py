@@ -31,7 +31,7 @@ print 'Data dimension: ', data.shape
 
 # 2. GENERATE GENE NAMES
 print('Generating corresponding gene names.')
-transcripts = np.arrange(arguments.num_genes)
+transcripts = np.arange(arguments.num_genes)
 
 # 3. SAVE RESULTS
 print('Saving results to \'{0}\'.'.format(arguments.fout))
