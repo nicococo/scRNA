@@ -71,7 +71,7 @@ def data_transformation(data):
 
 
 def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
-    gene_names = np.loadtxt('/Users/nicococo/Documents/scRNA/pfizer/gene_names.txt', skiprows=1, dtype='object')
+    gene_names = np.loadtxt('gene_names.txt', skiprows=1, dtype='object')
     print gene_names.shape
     print np.unique(gene_names[:, 0]).shape, np.unique(gene_names[:, 1]).shape
 
@@ -93,11 +93,11 @@ def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
                 inds2.append(ind[0])
 
     print len(inds1), len(inds2)
-
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
-def mtl_distance(data, gene_ids, metric='euclidean', mixture=0.75):
-    pdata, pgene_ids = load_dataset_by_name('Pfizer')
+
+def mtl_distance(data, gene_ids, fmtl=None, metric='euclidean', mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75):
+    pdata, pgene_ids, labels = load_dataset(fmtl)
     num_transcripts, num_cells = data.shape
 
     # filter cells
@@ -117,23 +117,25 @@ def mtl_distance(data, gene_ids, metric='euclidean', mixture=0.75):
 
     # find (and translate) a common set of genes
     inds1, inds2 = mtl_filter_and_sort_genes(gene_ids, pgene_ids)
-    print 'Pfizer {0} genes -> {1} genes.'.format(pgene_ids.size, inds2.size)
-    print 'Other  {0} genes -> {1} genes.'.format(gene_ids.size, inds1.size)
+    print 'MTL source {0} genes -> {1} genes.'.format(pgene_ids.size, inds2.size)
+    print 'MTL target {0} genes -> {1} genes.'.format(gene_ids.size, inds1.size)
 
     X = X[inds2, :]
-    nmf = decomp.NMF(alpha=10.1, init='nndsvdar', l1_ratio=0.9, max_iter=1000,
-        n_components=10, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+    nmf = decomp.NMF(alpha=nmf_alpha, init='nndsvdar', l1_ratio=nmf_l1, max_iter=1000,
+        n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
     print nmf.reconstruction_err_
 
     # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(10, data.shape[1])
+    H = np.random.randn(nmf_k, data.shape[1])
+    a1, a2 = np.where(H < 0.)
+    H[a1, a2] *= -1.
     Y = data[inds1, :].copy()
     # TODO: some NMF MU steps
     for i in range(200):
         print 'Iteration: ', i
-        print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
+        print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
         print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
         H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
 

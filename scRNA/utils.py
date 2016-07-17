@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 
 def load_dataset_by_name(name):
     if name == 'Pfizer':
@@ -18,6 +18,8 @@ def load_dataset_by_name(name):
 
 
 def load_dataset(fname):
+    if not os.path.exists(fname):
+        raise StandardError('File \'{0}\' not found.'.format(fname))
     foo = np.load(fname)
     data  = foo['data']
     gene_ids = foo['transcripts']
