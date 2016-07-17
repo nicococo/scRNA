@@ -67,8 +67,8 @@ def kta_align_binary(K, y):
     return K.dot(YY).trace() / (m * np.sqrt(K.dot(K.T).trace()))
 
 
-def generate_toy_data(num_genes=5000, num_cells= 400,num_clusters= 5,dirichlet_parameter_cluster_size=1, shape_power_law=0.1,upper_bound_counts=300000,
-                      dirichlet_parameter_counts=1):
+def generate_toy_data(num_genes=5000, num_cells= 400,num_clusters= 5, dirichlet_parameter_cluster_size=1,
+                      shape_power_law=0.1, upper_bound_counts=300000, dirichlet_parameter_counts=1):
     # Toy experiment parameters
     # shape_power_law = 0.1  # shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
     # num_clusters = 5
