@@ -71,7 +71,12 @@ def data_transformation(data):
 
 
 def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
-    gene_names = np.loadtxt('gene_names.txt', skiprows=1, dtype='object')
+    import utils
+    mypath = utils.__file__
+    mypath = mypath.rsplit('/', 1)[0]
+    print mypath
+
+    gene_names = np.loadtxt('{0}/gene_names.txt'.format(mypath), skiprows=1, dtype='object')
     print gene_names.shape
     print np.unique(gene_names[:, 0]).shape, np.unique(gene_names[:, 1]).shape
 
