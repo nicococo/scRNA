@@ -1,6 +1,7 @@
 import argparse, sys
 
 import sklearn.decomposition as decomp
+from sklearn.metrics import adjusted_rand_score
 
 import sc3_pipeline_impl as sc
 from utils import *
@@ -27,7 +28,7 @@ print arguments
 # 1. LOAD DATA
 print("\nLoading target dataset ({0}).".format(arguments.fname))
 dataset = arguments.fname
-data, gene_ids = load_dataset(dataset)
+data, gene_ids, labels = load_dataset(dataset)
 print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 
 num_transcripts, num_cells = data.shape
@@ -59,9 +60,14 @@ print 'Frobenius-norm reconstruction error: ', np.sqrt(np.sum((X - W.dot(H))*(X 
 print 'dim(W): ', W.shape
 print 'dim(H): ', H.shape
 
+# Check if labels are available:
+if not labels is None:
+    print('\nLabels are available!')
+    print 'ARI for max-assignment: ', adjusted_rand_score(labels[remain_cell_inds], np.argmax(H, axis=0))
+
 # 4. SAVE RESULTS
 print('\nSaving results to \'{0}\'.'.format(arguments.fout))
-np.savez(arguments.fout, type='NMF-single', X=X, W=W, H=H,
+np.savez(arguments.fout, type='NMF-single', X=X, W=W, H=H, labels=np.argmax(H, axis=0),
          args=arguments, remain_cell_inds=remain_cell_inds, remain_gene_inds=remain_gene_inds)
 
 print('Done.')
