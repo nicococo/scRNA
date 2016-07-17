@@ -255,7 +255,7 @@ def intermediate_kmeans_clustering(X, k=5, cutoff=15):
     dims = X.shape[1]
     if cutoff == -1:
         cutoff = dims
-    kmeans = cluster.KMeans(n_clusters=k, n_init=1000, max_iter=10^9,
+    kmeans = cluster.KMeans(n_clusters=k, n_init=1000, max_iter=10000,
                             init='k-means++', n_jobs=-1)
     rinds = np.random.permutation(np.arange(dims))
     rinds = rinds[:cutoff]

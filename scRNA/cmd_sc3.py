@@ -74,4 +74,7 @@ if not labels is None:
 print('\nSaving results to \'{0}\'.'.format(arguments.fout))
 np.savez(arguments.fout, type='SC3-single', sc3_pipeline=cp, args=arguments)
 
+np.savetxt('{0}.labels'.format(arguments.fout), (cp.cluster_labels, cp.remain_cell_inds))
+
+
 print('Done.')
