@@ -70,7 +70,7 @@ print('\nSaving results to \'{0}\'.'.format(arguments.fout))
 np.savez(arguments.fout, type='NMF-single', X=X, W=W, H=H, labels=np.argmax(H, axis=0),
          args=arguments, remain_cell_inds=remain_cell_inds, remain_gene_inds=remain_gene_inds)
 
-np.savetxt('{0}.labels'.format(arguments.fout), (np.argmax(H, axis=0), remain_cell_inds))
+np.savetxt('{0}.labels'.format(arguments.fout), (np.argmax(H, axis=0), remain_cell_inds), fmt='%u')
 
 
 print('Done.')
