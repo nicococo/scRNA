@@ -261,10 +261,11 @@ def intermediate_kmeans_clustering(X, k=5, cutoff=15):
     print '2'
     rinds = np.random.permutation(np.arange(dims))
     rinds = rinds[:cutoff]
-    labels = kmeans.fit_predict(X[:, rinds])
     print '3'
-    assert labels.size == X.shape[0]
+    labels = kmeans.fit_predict(X[:, rinds])
     print '4'
+    assert labels.size == X.shape[0]
+    print '5'
     return labels
 
 
