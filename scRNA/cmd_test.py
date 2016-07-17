@@ -1,6 +1,7 @@
-import argparse, sys
+import argparse
 
-parser = argparse.ArgumentParser()
-arguments = parser.parse_args(sys.argv[1:])
-print('Parameters:')
-print arguments
+def main(args):
+    parser = argparse.ArgumentParser()
+    arguments = parser.parse_args(args)
+    print('Parameters:')
+    print arguments
