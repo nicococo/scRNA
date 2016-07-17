@@ -1,4 +1,3 @@
 #!/usr/bin/env python
 
-import scRNA
-print main_nmf
+import scRNA import cmd_test
