@@ -11,7 +11,7 @@ config = {
     'version': '0.1',
     'install_requires': ['nose', 'cvxopt','scikit-learn','numpy', 'scipy'],
     'packages': ['scRNA'],
-    'scripts': [],
+    'scripts': ['bin/scRNA-nmf.sh'],
     'name': 'scRNA',
     'classifiers':['Intended Audience :: Science/Research',
                    'Programming Language :: Python',
