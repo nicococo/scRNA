@@ -3,7 +3,7 @@ import numpy as np
 from functools import partial
 
 import sc3_pipeline_impl as sc
-from cluster_pipeline import ClusterPipeline
+from sc3_pipeline import SC3Pipeline
 from utils import *
 
 
@@ -12,7 +12,7 @@ if __name__ == "__main__":
     # dataset = 'Pfizer'
     # dataset = 'Usoskin'
 
-    data, gene_ids = load_dataset(dataset)
+    data, gene_ids = load_dataset_by_name(dataset)
 
     # X = rpm_data[:, filtered_inds]
     # X = data
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # # np.savetxt('ting.csv', X, fmt=fmt, delimiter=',', newline='\n', comments='')
     # np.savetxt('ting.csv', X[:,1:], fmt='%1.2f', delimiter=',', newline='\n', comments='')
 
-    cp = ClusterPipeline(data, gene_ids)
+    cp = SC3Pipeline(data, gene_ids)
 
     np.random.seed(1)
     ks = range(3, 7+1)

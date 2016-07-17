@@ -38,6 +38,8 @@ def cell_filter(data, num_expr_genes=2000, non_zero_threshold=2):
     :return: indices of valid cells
     """
     print('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold))
+    ai, bi = np.where(np.isnan(data))
+    data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
     res = np.sum(data >= non_zero_threshold , axis=0)
     return np.where(np.isfinite(res) & (res >= num_expr_genes))[0]
@@ -49,6 +51,8 @@ def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
     :return: indices of valid transcripts
     """
     print('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold))
+    ai, bi = np.where(np.isnan(data))
+    data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
     res_l = np.sum(data >= non_zero_threshold , axis=1)
     res_h = np.sum(data > 0 , axis=1)
@@ -93,7 +97,7 @@ def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
 def mtl_distance(data, gene_ids, metric='euclidean', mixture=0.75):
-    pdata, pgene_ids = load_dataset('Pfizer')
+    pdata, pgene_ids = load_dataset_by_name('Pfizer')
     num_transcripts, num_cells = data.shape
 
     # filter cells

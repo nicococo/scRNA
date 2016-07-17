@@ -1,3 +1,3 @@
 #!/usr/bin/env python
 
-from scRNA import cmd_test
+from scRNA import cmd_nmf

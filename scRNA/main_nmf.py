@@ -22,7 +22,7 @@ if __name__ == "__main__":
     print("Starting...")
     dataset = 'Pfizer'
     # dataset = 'Usoskin'
-    data, gene_ids = load_dataset(dataset)
+    data, gene_ids = load_dataset_by_name(dataset)
 
     # foo = np.load('/Users/nicococo/Documents/scRNA-data/Usoskin.npz')
     # foo = np.load('/Users/nicococo/Documents/scRNA-data/Ting.npz')

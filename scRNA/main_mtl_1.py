@@ -7,19 +7,19 @@ import sklearn.preprocessing as pp
 from functools import partial
 
 import sc3_pipeline_impl as sc
-from cluster_pipeline import ClusterPipeline
+from sc3_pipeline import SC3Pipeline
 from utils import *
 
 
 if __name__ == "__main__":
-    data, gene_ids = load_dataset('Usoskin')
+    data, gene_ids = load_dataset_by_name('Usoskin')
 
     mixture_coeffs = [1.0, 0.75, 0.5, 0.25, 0.1, 0.0]
     mixture_coeffs = [0.25, 0.2, 0.15, 0.1, 0.05, 0.0]
     all_labels = []
     all_ktas = []
     for i in range(len(mixture_coeffs)):
-        cp = ClusterPipeline(data, gene_ids)
+        cp = SC3Pipeline(data, gene_ids)
         np.random.seed(1)
         n_cluster = 11
         max_pca_comp = np.ceil(cp.num_cells*0.07).astype(np.int)

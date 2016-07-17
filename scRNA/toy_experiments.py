@@ -12,7 +12,7 @@ from sklearn.cross_validation import train_test_split
 from functools import partial
 
 import sc3_pipeline_impl as sc
-from cluster_pipeline import ClusterPipeline
+from sc3_pipeline import SC3Pipeline
 from utils import *
 
 
@@ -100,7 +100,7 @@ def data_transformation(data):
 
 
 def SC3_clustering(target_data, source_data, num_clusters=5, ks = range(3, 7 + 1)):
-    cp = ClusterPipeline(target_data)
+    cp = SC3Pipeline(target_data)
 
     max_pca_comp = np.ceil(cp.num_cells * 0.07).astype(np.int)
     min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
@@ -124,7 +124,7 @@ def SC3_clustering(target_data, source_data, num_clusters=5, ks = range(3, 7 + 1
 
 
 def SC3_MTL_clustering(target_data, source_data, num_clusters=5, ks = range(3, 7 + 1)):
-    cp = ClusterPipeline(target_data)
+    cp = SC3Pipeline(target_data)
 
     max_pca_comp = np.ceil(cp.num_cells * 0.07).astype(np.int)
     min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)

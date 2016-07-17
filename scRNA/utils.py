@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def load_dataset(name):
+def load_dataset_by_name(name):
     if name == 'Pfizer':
         foo = np.load('pfizer_data.npz')
         data  = foo['rpm_data']
@@ -14,6 +14,16 @@ def load_dataset(name):
         foo = np.load('/Users/nicococo/Documents/scRNA-data/Ting.npz')
         data  = foo['data']
         gene_ids = foo['transcripts']
+    return data, gene_ids
+
+
+def load_dataset(fname):
+    foo = np.load(fname)
+    data  = foo['data']
+    gene_ids = foo['transcripts']
+    if 'pfizer' in fname:
+        print('Load rpm data instead.')
+        data = foo['rpm_data']
     return data, gene_ids
 
 

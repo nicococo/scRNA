@@ -4,7 +4,7 @@ from functools import partial
 from sklearn.metrics import adjusted_rand_score
 
 import sc3_pipeline_impl as sc
-from cluster_pipeline import ClusterPipeline
+from sc3_pipeline import SC3Pipeline
 from utils import *
 
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
                                         dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, shape_power_law=shape_power_law,
                                         upper_bound_counts=upper_bound_counts,dirichlet_parameter_counts=dirichlet_parameter_counts)
 
-    cp = ClusterPipeline(data)
+    cp = SC3Pipeline(data)
 
     # np.random.seed(1)
     ks = range(3, 7+1)

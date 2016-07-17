@@ -1,6 +1,6 @@
 import numpy as np
 
-class ClusterPipeline(object):
+class SC3Pipeline(object):
     """ Meta-class for single-cell clustering based on the SC3 pipeline.
         Nico Goernitz, TU Berlin, 2016
     """
