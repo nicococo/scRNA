@@ -11,6 +11,7 @@ config = {
     'version': '0.1',
     'install_requires': ['nose', 'cvxopt','scikit-learn','numpy', 'scipy'],
     'packages': ['scRNA'],
+    'package_dir' : {'scRNA': 'scRNA'},
     'package_data': {'scRNA': ['scRNA/gene_names.txt']},
     'scripts': ['bin/scRNA-nmf.sh','bin/scRNA-generate-data.sh','bin/scRNA-evaluate.sh','bin/scRNA-sc3.sh','bin/scRNA-mtl-sc3.sh'],
     'name': 'scRNA',
