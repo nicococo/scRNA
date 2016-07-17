@@ -24,7 +24,11 @@ def load_dataset(fname):
     if 'pfizer' in fname:
         print('Load rpm data instead.')
         data = foo['rpm_data']
-    return data, gene_ids
+    # look for labels
+    labels = None
+    if 'labels' in foo:
+        labels = foo['labels']
+    return data, gene_ids, labels
 
 
 def normalize_kernel(K):
