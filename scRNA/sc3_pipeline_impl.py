@@ -38,6 +38,8 @@ def cell_filter(data, num_expr_genes=2000, non_zero_threshold=2):
     :return: indices of valid cells
     """
     print('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold))
+    ai, bi = np.where(np.isnan(data))
+    data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
     res = np.sum(data >= non_zero_threshold , axis=0)
     return np.where(np.isfinite(res) & (res >= num_expr_genes))[0]
@@ -49,6 +51,8 @@ def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
     :return: indices of valid transcripts
     """
     print('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold))
+    ai, bi = np.where(np.isnan(data))
+    data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
     res_l = np.sum(data >= non_zero_threshold , axis=1)
     res_h = np.sum(data > 0 , axis=1)
@@ -67,7 +71,12 @@ def data_transformation(data):
 
 
 def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
-    gene_names = np.loadtxt('/Users/nicococo/Documents/scRNA/pfizer/gene_names.txt', skiprows=1, dtype='object')
+    import utils
+    mypath = utils.__file__
+    mypath = mypath.rsplit('/', 1)[0]
+    print mypath
+
+    gene_names = np.loadtxt('{0}/gene_names.txt'.format(mypath), skiprows=1, dtype='object')
     print gene_names.shape
     print np.unique(gene_names[:, 0]).shape, np.unique(gene_names[:, 1]).shape
 
@@ -89,11 +98,11 @@ def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
                 inds2.append(ind[0])
 
     print len(inds1), len(inds2)
-
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
-def mtl_distance(data, gene_ids, metric='euclidean', mixture=0.75):
-    pdata, pgene_ids = load_dataset('Pfizer')
+
+def mtl_distance(data, gene_ids, fmtl=None, metric='euclidean', mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75):
+    pdata, pgene_ids, labels = load_dataset(fmtl)
     num_transcripts, num_cells = data.shape
 
     # filter cells
@@ -113,23 +122,25 @@ def mtl_distance(data, gene_ids, metric='euclidean', mixture=0.75):
 
     # find (and translate) a common set of genes
     inds1, inds2 = mtl_filter_and_sort_genes(gene_ids, pgene_ids)
-    print 'Pfizer {0} genes -> {1} genes.'.format(pgene_ids.size, inds2.size)
-    print 'Other  {0} genes -> {1} genes.'.format(gene_ids.size, inds1.size)
+    print 'MTL source {0} genes -> {1} genes.'.format(pgene_ids.size, inds2.size)
+    print 'MTL target {0} genes -> {1} genes.'.format(gene_ids.size, inds1.size)
 
     X = X[inds2, :]
-    nmf = decomp.NMF(alpha=10.1, init='nndsvdar', l1_ratio=0.9, max_iter=1000,
-        n_components=10, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+    nmf = decomp.NMF(alpha=nmf_alpha, init='nndsvdar', l1_ratio=nmf_l1, max_iter=1000,
+        n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
     print nmf.reconstruction_err_
 
     # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(10, data.shape[1])
+    H = np.random.randn(nmf_k, data.shape[1])
+    a1, a2 = np.where(H < 0.)
+    H[a1, a2] *= -1.
     Y = data[inds1, :].copy()
     # TODO: some NMF MU steps
     for i in range(200):
         print 'Iteration: ', i
-        print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
+        print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
         print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
         H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
 
@@ -251,8 +262,8 @@ def intermediate_kmeans_clustering(X, k=5, cutoff=15):
     dims = X.shape[1]
     if cutoff == -1:
         cutoff = dims
-    kmeans = cluster.KMeans(n_clusters=k, n_init=1000, max_iter=10^9,
-                            init='k-means++', n_jobs=-1)
+    kmeans = cluster.KMeans(n_clusters=k, precompute_distances=True, n_init=250, max_iter=10000,
+                            init='k-means++', n_jobs=1)
     rinds = np.random.permutation(np.arange(dims))
     rinds = rinds[:cutoff]
     labels = kmeans.fit_predict(X[:, rinds])
@@ -298,7 +309,7 @@ def consensus_clustering(X, n_components=5):
     labels = spc.fcluster(hclust, n_components, criterion='maxclust')
     print np.sort(np.unique(labels)), labels
 
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
     #spc.dendrogram(hclust, truncate_mode='lastp', p=40, show_contracted=True)
 
     inds = np.argsort(labels)
