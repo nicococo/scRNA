@@ -1,4 +1,6 @@
 import numpy as np
+import pdb
+
 import sklearn.cluster as cluster
 import sklearn.decomposition as decomp
 
@@ -27,7 +29,7 @@ def get_sc3_Ting_labels():
     sc3_labels = np.zeros(187)
     for lbl in range(len(SC3_Ting7_results)):
         inds = np.array(SC3_Ting7_results[lbl], dtype=np.int)-1
-        # print lbl, inds.shape
+        print lbl, inds.shape
         sc3_labels[inds] = lbl
     return sc3_labels
 
@@ -201,7 +203,7 @@ def distances(data, gene_ids, metric='euclidean'):
     else:
         X = dist.pdist(data.T, metric=metric)
         X = dist.squareform(X)
-    print X.shape
+        print X.shape
     return X
 
 
@@ -241,12 +243,12 @@ def transformations(dm, components=5, method='pca'):
         x = np.sqrt(vals*vals)
         inds = np.argsort(-x) # argsort is ascending order
         inds = inds[:components]
-        print inds
+        # print inds
 
     # inds = range(vals.size-components, vals.size)
     # inds = range(components)
-    # print inds
-    # print vals.size, vals
+    print inds
+    print vals.size, vals
     D = np.diag(vals[inds])
     return vecs[:, inds].dot(D.dot(vecs[:, inds].T)), vecs[:, inds]
 
@@ -277,11 +279,11 @@ def build_consensus_matrix(X):
     for i in range(n):
         t = dist.squareform(dist.pdist(X[i, :].reshape(cells, 1)))
         t = np.array(t, dtype=np.int)
-        # print np.unique(t)
+        print np.unique(t)
         t[t != 0] = -1
         t[t == 0] = +1
         t[t == -1] = 0
-        # print np.unique(t)
+        print np.unique(t)
         consensus += np.array(t, dtype=np.float)
     consensus /= np.float(n)
     return consensus
