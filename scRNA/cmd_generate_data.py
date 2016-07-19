@@ -4,7 +4,8 @@ from utils import *
 
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
-parser.add_argument("--fout", help="Output filename", default='fout.npz', type=str)
+parser.add_argument("--fout_target", help="Output filename target data", default='fout_target.npz', type=str)
+parser.add_argument("--fout_source", help="Output filename source data", default='fout_source.npz', type=str)
 
 parser.add_argument("--num_genes", help="Number of genes/transcripts per cell (default 5000)", default=5000, type = int)
 parser.add_argument("--num_cells", help="Number of cells (default 400)", default=400, type = int)
@@ -40,21 +41,23 @@ print 'Data dimension: ', data.shape
 print('\nSplit artificial single-cell RNA-seq data in target and source data.')
 data_source, data_target, true_labels_source, true_labels_target = split_source_target(data, labels, proportion_target=arguments.proportion_target,
                                                                                        mode=arguments.splitting_mode)
-print 'Target data dimension: ', data_target.shape
-print 'Source data dimension: ', data_source.shape
-
+print 'Target data dimension: ', np.transpose(data_target).shape
+print 'Source data dimension: ', np.transpose(data_source).shape
 
 # 3. GENERATE GENE NAMES
 print('Generating corresponding gene names.')
 transcripts = np.arange(arguments.num_genes)
 
 # 4. SAVE RESULTS
-print('Saving results to \'{0}\'.'.format(arguments.fout))
-np.savez(arguments.fout, type='Toy',
-         data_source=data_source,
-         true_labels_source=true_labels_source,
-         data_target=data_target,
+print('Saving target data to \'{0}\'.'.format(arguments.fout_target))
+np.savez(arguments.fout_target, type='Toy',
+         data_target=np.transpose(data_target),
          true_labels_target=true_labels_target,
+         transcripts=transcripts)
+print('Saving source data to \'{0}\'.'.format(arguments.fout_source))
+np.savez(arguments.fout_source, type='Toy',
+         data_source=np.transpose(data_source),
+         true_labels_source=true_labels_source,
          transcripts=transcripts)
 
 print('Done.')

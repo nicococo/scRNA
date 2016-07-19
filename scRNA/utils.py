@@ -1,5 +1,7 @@
 import numpy as np
 import os
+from sklearn.cross_validation import train_test_split
+
 
 def load_dataset_by_name(name):
     if name == 'Pfizer':
