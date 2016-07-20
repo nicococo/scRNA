@@ -75,20 +75,23 @@ def kta_align_binary(K, y):
     return K.dot(YY).trace() / (m * np.sqrt(K.dot(K.T).trace()))
 
 
-def generate_toy_data(num_genes=5000, num_cells=400, num_clusters=5, dirichlet_parameter_cluster_size=1, mode=1, shape_power_law=0.1, upper_bound_counts=300000,
-                          dirichlet_parameter_counts=1, binomial_parameter=1e-05):
 
+
+def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet_parameter_cluster_size=10, mode=1, shape_power_law=0.1,upper_bound_counts=1000000,
+                      dirichlet_parameter_counts=0.05, binomial_parameter=1e-05):
     # Toy experiment parameters
-    # mode: How are total counts generated? 1 = Power law, 2 = Negative Binomial Distribution
-    # shape_power_law = 0.1  # shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
-    # num_clusters = 5
-    # dirichlet_parameter_cluster_size = 1  # between 0 and inf, smaller values make cluster sizes more similar
+    # Data generation parameters
+    # num_genes = 10000  # 10000, number of genes
+    # num_cells = 1000  # 1000, number of cells
+    # true_num_clusters = 4  # 4, number of clusters
+    # dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
+    # total_counts_mode = 1 # 1, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution
+    # shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
+    # upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
+    # dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
+    # inverse noise parameter: bigger values make counts within cluster more similar (splitting the total abundances in more equal parts for each cell)
+    # binomial_parameter = 1e-05 # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
 
-    # num_genes = 5000  # 20000
-    # num_cells = 400  # 400
-    # upper_bound_counts = 300000  # 300000
-    # dirichlet_parameter_counts = 1  # between 0 and inf, noise parameter: smaller values make counts within cluster more similar (splitting the total
-    # abundances in more equal parts for each cell)
 
     # Generate Cluster sizes
     cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
@@ -98,6 +101,7 @@ def generate_toy_data(num_genes=5000, num_cells=400, num_clusters=5, dirichlet_p
     if np.sum(cluster_sizes) != num_cells:
         cluster_sizes[0] = cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
 
+    # print cluster_sizes
     # Generate data for each cluster
     data_complete = []
     labels_now = []
@@ -117,7 +121,6 @@ def generate_toy_data(num_genes=5000, num_cells=400, num_clusters=5, dirichlet_p
         # plt.plot(np.sort(sample_nb)[::-1], 'o')
         # plt.show()
 
-
         # Generate data
         data_now = []
         for i in range(num_genes):
@@ -126,7 +129,7 @@ def generate_toy_data(num_genes=5000, num_cells=400, num_clusters=5, dirichlet_p
             data_now.append(one_gene)
 
         data_complete.append(np.squeeze(np.asarray(data_now)))
-        labels_now.append(np.tile(cluster_ind + 1, cluster_sizes[cluster_ind]))
+        labels_now.append(np.tile(cluster_ind+1, cluster_sizes[cluster_ind]))
 
     assert min(cluster_sizes) > 1
     data = np.squeeze(np.hstack(data_complete))
@@ -134,15 +137,23 @@ def generate_toy_data(num_genes=5000, num_cells=400, num_clusters=5, dirichlet_p
     return [data, labels]
 
 
-def split_source_target(toy_data, true_toy_labels, proportion_target, mode):
-    # 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters, 4 = have only exclusive clusters
-
+def split_source_target(toy_data, true_toy_labels, proportion_target=0.4, mode=2):
+    # Parameters for splitting data in source and target set
+    # proportion_target = 0.4 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
+    # splitting_mode = 2  # 2, Splitting mode: 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters,
+    # 4 = have only non-overlapping clusters
     if mode == 1:
-        toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = train_test_split(np.transpose(toy_data), true_toy_labels,
+        toy_data_source_now, toy_data_target_now, true_toy_labels_source, true_toy_labels_target = train_test_split(np.transpose(toy_data), true_toy_labels,
                                                                                                             test_size=proportion_target)
+        toy_data_source = np.transpose(toy_data_source_now)
+        toy_data_target = np.transpose(toy_data_target_now)
+
     elif mode == 2:
-        toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = train_test_split(np.transpose(toy_data), true_toy_labels,
+        toy_data_source_now, toy_data_target_now, true_toy_labels_source, true_toy_labels_target = train_test_split(np.transpose(toy_data), true_toy_labels,
                                                                                                             test_size=proportion_target, stratify=true_toy_labels)
+        toy_data_source = np.transpose(toy_data_source_now)
+        toy_data_target = np.transpose(toy_data_target_now)
+
     elif mode == 3:
         cluster_names = np.unique(true_toy_labels)
 
@@ -179,14 +190,14 @@ def split_source_target(toy_data, true_toy_labels, proportion_target, mode):
 
         # toy_data_rebuilt = np.concatenate((toy_data_source, toy_data_target), axis=1)
         # toy_labels_rebuilt = np.concatenate((true_toy_labels_source, true_toy_labels_target), axis=0)
-
+        # pdb.set_trace()
         # TSNE_plot(toy_data_rebuilt, toy_labels_rebuilt)
         # TSNE_plot(toy_data, true_toy_labels)
         # TSNE_plot(toy_data_source, true_toy_labels_source)
         # TSNE_plot(toy_data_target, true_toy_labels_target)
 
     elif mode == 4:
-
+        proportion_source = 1-proportion_target
         cluster_names = np.unique(true_toy_labels)
         source_clusters = cluster_names[0: int(len(cluster_names) * proportion_source)]
         target_clusters = cluster_names[int(len(cluster_names) * proportion_source):len(cluster_names)]

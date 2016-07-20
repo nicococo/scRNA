@@ -29,7 +29,7 @@ def get_sc3_Ting_labels():
     sc3_labels = np.zeros(187)
     for lbl in range(len(SC3_Ting7_results)):
         inds = np.array(SC3_Ting7_results[lbl], dtype=np.int)-1
-        print lbl, inds.shape
+        # print lbl, inds.shape
         sc3_labels[inds] = lbl
     return sc3_labels
 
@@ -76,11 +76,11 @@ def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
     import utils
     mypath = utils.__file__
     mypath = mypath.rsplit('/', 1)[0]
-    print mypath
+    # print mypath
 
     gene_names = np.loadtxt('{0}/gene_names.txt'.format(mypath), skiprows=1, dtype='object')
-    print gene_names.shape
-    print np.unique(gene_names[:, 0]).shape, np.unique(gene_names[:, 1]).shape
+    # print gene_names.shape
+    # print np.unique(gene_names[:, 0]).shape, np.unique(gene_names[:, 1]).shape
 
     gene_id_map = dict()
     for i in range(gene_names.shape[0]):
@@ -88,7 +88,7 @@ def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
 
     inds1 = []
     inds2 = []
-    print gene_ids1.size, gene_ids2.size
+    # print gene_ids1.size, gene_ids2.size
     for i in range(gene_ids1.size):
         id = gene_ids1[i]
         if gene_id_map.has_key(id):
@@ -99,7 +99,7 @@ def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
                 inds1.append(i)
                 inds2.append(ind[0])
 
-    print len(inds1), len(inds2)
+    # print len(inds1), len(inds2)
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
 
@@ -132,7 +132,7 @@ def mtl_distance(data, gene_ids, fmtl=None, metric='euclidean', mixture=0.75, nm
         n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
-    print nmf.reconstruction_err_
+    # print nmf.reconstruction_err_
 
     # reconstruct given dataset using the Pfizer dictionary
     H = np.random.randn(nmf_k, data.shape[1])
@@ -141,9 +141,9 @@ def mtl_distance(data, gene_ids, fmtl=None, metric='euclidean', mixture=0.75, nm
     Y = data[inds1, :].copy()
     # TODO: some NMF MU steps
     for i in range(200):
-        print 'Iteration: ', i
-        print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
-        print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
+        # print 'Iteration: ', i
+        # print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
+        # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
         H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
 
     # convex combination of vanilla distance and nmf distance
@@ -159,17 +159,17 @@ def mtl_toy_distance(data, gene_ids, src_data, metric='euclidean', mixture=0.75)
         n_components=10, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
-    print nmf.reconstruction_err_
-    print H
+    # print nmf.reconstruction_err_
+    # print H
 
     # reconstruct given dataset using the Pfizer dictionary
     H = np.random.randn(10, data.shape[1])
     Y = data.copy()
     # TODO: some NMF MU steps
     for i in range(200):
-        print 'Iteration: ', i
-        print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
-        print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
+        # print 'Iteration: ', i
+        # print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
+        # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
         H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
 
     # convex combination of vanilla distance and nmf distance
@@ -203,7 +203,7 @@ def distances(data, gene_ids, metric='euclidean'):
     else:
         X = dist.pdist(data.T, metric=metric)
         X = dist.squareform(X)
-        print X.shape
+        # print X.shape
     return X
 
 
@@ -247,8 +247,8 @@ def transformations(dm, components=5, method='pca'):
 
     # inds = range(vals.size-components, vals.size)
     # inds = range(components)
-    print inds
-    print vals.size, vals
+    # print inds
+    # print vals.size, vals
     D = np.diag(vals[inds])
     return vecs[:, inds].dot(D.dot(vecs[:, inds].T)), vecs[:, inds]
 
@@ -279,11 +279,11 @@ def build_consensus_matrix(X):
     for i in range(n):
         t = dist.squareform(dist.pdist(X[i, :].reshape(cells, 1)))
         t = np.array(t, dtype=np.int)
-        print np.unique(t)
+        # print np.unique(t)
         t[t != 0] = -1
         t[t == 0] = +1
         t[t == -1] = 0
-        print np.unique(t)
+        # print np.unique(t)
         consensus += np.array(t, dtype=np.float)
     consensus /= np.float(n)
     return consensus
@@ -309,7 +309,7 @@ def consensus_clustering(X, n_components=5):
     hclust = spc.linkage(cdm)
 
     labels = spc.fcluster(hclust, n_components, criterion='maxclust')
-    print np.sort(np.unique(labels)), labels
+    # print np.sort(np.unique(labels)), labels
 
     # import matplotlib.pyplot as plt
     #spc.dendrogram(hclust, truncate_mode='lastp', p=40, show_contracted=True)
