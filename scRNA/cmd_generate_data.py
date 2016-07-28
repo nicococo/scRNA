@@ -1,5 +1,7 @@
-import argparse, sys
+import argparse
+import sys
 
+from simulation import generate_toy_data, split_source_target
 from utils import *
 
 # 0. PARSE ARGUMENTS

@@ -1,18 +1,15 @@
-import pdb
-
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.manifold import TSNE
-import pandas as pd
-import sklearn.decomposition as decomp
-from sklearn.metrics import adjusted_rand_score
-import statsmodels.stats.api as sms
-from sklearn.cross_validation import train_test_split
-
 from functools import partial
 
-import sc3_pipeline_impl as sc
+import matplotlib.pyplot as plt
+import pandas as pd
+import sklearn.decomposition as decomp
+import statsmodels.stats.api as sms
 from cluster_pipeline import ClusterPipeline
+from sklearn.manifold import TSNE
+from sklearn.metrics import adjusted_rand_score
+
+import sc3_pipeline_impl as sc
+from simulation import generate_toy_data, split_source_target
 from utils import *
 
 

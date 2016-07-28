@@ -1,12 +1,11 @@
-import numpy as np
-
 from functools import partial
+
 from sklearn.metrics import adjusted_rand_score
 
 import sc3_pipeline_impl as sc
 from sc3_pipeline import SC3Pipeline
+from simulation import generate_toy_data
 from utils import *
-
 
 if __name__ == "__main__":
     # Data generation parameters
