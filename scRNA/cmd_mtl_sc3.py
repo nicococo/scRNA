@@ -3,6 +3,7 @@ import argparse, sys
 from functools import partial
 from sklearn.metrics import adjusted_rand_score
 
+import mtl
 import sc3_pipeline_impl as sc
 from sc3_pipeline import SC3Pipeline
 from utils import *
@@ -10,9 +11,11 @@ from utils import *
 
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
-parser.add_argument("--fname", help="Target dataset filename", required=True, type=str)
-parser.add_argument("--fmtl", help="MTL source dataset filename", required=True, type=str)
-parser.add_argument("--fout", help="Result filename", default='out.npz', type=str)
+parser.add_argument("--fname", help="Target TSV dataset filename", required=True, type=str)
+parser.add_argument("--fgeneids", help="Target TSV gene ids filename", required=True, type=str)
+parser.add_argument("--fmtl", help="MTL source TSV dataset filename", required=True, type=str)
+parser.add_argument("--fmtl_geneids", help="MTL source TSV gene ids filename", required=True, type=str)
+parser.add_argument("--fout", help="Result filename", default='out', type=str)
 
 parser.add_argument("--cf_min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
 parser.add_argument("--cf_non_zero_threshold", help="(Cell filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
@@ -35,9 +38,9 @@ print('Command line arguments:')
 print arguments
 
 # 1. LOAD DATA
-print("\nLoading target dataset ({0}).".format(arguments.fname))
+print("\nLoading target dataset ({0} with {1} gene ids).".format(arguments.fname, arguments.fgeneids))
 dataset = arguments.fname
-data, gene_ids, labels = load_dataset(dataset)
+data, gene_ids, labels = load_dataset_tsv(dataset, arguments.fgeneids)
 print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 
 # 2. BUILD SC3 PIPELINE
@@ -58,8 +61,14 @@ dist_list = arguments.sc3_dists.split(",")
 print('\nThere are {0} distances given.'.format(len(dist_list)))
 for ds in dist_list:
     print('- Adding MTL distance {0}'.format(ds))
-    cp.add_distance_calculation(partial(sc.mtl_distance, fmtl=arguments.fmtl, metric=ds, mixture=arguments.mtl_mixture,
-        nmf_alpha=arguments.nmf_alpha, nmf_k=arguments.nmf_k, nmf_l1=arguments.nmf_l1))
+    cp.add_distance_calculation(partial(mtl.mtl_distance,
+                                        fmtl=arguments.fmtl,
+                                        fmtl_geneids=arguments.fmtl_geneids,
+                                        metric=ds,
+                                        mixture=arguments.mtl_mixture,
+                                        nmf_alpha=arguments.nmf_alpha,
+                                        nmf_k=arguments.nmf_k,
+                                        nmf_l1=arguments.nmf_l1))
 
 transf_list = arguments.sc3_transf.split(",")
 print('\nThere are {0} transformations given.'.format(len(transf_list)))
@@ -78,11 +87,13 @@ if not labels is None:
     print('\nLabels are available!')
     print 'ARI for max-assignment: ', adjusted_rand_score(labels[cp.remain_cell_inds], cp.cluster_labels)
 
-# 4. SAVE RESULTS
-print('\nSaving results to \'{0}\'.'.format(arguments.fout))
-np.savez(arguments.fout, type='SC3-single', sc3_pipeline=cp, args=arguments)
 
-np.savetxt('{0}.labels'.format(arguments.fout), (cp.cluster_labels, cp.remain_cell_inds), fmt='%u')
+# 4. SAVE RESULTS
+print('\nSaving data structures and results to \'{0}.npz\'.'.format(arguments.fout))
+np.savez('{0}.npz'.format(arguments.fout), type='SC3-mtl', sc3_pipeline=cp, args=arguments)
+
+print('\nSaving inferred labeling as TSV file to \'{0}.labels.tsv\'.'.format(arguments.fout))
+np.savetxt('{0}.labels.tsv'.format(arguments.fout), (cp.cluster_labels, cp.remain_cell_inds), fmt='%u', delimiter='\t')
 
 
 print('Done.')

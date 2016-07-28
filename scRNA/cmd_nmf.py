@@ -8,8 +8,8 @@ from utils import *
 
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
-parser.add_argument("--fname", help="Target dataset filename", required=True, type=str)
-parser.add_argument("--fout", help="Result filename", default='out.npz', type=str)
+parser.add_argument("--fname", help="Target TSV dataset filename", required=True, type=str)
+parser.add_argument("--fout", help="Result filename (no extension)", default='out', type=str)
 
 parser.add_argument("--cf_min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
 parser.add_argument("--cf_non_zero_threshold", help="(Cell filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
@@ -28,7 +28,7 @@ print arguments
 # 1. LOAD DATA
 print("\nLoading target dataset ({0}).".format(arguments.fname))
 dataset = arguments.fname
-data, gene_ids, labels = load_dataset(dataset)
+data, _, labels = load_dataset_tsv(dataset)
 print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 
 num_transcripts, num_cells = data.shape
@@ -66,11 +66,12 @@ if not labels is None:
     print 'ARI for max-assignment: ', adjusted_rand_score(labels[remain_cell_inds], np.argmax(H, axis=0))
 
 # 4. SAVE RESULTS
-print('\nSaving results to \'{0}\'.'.format(arguments.fout))
-np.savez(arguments.fout, type='NMF-single', X=X, W=W, H=H, labels=np.argmax(H, axis=0),
+print('\nSaving data structures and results to \'{0}.npz\'.'.format(arguments.fout))
+np.savez('{0}.npz'.format(arguments.fout), type='NMF-single', X=X, W=W, H=H, labels=np.argmax(H, axis=0),
          args=arguments, remain_cell_inds=remain_cell_inds, remain_gene_inds=remain_gene_inds)
 
-np.savetxt('{0}.labels'.format(arguments.fout), (np.argmax(H, axis=0), remain_cell_inds), fmt='%u')
+print('\nSaving inferred labeling as TSV file to \'{0}.labels.tsv\'.'.format(arguments.fout))
+np.savetxt('{0}.labels.tsv'.format(arguments.fout), (np.argmax(H, axis=0), remain_cell_inds), fmt='%u', delimiter='\t')
 
 
 print('Done.')
