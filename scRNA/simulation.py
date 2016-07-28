@@ -1,9 +1,10 @@
 import numpy as np
+import pdb
 from sklearn.cross_validation import train_test_split
 
 
-def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet_parameter_cluster_size=10, mode=1, shape_power_law=0.1,upper_bound_counts=1000000,
-                      dirichlet_parameter_counts=0.05, binomial_parameter=1e-05):
+def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet_parameter_cluster_size=10, mode=1, shape_power_law=0.1, upper_bound_counts=1000000,
+                      dirichlet_parameter_counts=0.05, binomial_parameter=1e-05, dirichlet_parameter_num_de_genes=10, gamma_shape=2, gamma_rate=2):
     # Toy experiment parameters
     # Data generation parameters
     # num_genes = 10000  # 10000, number of genes
@@ -26,13 +27,16 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
     if np.sum(cluster_sizes) != num_cells:
         cluster_sizes[0] = cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
 
-    # print cluster_sizes
+    # pdb.set_trace()
+    de_genes_per_cluster = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1) * (0.6* num_genes - num_clusters))) + 1
+    true_means = np.random.gamma(gamma_shape, scale=1/float(gamma_rate), size=num_genes)
+
     # Generate data for each cluster
     data_complete = []
     labels_now = []
     for cluster_ind in range(num_clusters):
-        # Draw samples from the power law distribution
-
+        
+        # Draw samples from the power law distribution or negative binomial
         # pdb.set_trace()
         if mode == 1:
             sample = np.round(np.random.power(shape_power_law, num_genes) * upper_bound_counts)
