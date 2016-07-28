@@ -8,6 +8,7 @@ from cluster_pipeline import ClusterPipeline
 from sklearn.manifold import TSNE
 from sklearn.metrics import adjusted_rand_score
 
+import mtl
 import sc3_pipeline_impl as sc
 from simulation import generate_toy_data, split_source_target
 from utils import *
@@ -120,7 +121,7 @@ def SC3_clustering(target_data, source_data, num_clusters=4):
     # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
 
     cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(sc.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=0))
+    cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=0))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
@@ -146,7 +147,7 @@ def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture= 0.6):
     # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
 
     cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(sc.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=mixture))
+    cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=mixture))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))

@@ -48,7 +48,7 @@ print 'Source data dimension: ', np.transpose(data_source).shape
 
 # 3. GENERATE GENE NAMES
 print('Generating corresponding gene names.')
-transcripts = np.arange(arguments.num_genes)
+transcripts = np.arange(arguments.num_genes).dtype(np.str)
 
 # 4. SAVE RESULTS
 print('Saving target data to \'{0}\'.'.format(arguments.fout_target))

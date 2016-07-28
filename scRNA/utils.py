@@ -1,6 +1,34 @@
 import os
-
 import numpy as np
+
+
+def load_dataset_tsv(fname, fgenes=None, flabels=None):
+    # check data filename
+    if not os.path.exists(fname):
+        raise StandardError('File \'{0}\' not found.'.format(fname))
+
+    print('Loading TSV data file from {0}.'.format(fname))
+    data = np.loadtxt(fname, delimiter='\t')
+    print data.shape
+
+    gene_ids = np.arange(0, data.shape[0]).astype(np.str)
+    # Some scripts expect the gene ids (esp. for multitask learning of two or
+    # more datasets). If not specified, inform the user.
+    if fgenes is None:
+        print('Warning! Gene identifier file is are specified. Gene ids are now generated.')
+    else:
+        gene_ids = np.loadtxt(fgenes, delimiter='\t', dtype=np.str)
+        print('Gene ids loaded. There are ids for {0} genes.'.format(gene_ids.shape[0]))
+        if not np.unique(gene_ids).shape[0] == gene_ids.shape[0]:
+            print('Warning! Gene ids are supposed to be unique. '
+                  'Only {0} of {1}  entries are unique.'.format(np.unique(gene_ids).shape[0], gene_ids.shape[0]))
+
+    labels = None
+    if flabels is not None:
+        # TODO: Load TSV label file
+        raise Exception('Not implemented yet.')
+
+    return data, gene_ids, labels
 
 
 def load_dataset_by_name(name):
