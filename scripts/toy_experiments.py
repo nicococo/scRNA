@@ -12,6 +12,7 @@ sys.path.append('../..')
 
 from scRNA import sc3_pipeline_impl as sc
 from scRNA.utils import *
+import scRNA.mtl
 from scRNA.sc3_pipeline import SC3Pipeline
 from scRNA.simulation import generate_toy_data, split_source_target
 
@@ -149,7 +150,7 @@ if __name__ == "__main__":
     num_cells = 1000  # 1000, number of cells
     true_num_clusters = 4  # 4, number of clusters
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
-    total_counts_mode = 1 # 1, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution
+    total_counts_mode = 3 # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3=simulation from Len et al
     shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
     upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
     dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     # new Parameters from R code
     # gene_length = 1000  # 1000, assumed length of genes
     dirichlet_parameter_num_de_genes = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
-    # de_logfc = c(2, 1, 2)
+    #
     gamma_shape = 2
     gamma_rate = 2
     # nb_dispersion = 0.1
