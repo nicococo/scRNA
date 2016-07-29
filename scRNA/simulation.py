@@ -3,7 +3,7 @@ import pdb
 from sklearn.cross_validation import train_test_split
 
 
-def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet_parameter_cluster_size=10, mode=1, shape_power_law=0.1, upper_bound_counts=1000000,
+def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet_parameter_cluster_size=10, mode=3, shape_power_law=0.1, upper_bound_counts=1000000,
                       dirichlet_parameter_counts=0.05, binomial_parameter=1e-05, dirichlet_parameter_num_de_genes=10, gamma_shape=2, gamma_rate=2):
     # Toy experiment parameters
     # Data generation parameters
@@ -11,13 +11,12 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
     # num_cells = 1000  # 1000, number of cells
     # true_num_clusters = 4  # 4, number of clusters
     # dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
-    # total_counts_mode = 1 # 1, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution
+    # total_counts_mode = 3 # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3 = simulation from Len et al.
     # shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
     # upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
     # dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
     # inverse noise parameter: bigger values make counts within cluster more similar (splitting the total abundances in more equal parts for each cell)
     # binomial_parameter = 1e-05 # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
-
 
     # Generate Cluster sizes
     cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
@@ -26,43 +25,76 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
 
     if np.sum(cluster_sizes) != num_cells:
         cluster_sizes[0] = cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
-
-    # pdb.set_trace()
-    de_genes_per_cluster = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1) * (0.6* num_genes - num_clusters))) + 1
-    true_means = np.random.gamma(gamma_shape, scale=1/float(gamma_rate), size=num_genes)
+    assert min(cluster_sizes) > 1
 
     # Generate data for each cluster
     data_complete = []
     labels_now = []
-    for cluster_ind in range(num_clusters):
-        
-        # Draw samples from the power law distribution or negative binomial
-        # pdb.set_trace()
-        if mode == 1:
-            sample = np.round(np.random.power(shape_power_law, num_genes) * upper_bound_counts)
-        elif mode == 2:
-            sample = np.random.negative_binomial(1, binomial_parameter, num_genes)
-        else:
-            print "Wrong mode!"
 
-        # the abundance plot
-        # plt.plot(np.sort(sample)[::-1], 'o')
-        # plt.plot(np.sort(sample_nb)[::-1], 'o')
-        # plt.show()
+    # Simulation from Len et al.
+    if mode == 3:
+        nb_dispersion = 0.1
+        de_logfc = np.random.choice([1, 2], num_clusters, replace=True)
+        nde = np.squeeze(
+        np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1) * (0.6 * num_genes - num_clusters))) + 1
+        nde_cumsum = np.cumsum(nde).astype(int)
+        nde_cumsum_zero = np.insert(nde_cumsum, 0, 0).astype(int)
+        true_means = np.random.gamma(gamma_shape, scale=1 / float(gamma_rate), size=num_genes)
 
-        # Generate data
-        data_now = []
-        for i in range(num_genes):
-            row_total = int(sample[i])
-            one_gene = np.round(np.random.dirichlet(np.ones(cluster_sizes[cluster_ind]) * dirichlet_parameter_counts, size=1) * row_total)
-            data_now.append(one_gene)
+        for cluster_ind in range(num_clusters):
 
-        data_complete.append(np.squeeze(np.asarray(data_now)))
-        labels_now.append(np.tile(cluster_ind+1, cluster_sizes[cluster_ind]))
+            # Draw samples from
+            all_facs = np.power(2,np.random.normal(loc=0, scale=0.5, size=cluster_sizes[cluster_ind]))
+            effective_means = np.outer(true_means, all_facs)
 
-    assert min(cluster_sizes) > 1
-    data = np.squeeze(np.hstack(data_complete))
-    labels = np.hstack(labels_now)
+            chosen = range(nde_cumsum_zero[cluster_ind], nde_cumsum[cluster_ind])
+            up_down = np.sign(np.random.normal(size=len(chosen)))
+            effective_means[chosen, ] = np.transpose(np.multiply(np.transpose(effective_means[chosen, ]), np.power(2, (de_logfc[cluster_ind] * up_down))))
+
+            # Generate data
+            sample = np.random.negative_binomial(p=(1/nb_dispersion)/((1/nb_dispersion)+effective_means), n=1/nb_dispersion, size=[num_genes, cluster_sizes[cluster_ind]])
+
+            # the abundance plot
+            # plt.plot(np.sort(np.sum(sample, axis=1))[::-1], 'o')
+            # plt.show()
+
+            data_complete.append(np.asarray(sample))
+            labels_now.append(np.tile(cluster_ind + 1, cluster_sizes[cluster_ind]))
+
+        data = np.squeeze(np.hstack(data_complete))
+        labels = np.hstack(labels_now)
+
+
+    # Our simulation
+    else:
+        for cluster_ind in range(num_clusters):
+
+            # Draw samples from the power law distribution or negative binomial
+            # pdb.set_trace()
+            if mode == 1:
+                sample = np.round(np.random.power(shape_power_law, num_genes) * upper_bound_counts)
+            elif mode == 2:
+                sample = np.random.negative_binomial(1, binomial_parameter, num_genes)
+            else:
+                print "Wrong mode!"
+
+            # the abundance plot
+            # plt.plot(np.sort(sample)[::-1], 'o')
+            # plt.plot(np.sort(sample_nb)[::-1], 'o')
+            # plt.show()
+
+            # Generate data
+            data_now = []
+            for i in range(num_genes):
+                row_total = int(sample[i])
+                one_gene = np.round(np.random.dirichlet(np.ones(cluster_sizes[cluster_ind]) * dirichlet_parameter_counts, size=1) * row_total)
+                data_now.append(one_gene)
+
+            data_complete.append(np.squeeze(np.asarray(data_now)))
+            labels_now.append(np.tile(cluster_ind+1, cluster_sizes[cluster_ind]))
+
+        data = np.squeeze(np.hstack(data_complete))
+        labels = np.hstack(labels_now)
     return [data, labels]
 
 

@@ -11,10 +11,10 @@ parser.add_argument("--fout_geneids", help="Output filename geneids", default='f
 parser.add_argument("--fout_target_labels", help="Output filename target labels", default='fout_target_labels.tsv', type=str)
 parser.add_argument("--fout_source_labels", help="Output filename source labels", default='fout_source_labels.tsv', type=str)
 
-parser.add_argument("--num_genes", help="Number of genes/transcripts per cell (default 10000)", default=100, type = int)
-parser.add_argument("--num_cells", help="Number of cells (default 1000)", default=10, type = int)
+parser.add_argument("--num_genes", help="Number of genes/transcripts per cell (default 10000)", default=10000, type = int)
+parser.add_argument("--num_cells", help="Number of cells (default 1000)", default=1000, type = int)
 parser.add_argument("--num_cluster", help="Number of clusters (default 4)", default=4, type = int)
-parser.add_argument("--generation_mode", help="How are total counts generated? 1 = Power law, 2 = Negative Binomial Distribution (default 1)", default=1, type = int)
+parser.add_argument("--generation_mode", help="How are total counts generated? 1 = Power law, 2 = Negative Binomial Distribution, 3 = simulation from Len et al. (default 3)", default=3, type = int)
 parser.add_argument("--dir_cluster_size", help="Dirichlet parameter cluster size (default 10)", default=10, type = int)
 parser.add_argument("--shape_pl", help="Shape power law (default 0.1)", default=0.1, type = float)
 parser.add_argument("--upper_counts", help="Upper bound counts (default 1000000)", default=1000000, type = int)
@@ -22,7 +22,6 @@ parser.add_argument("--dir_counts", help="Dirichlet parameter counts (default 0.
 parser.add_argument("--proportion_target", help="How much of data will be target data? This will not be exact for splitting mode 3 and 4! (default 0.4)", default=0.4, type = float)
 parser.add_argument("--splitting_mode", help="Splitting mode, 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters, 4 = Have only exclusive clusters (default 2)", default=2, type = int)
 parser.add_argument("--binomial_parameter", help="Parameter p of negative binomial distribution, between 0-1 (default 1e-05)", default=1e-05, type = float)
-
 
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
