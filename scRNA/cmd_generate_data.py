@@ -1,16 +1,18 @@
 import argparse
 import sys
-
 from simulation import generate_toy_data, split_source_target
 from utils import *
 
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
-parser.add_argument("--fout_target", help="Output filename target data", default='fout_target.npz', type=str)
-parser.add_argument("--fout_source", help="Output filename source data", default='fout_source.npz', type=str)
+parser.add_argument("--fout_target_data", help="Output filename target data", default='fout_target_data.tsv', type=str)
+parser.add_argument("--fout_source_data", help="Output filename source data", default='fout_source_data.tsv', type=str)
+parser.add_argument("--fout_geneids", help="Output filename geneids", default='fout_geneids.tsv', type=str)
+parser.add_argument("--fout_target_labels", help="Output filename target labels", default='fout_target_labels.tsv', type=str)
+parser.add_argument("--fout_source_labels", help="Output filename source labels", default='fout_source_labels.tsv', type=str)
 
-parser.add_argument("--num_genes", help="Number of genes/transcripts per cell (default 10000)", default=10000, type = int)
-parser.add_argument("--num_cells", help="Number of cells (default 1000)", default=1000, type = int)
+parser.add_argument("--num_genes", help="Number of genes/transcripts per cell (default 10000)", default=100, type = int)
+parser.add_argument("--num_cells", help="Number of cells (default 1000)", default=10, type = int)
 parser.add_argument("--num_cluster", help="Number of clusters (default 4)", default=4, type = int)
 parser.add_argument("--generation_mode", help="How are total counts generated? 1 = Power law, 2 = Negative Binomial Distribution (default 1)", default=1, type = int)
 parser.add_argument("--dir_cluster_size", help="Dirichlet parameter cluster size (default 10)", default=10, type = int)
@@ -43,23 +45,21 @@ print 'Data dimension: ', data.shape
 print('\nSplit artificial single-cell RNA-seq data in target and source data.')
 data_source, data_target, true_labels_source, true_labels_target = split_source_target(data, labels, proportion_target=arguments.proportion_target,
                                                                                        mode=arguments.splitting_mode)
-print 'Target data dimension: ', np.transpose(data_target).shape
-print 'Source data dimension: ', np.transpose(data_source).shape
+print 'Target data dimension: ', data_target.shape
+print 'Source data dimension: ', data_source.shape
 
-# 3. GENERATE GENE NAMES
+# 3. GENERATE GENE AND CELL NAMES
 print('Generating corresponding gene names.')
-transcripts = np.arange(arguments.num_genes).dtype(np.str)
+transcripts = np.arange(arguments.num_genes)
 
 # 4. SAVE RESULTS
-print('Saving target data to \'{0}\'.'.format(arguments.fout_target))
-np.savez(arguments.fout_target, type='Toy',
-         data_target=np.transpose(data_target),
-         true_labels_target=true_labels_target,
-         transcripts=transcripts)
-print('Saving source data to \'{0}\'.'.format(arguments.fout_source))
-np.savez(arguments.fout_source, type='Toy',
-         data_source=np.transpose(data_source),
-         true_labels_source=true_labels_source,
-         transcripts=transcripts)
+print('Saving target data to \'{0}\'.'.format(arguments.fout_target_data))
+np.savetxt(arguments.fout_target_data, data_target, fmt='%u', delimiter='\t')
+np.savetxt(arguments.fout_geneids, transcripts, fmt='%u', delimiter='\t')
+np.savetxt(arguments.fout_target_labels, true_labels_target, fmt='%u', delimiter='\t')
+
+print('Saving source data to \'{0}\'.'.format(arguments.fout_source_data))
+np.savetxt(arguments.fout_source_data, data_source, fmt='%u', delimiter='\t')
+np.savetxt(arguments.fout_source_labels, true_labels_source, fmt='%u', delimiter='\t')
 
 print('Done.')
