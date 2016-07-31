@@ -12,7 +12,7 @@ sys.path.append('../..')
 
 from scRNA import sc3_pipeline_impl as sc
 from scRNA.utils import *
-import scRNA.mtl
+import scRNA.mtl as mtl
 from scRNA.sc3_pipeline import SC3Pipeline
 from scRNA.simulation import generate_toy_data, split_source_target
 
@@ -53,10 +53,8 @@ def data_transformation(data):
 
 
 def SC3_clustering(target_data, source_data, num_clusters=4):
-    # SC3_num_clusters = 4 # 4, number of clusters for SC3
 
     cp = SC3Pipeline(target_data)
-
     max_pca_comp = np.ceil(cp.num_cells * 0.07).astype(np.int)
     min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
 
@@ -64,7 +62,7 @@ def SC3_clustering(target_data, source_data, num_clusters=4):
     # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
 
     cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(sc.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=0))
+    cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
@@ -90,7 +88,7 @@ def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture= 0.6):
     # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
 
     cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(sc.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=mixture))
+    cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=mixture))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
@@ -166,7 +164,7 @@ if __name__ == "__main__":
     # nb_dispersion = 0.1
 
     # Parameters for splitting data in source and target set
-    proportion_target = 0.4 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
+    proportion_target = 0.1 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
     splitting_mode = 2  # 2, Splitting mode: 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters,
     # 4 = have only non-overlapping clusters
 
@@ -174,7 +172,7 @@ if __name__ == "__main__":
     NMF_num_clusters = 4 # 4, number of clusters for NMF
     SC3_num_clusters = 4 # 4, number of clusters for SC3
     SC3_MTL_num_clusters = 4 # 4, number of clusters for SC3_MTL
-    SC3_MTL_mixture_parameter = 0.6 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
+    SC3_MTL_mixture_parameter = 1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
 
     # Run toy experiments
     ARIs_SC3 = np.zeros(reps)
