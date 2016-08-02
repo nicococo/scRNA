@@ -7,7 +7,6 @@ import sklearn.decomposition as decomp
 from sklearn.metrics import adjusted_rand_score
 import statsmodels.stats.api as sms
 from functools import partial
-import scipy.stats as ss
 
 import sys
 sys.path.append('../..')
@@ -143,13 +142,13 @@ def NMF_clustering(data, num_clusters=4):
 if __name__ == "__main__":
 
     # Toy experiment parameters
-    reps = 10  # 10, number of repetitions
+    reps = 20  # 10, number of repetitions
 
     # Data generation parameters
-    num_genes = 10000  # 10000, number of genes
+    num_genes = 100000  # 10000, number of genes
     # num_cells = 1000  # 1000, number of cells
-    num_cells_source = 500
-    target_sizes = [50, 100, 500, 1000]  # [50, 100, 500, 1000, 5000, 10000]
+    num_cells_source = 1000 # 1000
+    target_sizes = [50, 100, 500, 1000, 5000,]  # [50, 100, 500, 1000, 5000, 10000]
     true_num_clusters = 4  # 4, number of clusters
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
     total_counts_mode = 3  # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3=simulation from Len et al
@@ -180,6 +179,11 @@ if __name__ == "__main__":
     # SC3_MTL_mixture_parameter = 0.1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
     SC3_MTL_mixtures = [0.1, 0.2, 0.5, 0.8]  # [0.1, 0.2, 0.5, 0.8]
 
+    # Save directories
+    fig_filename = 'simulation_results.png'
+    npz_filename = 'simulation_results.npz'
+
+    # Initialization
     SC3_ARI_means = np.zeros(len(target_sizes))
     SC3_ARI_errorbars = np.zeros(len(target_sizes))
     NMF_ARI_means = np.zeros(len(target_sizes))
@@ -258,15 +262,24 @@ if __name__ == "__main__":
     ax.axis([0, max(target_sizes)+100, -0.1, 1.1])
     linestyle = {"linestyle":"--", "linewidth":4, "markeredgewidth":5, "elinewidth":5, "capsize":10}
     linestyle2 = {"linestyle":":", "linewidth":4, "markeredgewidth":5, "elinewidth":5, "capsize":10}
-    ax.errorbar(target_sizes, SC3_ARI_means, yerr=SC3_ARI_errorbars, color="r", label='SC3', **linestyle)
-    ax.errorbar(target_sizes, NMF_ARI_means, yerr=NMF_ARI_errorbars, color="b", label='NMF', **linestyle)
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(SC3_MTL_mixtures)+2)))
+    c = next(color)
+    ax.errorbar(target_sizes, SC3_ARI_means, yerr=SC3_ARI_errorbars, color=c, label='SC3', **linestyle)
+    c = next(color)
+    ax.errorbar(target_sizes, NMF_ARI_means, yerr=NMF_ARI_errorbars, color=c, label='NMF', **linestyle)
 
-    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(SC3_MTL_mixtures))))
     for mixture_index in range(len(SC3_MTL_mixtures)):
         c = next(color)
-        ax.errorbar(target_sizes, SC3_MTL_ARI_means[:,0], yerr=NMF_ARI_errorbars, color=c, label='SC3_MTL with mixture ' + str(SC3_MTL_mixtures[mixture_index]),
+        ax.errorbar(target_sizes, SC3_MTL_ARI_means[:, mixture_index], yerr=NMF_ARI_errorbars[mixture_index], color=c, label='SC3_MTL with mixture ' + str(SC3_MTL_mixtures[mixture_index]),
                     **linestyle2)
-    ax.legend(loc='best')
+    ax.legend(loc='best', fontsize='12')
+    fig.savefig(fig_filename)
+    np.savez(npz_filename, SC3_ARI_means=SC3_ARI_means, SC3_ARI_errorbars=SC3_ARI_errorbars, NMF_ARI_means=NMF_ARI_means, NMF_ARI_errorbars=NMF_ARI_errorbars,
+             SC3_MTL_ARI_means=SC3_MTL_ARI_means, SC3_MTL_ARI_errorbars=SC3_MTL_ARI_errorbars, SC3_MTL_mixtures=SC3_MTL_mixtures,
+             SC3_MTL_num_clusters=SC3_MTL_num_clusters, SC3_num_clusters=SC3_num_clusters, NMF_num_clusters=NMF_num_clusters, gamma_rate=gamma_rate,
+             gamma_shape=gamma_shape, dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, splitting_mode=splitting_mode,
+             total_counts_mode=total_counts_mode, dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, true_num_clusters=true_num_clusters,
+             target_sizes=target_sizes, num_cells_source=num_cells_source, num_genes=num_genes, reps=reps)
     plt.show()
-
     pdb.set_trace()
+
