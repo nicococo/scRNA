@@ -148,7 +148,7 @@ if __name__ == "__main__":
     # Data generation parameters
     num_genes = 10000  # 10000, number of genes
     # num_cells = 1000  # 1000, number of cells
-    num_cells_source = 1000
+    num_cells_source = 500
     target_sizes = [50, 100, 500, 1000]  # [50, 100, 500, 1000, 5000, 10000]
     true_num_clusters = 4  # 4, number of clusters
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
