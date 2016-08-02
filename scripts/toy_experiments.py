@@ -1,11 +1,13 @@
 import pdb
 import matplotlib.pyplot as plt
+
 from sklearn.manifold import TSNE
 import pandas as pd
 import sklearn.decomposition as decomp
 from sklearn.metrics import adjusted_rand_score
 import statsmodels.stats.api as sms
 from functools import partial
+import scipy.stats as ss
 
 import sys
 sys.path.append('../..')
@@ -76,7 +78,7 @@ def SC3_clustering(target_data, source_data, num_clusters=4):
     return SC3_labels
 
 
-def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture= 0.6):
+def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6):
     # SC3_MTL_num_clusters = 4 # 4, number of clusters for SC3_MTL
     # SC3_MTL_mixture_parameter = 0.6 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
     cp = SC3Pipeline(target_data)
@@ -145,93 +147,126 @@ if __name__ == "__main__":
 
     # Data generation parameters
     num_genes = 10000  # 10000, number of genes
-    num_cells = 1000  # 1000, number of cells
+    # num_cells = 1000  # 1000, number of cells
+    num_cells_source = 1000
+    target_sizes = [50, 100, 500, 1000]  # [50, 100, 500, 1000, 5000, 10000]
     true_num_clusters = 4  # 4, number of clusters
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
-    total_counts_mode = 3 # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3=simulation from Len et al
-    shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
-    upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
-    dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
-    # inverse noise parameter: bigger values make counts within cluster more similar (splitting the total abundances in more equal parts for each cell)
-    binomial_parameter = 1e-05 # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
+    total_counts_mode = 3  # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3=simulation from Len et al
+
+    # Parameters for splitting data in source and target set
+    # proportion_target = 0.5 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
+    splitting_mode = 2  # 2, Splitting mode: 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters,
+    # 4 = have only non-overlapping clusters
 
     # new Parameters from R code
     # gene_length = 1000  # 1000, assumed length of genes
-    dirichlet_parameter_num_de_genes = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
-    #
+    dirichlet_parameter_num_de_genes = 10  # 10, Dirichlet parameter for number of DE genes, between 0 and inf, bigger values numbers more similar
     gamma_shape = 2
     gamma_rate = 2
     # nb_dispersion = 0.1
 
-    # Parameters for splitting data in source and target set
-    proportion_target = 0.1 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
-    splitting_mode = 2  # 2, Splitting mode: 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters,
-    # 4 = have only non-overlapping clusters
+    # Parameters of other simulations (not needed for total_counts_mode = 3)
+    shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
+    upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
+    dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
+    # inverse noise parameter: bigger values make counts within cluster more similar (splitting the total abundances in more equal parts for each cell)
+    binomial_parameter = 1e-05  # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
 
     #  Clustering parameters
-    NMF_num_clusters = 4 # 4, number of clusters for NMF
-    SC3_num_clusters = 4 # 4, number of clusters for SC3
-    SC3_MTL_num_clusters = 4 # 4, number of clusters for SC3_MTL
-    SC3_MTL_mixture_parameter = 1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
+    NMF_num_clusters = 4  # 4, number of clusters for NMF
+    SC3_num_clusters = 4  # 4, number of clusters for SC3
+    SC3_MTL_num_clusters = 4  # 4, number of clusters for SC3_MTL
+    # SC3_MTL_mixture_parameter = 0.1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
+    SC3_MTL_mixtures = [0.1, 0.2, 0.5, 0.8]  # [0.1, 0.2, 0.5, 0.8]
 
-    # Run toy experiments
-    ARIs_SC3 = np.zeros(reps)
-    ARIs_NMF = np.zeros(reps)
-    ARIs_SC3_MTL = np.zeros(reps)
-    # ARIs_MTL_NMF = np.zeros(reps)
+    SC3_ARI_means = np.zeros(len(target_sizes))
+    SC3_ARI_errorbars = np.zeros(len(target_sizes))
+    NMF_ARI_means = np.zeros(len(target_sizes))
+    NMF_ARI_errorbars = np.zeros(len(target_sizes))
+    SC3_MTL_ARI_means = np.zeros((len(target_sizes), len(SC3_MTL_mixtures)))
+    SC3_MTL_ARI_errorbars = np.zeros((len(target_sizes), len(SC3_MTL_mixtures)))
 
-    for repetition in range(reps):
-        print str(((np.float(repetition)+1)/reps)*100), "% of repetitions done."
-        # Generate toy data
-        [toy_data, true_toy_labels] = generate_toy_data(num_genes=num_genes, num_cells=num_cells,num_clusters=true_num_clusters,
-                                                        dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, mode=total_counts_mode,
-                                                        shape_power_law=shape_power_law, upper_bound_counts=upper_bound_counts,
-                                                        dirichlet_parameter_counts=dirichlet_parameter_counts, binomial_parameter=binomial_parameter,
-                                                        dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, gamma_shape=gamma_shape, gamma_rate=gamma_rate)
+    for target_size_index in range(len(target_sizes)):
+        num_cells_target = target_sizes[target_size_index]
+        # Run toy experiments
+        ARIs_SC3 = np.zeros(reps)
+        ARIs_NMF = np.zeros(reps)
+        ARIs_SC3_MTL = np.zeros((reps, len(SC3_MTL_mixtures)))
+        # ARIs_MTL_NMF = np.zeros(reps)
 
-        # Split in source and target data
-        toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data, true_toy_labels, proportion_target, splitting_mode)
-        # print "source data:", toy_data_source.shape
-        # print "target data:", toy_data_target.shape
+        num_cells = num_cells_source+num_cells_target
+        proportion_target = float(num_cells_target)/num_cells
 
-        # TSNE_plot(toy_data, true_toy_labels)
-        # TSNE_plot(toy_data_source, true_toy_labels_source)
-        # TSNE_plot(toy_data_target, true_toy_labels_target)
+        for repetition in range(reps):
+            print str(((np.float(repetition)+1)/reps)*100), "% of repetitions of target size ", str(num_cells_target), " done."
+            # Generate toy data
 
-        # pdb.set_trace()
-        # np.savetxt('SC3_labels.txt', SC3_labels, delimiter=' ')
+            [toy_data, true_toy_labels] = generate_toy_data(num_genes=num_genes, num_cells=num_cells, num_clusters=true_num_clusters,
+                                                            dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, mode=total_counts_mode,
+                                                            shape_power_law=shape_power_law, upper_bound_counts=upper_bound_counts,
+                                                            dirichlet_parameter_counts=dirichlet_parameter_counts, binomial_parameter=binomial_parameter,
+                                                            dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, gamma_shape=gamma_shape,
+                                                            gamma_rate=gamma_rate)
 
-        # Run SC3 on target data
-        SC3_labels = SC3_clustering(toy_data_target, toy_data_source, SC3_num_clusters)
-        ARIs_SC3[repetition] = adjusted_rand_score(true_toy_labels_target, SC3_labels)
+            # Split in source and target data
+            toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data, true_toy_labels, proportion_target, splitting_mode)
+            # print "source data:", toy_data_source.shape
+            # print "target data:", toy_data_target.shape
 
-        # Run SC3 with MTL distances
-        SC3_MTL_labels = SC3_MTL_clustering(toy_data_target, toy_data_source, SC3_MTL_num_clusters, SC3_MTL_mixture_parameter)
-        ARIs_SC3_MTL[repetition] = adjusted_rand_score(true_toy_labels_target,SC3_MTL_labels)
+            # TSNE_plot(toy_data, true_toy_labels)
+            # TSNE_plot(toy_data_source, true_toy_labels_source)
+            # TSNE_plot(toy_data_target, true_toy_labels_target)
 
-        # Run NMF on target data
-        NMF_labels = NMF_clustering(toy_data_target, NMF_num_clusters)
-        ARIs_NMF[repetition] = adjusted_rand_score(true_toy_labels_target, NMF_labels)
+            # np.savetxt('SC3_labels.txt', SC3_labels, delimiter=' ')
 
-        # Run MTL NMF on target data
-        # TODO
-        # MTL_NMF_labels = MTL_NMF_clustering(toy_data_target, toy_data_source, num_clusters=MTL_NMF_num_clusters)
-        # ARIs_MTL_NMF[repetition] = adjusted_rand_score(true_toy_labels_target, MTL_NMF_labels)
+            # Run SC3 on target data
+            SC3_labels = SC3_clustering(toy_data_target, toy_data_source, SC3_num_clusters)
+            ARIs_SC3[repetition] = adjusted_rand_score(true_toy_labels_target, SC3_labels)
 
+            # Run SC3 with MTL distances
+            for mixture_index in range(len(SC3_MTL_mixtures)):
+                SC3_MTL_mixture_parameter = SC3_MTL_mixtures[mixture_index]
+                SC3_MTL_labels = SC3_MTL_clustering(toy_data_target, toy_data_source, SC3_MTL_num_clusters, SC3_MTL_mixture_parameter)
+                ARIs_SC3_MTL[repetition, mixture_index] = adjusted_rand_score(true_toy_labels_target, SC3_MTL_labels)
 
+            # Run NMF on target data
+            NMF_labels = NMF_clustering(toy_data_target, NMF_num_clusters)
+            ARIs_NMF[repetition] = adjusted_rand_score(true_toy_labels_target, NMF_labels)
 
+            # Run MTL NMF on target data
+            # TODO
+            # MTL_NMF_labels = MTL_NMF_clustering(toy_data_target, toy_data_source, num_clusters=MTL_NMF_num_clusters)
+            # ARIs_MTL_NMF[repetition] = adjusted_rand_score(true_toy_labels_target, MTL_NMF_labels)
 
+        SC3_ARI_means[target_size_index] = np.mean(ARIs_SC3)
+        SC3_ARI_CIs = sms.DescrStatsW(ARIs_SC3).tconfint_mean()
+        SC3_ARI_errorbars[target_size_index] = (SC3_ARI_CIs[1] - SC3_ARI_CIs[0])/2
+        NMF_ARI_means[target_size_index] = np.mean(ARIs_NMF)
+        NMF_ARI_CIs = sms.DescrStatsW(ARIs_NMF).tconfint_mean()
+        NMF_ARI_errorbars[target_size_index] = (NMF_ARI_CIs[1] - NMF_ARI_CIs[0])/2
+        SC3_MTL_ARI_means[target_size_index] = np.mean(ARIs_SC3_MTL, axis=0)
+        SC3_MTL_ARI_CIs = sms.DescrStatsW(ARIs_SC3_MTL).tconfint_mean()
+        SC3_MTL_ARI_errorbars[target_size_index] = (SC3_MTL_ARI_CIs[1] - SC3_MTL_ARI_CIs[0])/2
 
+    # Plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_xlabel('Size of target dataset', fontsize=16)
+    ax.set_ylabel('ARI with 95% errorbars', fontsize=16)
+    ax.set_title("Clustering performances for varying target size", fontsize=20)
+    ax.axis([0, max(target_sizes)+100, -0.1, 1.1])
+    linestyle = {"linestyle":"--", "linewidth":4, "markeredgewidth":5, "elinewidth":5, "capsize":10}
+    linestyle2 = {"linestyle":":", "linewidth":4, "markeredgewidth":5, "elinewidth":5, "capsize":10}
+    ax.errorbar(target_sizes, SC3_ARI_means, yerr=SC3_ARI_errorbars, color="r", label='SC3', **linestyle)
+    ax.errorbar(target_sizes, NMF_ARI_means, yerr=NMF_ARI_errorbars, color="b", label='NMF', **linestyle)
 
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(SC3_MTL_mixtures))))
+    for mixture_index in range(len(SC3_MTL_mixtures)):
+        c = next(color)
+        ax.errorbar(target_sizes, SC3_MTL_ARI_means[:,0], yerr=NMF_ARI_errorbars, color=c, label='SC3_MTL with mixture ' + str(SC3_MTL_mixtures[mixture_index]),
+                    **linestyle2)
+    ax.legend(loc='best')
+    plt.show()
 
-    # print ARIs
-    print "Mean ARI of SC3: ", str(np.round(np.mean(ARIs_SC3), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_SC3).tconfint_mean(), decimals=3))
-    print "Mean ARI of NMF: ", str(np.round(np.mean(ARIs_NMF), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_NMF).tconfint_mean(), decimals=3))
-    print "Mean ARI of MTL SC3: ", str(np.round(np.mean(ARIs_SC3_MTL), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_SC3_MTL).tconfint_mean(), decimals=3))
-    # print "Mean ARI of MTL NMF: ", str(np.round(np.mean(ARIs_MTL_NMF), decimals=3)), ", 95% Confidence Interval: ", str(np.round(sms.DescrStatsW(ARIs_MTL_NMF).tconfint_mean(), decimals=3))
-
-
-
-
-
-
+    pdb.set_trace()
