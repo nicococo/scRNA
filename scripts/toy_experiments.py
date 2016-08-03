@@ -142,13 +142,13 @@ def NMF_clustering(data, num_clusters=4):
 if __name__ == "__main__":
 
     # Toy experiment parameters
-    reps = 20  # 10, number of repetitions
+    reps = 5  # 10, number of repetitions
 
     # Data generation parameters
-    num_genes = 100000  # 10000, number of genes
+    num_genes = 5000  # 10000, number of genes
     # num_cells = 1000  # 1000, number of cells
-    num_cells_source = 1000 # 1000
-    target_sizes = [50, 100, 500, 1000, 5000,]  # [50, 100, 500, 1000, 5000, 10000]
+    num_cells_source = 500  # 1000
+    target_sizes = [50, 100, 500]  # [50, 100, 500, 1000, 5000, 10000]
     true_num_clusters = 4  # 4, number of clusters
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
     total_counts_mode = 3  # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3=simulation from Len et al
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     SC3_num_clusters = 4  # 4, number of clusters for SC3
     SC3_MTL_num_clusters = 4  # 4, number of clusters for SC3_MTL
     # SC3_MTL_mixture_parameter = 0.1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
-    SC3_MTL_mixtures = [0.1, 0.2, 0.5, 0.8]  # [0.1, 0.2, 0.5, 0.8]
+    SC3_MTL_mixtures = [0.2, 0.5, 0.7]  # [0.1, 0.2, 0.5, 0.8]
 
     # Save directories
     fig_filename = 'simulation_results.png'
@@ -252,6 +252,13 @@ if __name__ == "__main__":
         SC3_MTL_ARI_means[target_size_index] = np.mean(ARIs_SC3_MTL, axis=0)
         SC3_MTL_ARI_CIs = sms.DescrStatsW(ARIs_SC3_MTL).tconfint_mean()
         SC3_MTL_ARI_errorbars[target_size_index] = (SC3_MTL_ARI_CIs[1] - SC3_MTL_ARI_CIs[0])/2
+
+        np.savez(npz_filename, SC3_ARI_means=SC3_ARI_means, SC3_ARI_errorbars=SC3_ARI_errorbars, NMF_ARI_means=NMF_ARI_means, NMF_ARI_errorbars=NMF_ARI_errorbars,
+                 SC3_MTL_ARI_means=SC3_MTL_ARI_means, SC3_MTL_ARI_errorbars=SC3_MTL_ARI_errorbars, SC3_MTL_mixtures=SC3_MTL_mixtures,
+                 SC3_MTL_num_clusters=SC3_MTL_num_clusters, SC3_num_clusters=SC3_num_clusters, NMF_num_clusters=NMF_num_clusters, gamma_rate=gamma_rate,
+                 gamma_shape=gamma_shape, dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, splitting_mode=splitting_mode,
+                 total_counts_mode=total_counts_mode, dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, true_num_clusters=true_num_clusters,
+                 target_sizes=target_sizes, num_cells_source=num_cells_source, num_genes=num_genes, reps=reps)
 
     # Plot
     fig = plt.figure()
