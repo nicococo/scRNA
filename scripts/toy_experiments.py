@@ -53,7 +53,7 @@ def data_transformation(data):
     return np.log2(data + 1.)
 
 
-def SC3_clustering(target_data, source_data, num_clusters=4):
+def SC3_clustering(target_data, num_clusters=4):
 
     cp = SC3Pipeline(target_data)
     max_pca_comp = np.ceil(cp.num_cells * 0.07).astype(np.int)
@@ -140,9 +140,8 @@ def NMF_clustering(data, num_clusters=4):
 
 
 if __name__ == "__main__":
-
     # Toy experiment parameters
-    reps = 5  # 10, number of repetitions
+    reps = 10  # 10, number of repetitions
 
     # Data generation parameters
     num_genes = 5000  # 10000, number of genes
@@ -225,7 +224,7 @@ if __name__ == "__main__":
             # np.savetxt('SC3_labels.txt', SC3_labels, delimiter=' ')
 
             # Run SC3 on target data
-            SC3_labels = SC3_clustering(toy_data_target, toy_data_source, SC3_num_clusters)
+            SC3_labels = SC3_clustering(toy_data_target, SC3_num_clusters)
             ARIs_SC3[repetition] = adjusted_rand_score(true_toy_labels_target, SC3_labels)
 
             # Run SC3 with MTL distances
@@ -289,4 +288,15 @@ if __name__ == "__main__":
              target_sizes=target_sizes, num_cells_source=num_cells_source, num_genes=num_genes, reps=reps)
     plt.show()
     pdb.set_trace()
+
+# To save the last rep as an example dataset as npz
+# SC3_ARI = adjusted_rand_score(true_toy_labels_target, SC3_labels)
+# NMF_ARI = adjusted_rand_score(true_toy_labels_target, NMF_labels)
+# np.savez('example_toy_data.npz', toy_data_target=toy_data_target, true_toy_labels_target=true_toy_labels_target, SC3_labels=SC3_labels, NMF_labels=NMF_labels, NMF_num_clusters=NMF_num_clusters, SC3_num_clusters=SC3_num_clusters, SC3_ARI=SC3_ARI, NMF_ARI=NMF_ARI)
+
+# Load npz data and save as tsv
+# data=np.load('example_toy_data.npz')
+# np.savetxt('example_toy_data.tsv', data["toy_data_target"], fmt='%u', delimiter='\t')
+# np.savetxt('example_toy_data_labels.tsv', data["true_toy_labels_target"], fmt='%u', delimiter='\t')
+# np.savetxt('example_toy_data_SC3labels.tsv', data["SC3_labels"], fmt='%u', delimiter='\t')
 
