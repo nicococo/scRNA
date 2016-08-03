@@ -160,8 +160,14 @@ class SC3Pipeline(object):
         for cluster in self.intermediate_clustering_list:
             for t in range(len(transf)):
                 _, deigv = transf[t]
-                for d in range(pc_range[0], pc_range[1]+1):
+                range_inds = range(pc_range[0], pc_range[1]+1)
+                if len(range_inds) > 15:
+                    # subsample 15 inds from this range
+                    range_inds = np.random.permutation(range_inds)[:15]
+                for d in range_inds:
                     labels.append(cluster(deigv[:, :d].reshape((deigv.shape[0], d))))
+
+        print '\nrange inds:\n', range_inds
 
         # 7. consensus clustering
         print '7. Consensus clustering.'

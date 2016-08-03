@@ -31,31 +31,12 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
     return data, gene_ids, labels
 
 
-def load_dataset_by_name(name):
-    if name == 'Pfizer':
-        foo = np.load('pfizer_data.npz')
-        data  = foo['rpm_data']
-        gene_ids = foo['transcripts']
-    if name == 'Usoskin':
-        foo = np.load('/Users/nicococo/Documents/scRNA-data/Usoskin.npz')
-        data  = foo['data']
-        gene_ids = foo['transcripts']
-    if name == 'Ting':
-        foo = np.load('/Users/nicococo/Documents/scRNA-data/Ting.npz')
-        data  = foo['data']
-        gene_ids = foo['transcripts']
-    return data, gene_ids
-
-
 def load_dataset(fname):
     if not os.path.exists(fname):
         raise StandardError('File \'{0}\' not found.'.format(fname))
     foo = np.load(fname)
     data  = foo['data']
     gene_ids = foo['transcripts']
-    if 'pfizer' in fname:
-        print('Load rpm data instead.')
-        data = foo['rpm_data']
     # look for labels
     labels = None
     if 'labels' in foo:
