@@ -6,9 +6,11 @@ import sklearn.metrics as metrics
 import sc3_pipeline_impl as sc
 from sc3_pipeline import SC3Pipeline
 from utils import *
+from mtl import *
 
 
 if __name__ == "__main__":
+    np.random.seed(6)
     n_cluster = 4
     dataset = '../example_toy_data.npz'
 
@@ -16,25 +18,51 @@ if __name__ == "__main__":
     print foo.files
     data  = foo['toy_data_target']
     labels = foo['true_toy_labels_target']
-    print np.unique(labels)
+
+    num_data = labels.size
+    N = 280
+    rinds = np.random.permutation(num_data)
+    target_inds = rinds[:N]
+    source_inds = rinds[N:]
+    print np.unique(labels[target_inds])
+    print np.unique(labels[source_inds])
+
+    source_data = data[:, source_inds].copy()
+    source_labels = labels[source_inds].copy()
+    data = data[:, target_inds]
+    labels = labels[target_inds]
+
+    # n_cluster = 7
+    # dataset = '/Users/nicococo/Documents/scRNA-data/Ting.npz'
+    # foo = np.load(dataset)
+    # print foo.files
+    # data  = foo['data']
+    # labels = sc.get_sc3_Ting_labels()
+    # print np.unique(labels)
 
     cp = SC3Pipeline(data)
 
-    np.random.seed(1)
+    mix = 0.0
+
     max_pca_comp = np.ceil(cp.num_cells*0.07).astype(np.int)
     min_pca_comp = np.floor(cp.num_cells*0.04).astype(np.int)
 
+    # max_pca_comp = np.ceil(  ((num_data-N)*mix + N*(1.0-mix))*0.07).astype(np.int)
+    # min_pca_comp = np.floor( ((num_data-N)*mix + N*(1.0-mix))*0.04).astype(np.int)
+
     print min_pca_comp, max_pca_comp
 
-    # if dataset != 'Ting':
-    #     cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=2, num_expr_genes=2000))
-    # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=2))
+    # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=1, num_expr_genes=2000))
+    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
     cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
+    # cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
+    cp.add_distance_calculation(partial(mtl_toy_distance, src_data=source_data, src_labels=source_labels, trg_labels=labels,
+                                       metric='euclidean', mixture=mix))
+
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
 
-    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_cluster-1))
+    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_cluster))
     cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_cluster))
 
     cp.apply(pc_range=[min_pca_comp, max_pca_comp])

@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn import decomposition as decomp
+import sklearn.metrics as metrics
 
 from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation, distances
 from utils import load_dataset_tsv
@@ -116,27 +117,40 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     return mixture*dist2 + (1.-mixture)*dist1
 
 
-def mtl_toy_distance(data, gene_ids, src_data, metric='euclidean', mixture=0.75):
+def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None, metric='euclidean', mixture=0.75):
     # transform data
     X = data_transformation(src_data[gene_ids, :])
-    nmf = decomp.NMF(alpha=1.1, init='nndsvdar', l1_ratio=0.9, max_iter=1000,
-        n_components=10, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+    nmf = decomp.NMF(alpha=10., init='nndsvdar', l1_ratio=0.9, max_iter=1000,
+        n_components=4, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
     # print nmf.reconstruction_err_
     # print H
+    if src_labels is not None:
+        print 'ARI: ', metrics.adjusted_rand_score(src_labels, np.argmax(H, axis=0))
+
 
     # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(10, data.shape[1])
+    H = np.random.randn(4, data.shape[1])
     Y = data.copy()
     # TODO: some NMF MU steps
-    for i in range(200):
+    for i in range(800):
         # print 'Iteration: ', i
         # print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
         # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
         H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
 
+    if trg_labels is not None:
+        print 'ARI: ', metrics.adjusted_rand_score(trg_labels, np.argmax(H, axis=0))
+
+    H2 = np.zeros((4, data.shape[1]))
+    H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = 1
+    print H2
+
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H), [], metric=metric)
+    # dist2 = distances(W.dot(H), [], metric=metric)
+    dist2 = distances(W.dot(H2), [], metric=metric)
+
+    print np.max(dist1), np.max(dist2)
     return mixture*dist2 + (1.-mixture)*dist1

@@ -130,6 +130,7 @@ def transformations(dm, components=5, method='pca'):
         # making the highest Eigenvalue first followed by the smallest (ascending) Eigenvalues
         x = np.sqrt(vals*vals)
         inds = np.argsort(-x) # argsort is ascending order
+        inds = np.argsort(vals) # argsort is ascending order
         inds = inds[:components]
         # print inds
 
