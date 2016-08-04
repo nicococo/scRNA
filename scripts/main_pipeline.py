@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     cp = SC3Pipeline(data)
 
-    mix = 0.0
+    mix = 0.5
 
     max_pca_comp = np.ceil(cp.num_cells*0.07).astype(np.int)
     min_pca_comp = np.floor(cp.num_cells*0.04).astype(np.int)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     cp.set_data_transformation(sc.data_transformation)
     # cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
     cp.add_distance_calculation(partial(mtl_toy_distance, src_data=source_data, src_labels=source_labels, trg_labels=labels,
-                                       metric='euclidean', mixture=mix))
+                                       metric='euclidean', mixture=mix, nmf_k=n_cluster))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
 

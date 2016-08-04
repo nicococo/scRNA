@@ -105,23 +105,27 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     H[a1, a2] *= -1.
     Y = data[inds1, :].copy()
     # TODO: some NMF MU steps
-    for i in range(200):
+    for i in range(800):
         # print 'Iteration: ', i
         # print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
         # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
         H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
 
+    H2 = np.zeros((nmf_k, data.shape[1]))
+    H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = 1
+    print H2
+
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H), [], metric=metric)
+    dist2 = distances(W.dot(H2), [], metric=metric)
     return mixture*dist2 + (1.-mixture)*dist1
 
 
-def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None, metric='euclidean', mixture=0.75):
+def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None, metric='euclidean', mixture=0.75, nmf_k=4):
     # transform data
     X = data_transformation(src_data[gene_ids, :])
     nmf = decomp.NMF(alpha=10., init='nndsvdar', l1_ratio=0.9, max_iter=1000,
-        n_components=4, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+        n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
     # print nmf.reconstruction_err_
@@ -131,7 +135,7 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
 
 
     # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(4, data.shape[1])
+    H = np.random.randn(nmf_k, data.shape[1])
     Y = data.copy()
     # TODO: some NMF MU steps
     for i in range(800):
@@ -143,7 +147,7 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     if trg_labels is not None:
         print 'ARI: ', metrics.adjusted_rand_score(trg_labels, np.argmax(H, axis=0))
 
-    H2 = np.zeros((4, data.shape[1]))
+    H2 = np.zeros((nmf_k, data.shape[1]))
     H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = 1
     print H2
 
