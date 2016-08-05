@@ -2,9 +2,15 @@ import numpy as np
 import pdb
 from sklearn.cross_validation import train_test_split
 
-
-def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet_parameter_cluster_size=10, mode=3, shape_power_law=0.1, upper_bound_counts=1000000,
-                      dirichlet_parameter_counts=0.05, binomial_parameter=1e-05, dirichlet_parameter_num_de_genes=10, gamma_shape=2, gamma_rate=2):
+def generate_toy_data(num_genes=10000, num_cells=1000, 
+                      num_clusters=4, dirichlet_parameter_cluster_size=10,
+                      cluster_spec=None,
+                      dirichlet_parameter_num_de_genes=10, 
+                      shape_power_law=0.1, upper_bound_counts=1000000,
+                      dirichlet_parameter_counts=0.05,
+                      binomial_parameter=1e-05, 
+                      gamma_shape=2, gamma_rate=2,
+                      mode=3):
     # Toy experiment parameters
     # Data generation parameters
     # num_genes = 10000  # 10000, number of genes
@@ -20,13 +26,28 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
     # binomial_parameter = 1e-05 # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
 
     # Generate Cluster sizes
-    cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
-    while min(cluster_sizes) == 1:
-        cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
+    if cluster_spec is None:
+      cluster_spec = range(num_clusters)
+    
+    cluster_sizes = np.ones(num_clusters)
+    
+    while min(cluster_sizes) == 1
+        cluster_sizes = \
+          np.floor(
+            np.random.dirichlet(
+              np.ones(num_clusters) * 
+              dirichlet_parameter_cluster_size, 
+              size=None
+            ) * num_cells
+          )
 
+    #Because of the floor call we always have a little too few cells
     if np.sum(cluster_sizes) != num_cells:
-        cluster_sizes[0] = cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
+        cluster_sizes[0] = \
+          cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
+          
     assert min(cluster_sizes) > 1
+    assert sum(cluster_sizes) == num_cells
 
     # Generate data for each cluster
     data_complete = []
@@ -71,7 +92,7 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
               nde_cumsum[cluster_ind]
             )
             up_down = np.sign(np.random.normal(size=len(chosen)))
-            effective_means[chosen, ] = 
+            effective_means[chosen, ] = \
               np.transpose(
                 np.multiply(
                   np.transpose(effective_means[chosen, ]),
