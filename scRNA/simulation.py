@@ -2,15 +2,22 @@ import numpy as np
 import pdb
 from sklearn.cross_validation import train_test_split
 
-
-def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet_parameter_cluster_size=10, mode=3, shape_power_law=0.1, upper_bound_counts=1000000,
-                      dirichlet_parameter_counts=0.05, binomial_parameter=1e-05, dirichlet_parameter_num_de_genes=10, gamma_shape=2, gamma_rate=2):
+def generate_toy_data(num_genes=10000, num_cells=1000, 
+                      num_clusters=4, dirichlet_parameter_cluster_size=10,
+                      cluster_spec=None,
+                      dirichlet_parameter_num_de_genes=10, 
+                      shape_power_law=0.1, upper_bound_counts=1000000,
+                      dirichlet_parameter_counts=0.05,
+                      binomial_parameter=1e-05, 
+                      gamma_shape=2, gamma_rate=2,
+                      mode=3):
     # Toy experiment parameters
     # Data generation parameters
     # num_genes = 10000  # 10000, number of genes
     # num_cells = 1000  # 1000, number of cells
-    # true_num_clusters = 4  # 4, number of clusters
+    # num_clusters = 4  # 4, number of clusters
     # dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
+    # dirichlet_parameter_num_de_genes = 10 # 10, Dirichlet parameter for the number of of DE genes per cluster (big)
     # total_counts_mode = 3 # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3 = simulation from Len et al.
     # shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
     # upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
@@ -19,13 +26,28 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
     # binomial_parameter = 1e-05 # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
 
     # Generate Cluster sizes
-    cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
-    while min(cluster_sizes) == 1:
-        cluster_sizes = np.squeeze(np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=1) * (num_cells - num_clusters))) + 1
+    if cluster_spec is None:
+      cluster_spec = range(num_clusters)
+    
+    cluster_sizes = np.ones(num_clusters)
+    
+    while min(cluster_sizes) == 1
+        cluster_sizes = \
+          np.floor(
+            np.random.dirichlet(
+              np.ones(num_clusters) * 
+              dirichlet_parameter_cluster_size, 
+              size=None
+            ) * num_cells
+          )
 
+    #Because of the floor call we always have a little too few cells
     if np.sum(cluster_sizes) != num_cells:
-        cluster_sizes[0] = cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
+        cluster_sizes[0] = \
+          cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
+          
     assert min(cluster_sizes) > 1
+    assert sum(cluster_sizes) == num_cells
 
     # Generate data for each cluster
     data_complete = []
@@ -33,37 +55,68 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
 
     # Simulation from Len et al.
     if mode == 3:
+        
         nb_dispersion = 0.1
+        
+        #Define the extent (effect size of DE per cluster) units are log2 FC
         de_logfc = np.random.choice([1, 2], num_clusters, replace=True)
+        
+        #Define the number of genes DE in each cluster and then their indices
         nde = np.squeeze(
-        np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1) * (0.6 * num_genes - num_clusters))) + 1
+          np.round(
+            np.random.dirichlet(
+              np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1
+            ) * (0.6 * num_genes)
+          )
+        ) + 1 #Why +1?
         nde_cumsum = np.cumsum(nde).astype(int)
         nde_cumsum_zero = np.insert(nde_cumsum, 0, 0).astype(int)
+        
+        #Define the 'true' population mean expression levels
         true_means = np.random.gamma(gamma_shape, scale=1 / float(gamma_rate), size=num_genes)
 
         for cluster_ind in range(num_clusters):
 
-            # Draw samples from
-            all_facs = np.power(2,np.random.normal(loc=0, scale=0.5, size=cluster_sizes[cluster_ind]))
+            #Per cell noise
+            all_facs = np.power(
+              2, 
+              np.random.normal(
+                loc=0, scale=0.5, size=cluster_sizes[cluster_ind]
+              )
+            )
             effective_means = np.outer(true_means, all_facs)
 
-            chosen = range(nde_cumsum_zero[cluster_ind], nde_cumsum[cluster_ind])
+            #Select DE genes for this cluster
+            chosen = range(
+              nde_cumsum_zero[cluster_ind],
+              nde_cumsum[cluster_ind]
+            )
             up_down = np.sign(np.random.normal(size=len(chosen)))
-            effective_means[chosen, ] = np.transpose(np.multiply(np.transpose(effective_means[chosen, ]), np.power(2, (de_logfc[cluster_ind] * up_down))))
+            effective_means[chosen, ] = \
+              np.transpose(
+                np.multiply(
+                  np.transpose(effective_means[chosen, ]),
+                  np.power(2, (de_logfc[cluster_ind] * up_down))
+                )
+              )
 
             # Generate data
-            sample = np.random.negative_binomial(p=(1/nb_dispersion)/((1/nb_dispersion)+effective_means), n=1/nb_dispersion, size=[num_genes, cluster_sizes[cluster_ind]])
+            sample = np.random.negative_binomial(
+              p=(1/nb_dispersion)/((1/nb_dispersion)+effective_means),
+              n=1/nb_dispersion, size=[num_genes, cluster_sizes[cluster_ind]]
+            )
 
             # the abundance plot
             # plt.plot(np.sort(np.sum(sample, axis=1))[::-1], 'o')
             # plt.show()
 
             data_complete.append(np.asarray(sample))
-            labels_now.append(np.tile(cluster_ind + 1, cluster_sizes[cluster_ind]))
+            labels_now.append(
+              np.tile(cluster_ind + 1, cluster_sizes[cluster_ind])
+            )
 
         data = np.squeeze(np.hstack(data_complete))
         labels = np.hstack(labels_now)
-
 
     # Our simulation
     else:
