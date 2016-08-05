@@ -6,6 +6,7 @@ import sklearn.manifold as manifold
 import sklearn.preprocessing as pp
 from functools import partial
 
+import mtl
 import sc3_pipeline_impl as sc
 from sc3_pipeline import SC3Pipeline
 from utils import *
@@ -29,7 +30,7 @@ if __name__ == "__main__":
         cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=2))
         cp.set_data_transformation(sc.data_transformation)
 
-        cp.add_distance_calculation(partial(sc.mtl_distance, metric='euclidean', mixture=mixture_coeffs[i]))
+        cp.add_distance_calculation(partial(mtl.mtl_distance, metric='euclidean', mixture=mixture_coeffs[i]))
 
         # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
         cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))

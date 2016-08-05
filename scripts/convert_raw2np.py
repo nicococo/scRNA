@@ -72,6 +72,10 @@ if __name__ == "__main__":
         name, encoding, transcripts, cells, data = eval('load_{0}'.format(datasets[i]))(PATH)
         props.append([name, encoding, data.shape[0], data.shape[1]])
         np.savez('{0}{1}.npz'.format(PATH, name), name=name, encoding=encoding, transcripts=transcripts, cells=cells, data=data)
+        # Save as tab-separated-values
+        np.savetxt('{0}{1}-data.tsv'.format(PATH, name), data, delimiter='\t', fmt='%.4f')
+        np.savetxt('{0}{1}-cellids.tsv'.format(PATH, name), cells, delimiter='\t', fmt='%s')
+        np.savetxt('{0}{1}-geneids.tsv'.format(PATH, name), transcripts, delimiter='\t', fmt='%s')
 
     print props
     # name, encoding, transcripts, cells, data = load_Ting(PATH)

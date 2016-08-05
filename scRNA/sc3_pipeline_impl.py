@@ -1,15 +1,9 @@
-import numpy as np
-import pdb
-
-import sklearn.cluster as cluster
-import sklearn.decomposition as decomp
-
 import scipy.cluster.hierarchy as spc
 import scipy.spatial.distance as dist
 import scipy.stats as stats
+import sklearn.cluster as cluster
 
 from utils import *
-
 
 # These are the SC3 labels for Ting with 7 clusters, PCA, Euclidean distances
 SC3_Ting7_results = [
@@ -70,112 +64,6 @@ def data_transformation(data):
     """
     print('SC3 log2 data transformation.')
     return np.log2(data + 1.)
-
-
-def mtl_filter_and_sort_genes(gene_ids1, gene_ids2):
-    import utils
-    mypath = utils.__file__
-    mypath = mypath.rsplit('/', 1)[0]
-    # print mypath
-
-    gene_names = np.loadtxt('{0}/gene_names.txt'.format(mypath), skiprows=1, dtype='object')
-    # print gene_names.shape
-    # print np.unique(gene_names[:, 0]).shape, np.unique(gene_names[:, 1]).shape
-
-    gene_id_map = dict()
-    for i in range(gene_names.shape[0]):
-        gene_id_map[gene_names[i, 0]] = gene_names[i, 1]
-
-    inds1 = []
-    inds2 = []
-    # print gene_ids1.size, gene_ids2.size
-    for i in range(gene_ids1.size):
-        id = gene_ids1[i]
-        if gene_id_map.has_key(id):
-            ens_id = gene_id_map[id]
-            ind = np.where(gene_ids2 == ens_id)[0]
-            if ind.size == 1:
-                # exactly 1 id found
-                inds1.append(i)
-                inds2.append(ind[0])
-
-    # print len(inds1), len(inds2)
-    return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
-
-
-def mtl_distance(data, gene_ids, fmtl=None, metric='euclidean', mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75):
-    pdata, pgene_ids, labels = load_dataset(fmtl)
-    num_transcripts, num_cells = data.shape
-
-    # filter cells
-    remain_inds = np.arange(0, num_cells)
-    res = cell_filter(pdata, num_expr_genes=2000, non_zero_threshold=2)
-    remain_inds = np.intersect1d(remain_inds, res)
-    A = pdata[:, remain_inds]
-
-    # filter genes
-    remain_inds = np.arange(0, num_transcripts)
-    res = gene_filter(A, perc_consensus_genes=0.94, non_zero_threshold=2)
-    remain_inds = np.intersect1d(remain_inds, res)
-
-    # transform data
-    X = data_transformation(A[remain_inds, :])
-    pgene_ids = pgene_ids[remain_inds]
-
-    # find (and translate) a common set of genes
-    inds1, inds2 = mtl_filter_and_sort_genes(gene_ids, pgene_ids)
-    print 'MTL source {0} genes -> {1} genes.'.format(pgene_ids.size, inds2.size)
-    print 'MTL target {0} genes -> {1} genes.'.format(gene_ids.size, inds1.size)
-
-    X = X[inds2, :]
-    nmf = decomp.NMF(alpha=nmf_alpha, init='nndsvdar', l1_ratio=nmf_l1, max_iter=1000,
-        n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
-    W = nmf.fit_transform(X)
-    H = nmf.components_
-    # print nmf.reconstruction_err_
-
-    # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(nmf_k, data.shape[1])
-    a1, a2 = np.where(H < 0.)
-    H[a1, a2] *= -1.
-    Y = data[inds1, :].copy()
-    # TODO: some NMF MU steps
-    for i in range(200):
-        # print 'Iteration: ', i
-        # print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
-        # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
-        H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
-
-    # convex combination of vanilla distance and nmf distance
-    dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H), [], metric=metric)
-    return mixture*dist2 + (1.-mixture)*dist1
-
-
-def mtl_toy_distance(data, gene_ids, src_data, metric='euclidean', mixture=0.75):
-    # transform data
-    X = data_transformation(src_data[gene_ids, :])
-    nmf = decomp.NMF(alpha=1.1, init='nndsvdar', l1_ratio=0.9, max_iter=1000,
-        n_components=10, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
-    W = nmf.fit_transform(X)
-    H = nmf.components_
-    # print nmf.reconstruction_err_
-    # print H
-
-    # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(10, data.shape[1])
-    Y = data.copy()
-    # TODO: some NMF MU steps
-    for i in range(200):
-        # print 'Iteration: ', i
-        # print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
-        # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
-        H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
-
-    # convex combination of vanilla distance and nmf distance
-    dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H), [], metric=metric)
-    return mixture*dist2 + (1.-mixture)*dist1
 
 
 def distances(data, gene_ids, metric='euclidean'):
@@ -242,6 +130,7 @@ def transformations(dm, components=5, method='pca'):
         # making the highest Eigenvalue first followed by the smallest (ascending) Eigenvalues
         x = np.sqrt(vals*vals)
         inds = np.argsort(-x) # argsort is ascending order
+        inds = np.argsort(vals) # argsort is ascending order
         inds = inds[:components]
         # print inds
 
