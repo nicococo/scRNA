@@ -42,7 +42,12 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
         
         #Define the number of genes DE in each cluster and then their indices
         nde = np.squeeze(
-        np.round(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1) * (0.6 * num_genes))) + 1 #Why +1?
+          np.round(
+            np.random.dirichlet(
+              np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1
+            ) * (0.6 * num_genes)
+          )
+        ) + 1 #Why +1?
         nde_cumsum = np.cumsum(nde).astype(int)
         nde_cumsum_zero = np.insert(nde_cumsum, 0, 0).astype(int)
         
@@ -51,27 +56,46 @@ def generate_toy_data(num_genes=10000, num_cells=1000, num_clusters=4, dirichlet
 
         for cluster_ind in range(num_clusters):
 
-            # Draw samples from
-            all_facs = np.power(2,np.random.normal(loc=0, scale=0.5, size=cluster_sizes[cluster_ind]))
+            #Per cell noise
+            all_facs = np.power(
+              2, 
+              np.random.normal(
+                loc=0, scale=0.5, size=cluster_sizes[cluster_ind]
+              )
+            )
             effective_means = np.outer(true_means, all_facs)
 
-            chosen = range(nde_cumsum_zero[cluster_ind], nde_cumsum[cluster_ind])
+            #Select DE genes for this cluster
+            chosen = range(
+              nde_cumsum_zero[cluster_ind],
+              nde_cumsum[cluster_ind]
+            )
             up_down = np.sign(np.random.normal(size=len(chosen)))
-            effective_means[chosen, ] = np.transpose(np.multiply(np.transpose(effective_means[chosen, ]), np.power(2, (de_logfc[cluster_ind] * up_down))))
+            effective_means[chosen, ] = 
+              np.transpose(
+                np.multiply(
+                  np.transpose(effective_means[chosen, ]),
+                  np.power(2, (de_logfc[cluster_ind] * up_down))
+                )
+              )
 
             # Generate data
-            sample = np.random.negative_binomial(p=(1/nb_dispersion)/((1/nb_dispersion)+effective_means), n=1/nb_dispersion, size=[num_genes, cluster_sizes[cluster_ind]])
+            sample = np.random.negative_binomial(
+              p=(1/nb_dispersion)/((1/nb_dispersion)+effective_means),
+              n=1/nb_dispersion, size=[num_genes, cluster_sizes[cluster_ind]]
+            )
 
             # the abundance plot
             # plt.plot(np.sort(np.sum(sample, axis=1))[::-1], 'o')
             # plt.show()
 
             data_complete.append(np.asarray(sample))
-            labels_now.append(np.tile(cluster_ind + 1, cluster_sizes[cluster_ind]))
+            labels_now.append(
+              np.tile(cluster_ind + 1, cluster_sizes[cluster_ind])
+            )
 
         data = np.squeeze(np.hstack(data_complete))
         labels = np.hstack(labels_now)
-
 
     # Our simulation
     else:
