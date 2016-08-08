@@ -1,37 +1,17 @@
 import numpy as np
+import random
+import ast
 import pdb
 from sklearn.cross_validation import train_test_split
 
-def generate_toy_data(num_genes=10000, num_cells=1000, 
-                      num_clusters=4, dirichlet_parameter_cluster_size=10,
-                      cluster_spec=None,
-                      dirichlet_parameter_num_de_genes=10, 
-                      shape_power_law=0.1, upper_bound_counts=1000000,
-                      dirichlet_parameter_counts=0.05,
-                      binomial_parameter=1e-05, 
-                      gamma_shape=2, gamma_rate=2,
-                      mode=3):
-    # Toy experiment parameters
-    # Data generation parameters
-    # num_genes = 10000  # 10000, number of genes
-    # num_cells = 1000  # 1000, number of cells
-    # num_clusters = 4  # 4, number of clusters
-    # dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
-    # dirichlet_parameter_num_de_genes = 10 # 10, Dirichlet parameter for the number of of DE genes per cluster (big)
-    # total_counts_mode = 3 # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3 = simulation from Len et al.
-    # shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
-    # upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
-    # dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
-    # inverse noise parameter: bigger values make counts within cluster more similar (splitting the total abundances in more equal parts for each cell)
-    # binomial_parameter = 1e-05 # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
+def recursive_dirichlet(cluster_spec, num_cells,
+                        dirichlet_parameter_cluster_size):
 
-    # Generate Cluster sizes
-    if cluster_spec is None:
-      cluster_spec = range(num_clusters)
-    
+    num_clusters = len(cluster_spec)
+        
     cluster_sizes = np.ones(num_clusters)
     
-    while min(cluster_sizes) == 1
+    while min(cluster_sizes) == 1:
         cluster_sizes = \
           np.floor(
             np.random.dirichlet(
@@ -48,110 +28,151 @@ def generate_toy_data(num_genes=10000, num_cells=1000,
           
     assert min(cluster_sizes) > 1
     assert sum(cluster_sizes) == num_cells
+    
+    cluster_sizes = cluster_sizes.astype(int).tolist()
+    for i, spec in enumerate(cluster_spec):
+        if type(spec) is list:
+             cluster_sizes[i] = recursive_dirichlet(
+               spec, 
+               cluster_sizes[i],
+               dirichlet_parameter_cluster_size
+             )
+             
+    return(cluster_sizes)
+            
+def generate_de_logfc(ngenes, prop_genes_de, de_logfc):
 
-    # Generate data for each cluster
-    data_complete = []
-    labels_now = []
+    nde_genes = int(np.floor(ngenes * prop_genes_de))
+    up_down = np.sign(np.random.normal(size = nde_genes))    
+    logfc = map((lambda x: x * de_logfc), up_down)
+        
+    logfc = logfc + [0] * (ngenes - nde_genes)
+    random.shuffle(logfc)
+    
+    return(logfc)
 
-    # Simulation from Len et al.
-    if mode == 3:
-        
-        nb_dispersion = 0.1
-        
-        #Define the extent (effect size of DE per cluster) units are log2 FC
-        de_logfc = np.random.choice([1, 2], num_clusters, replace=True)
-        
-        #Define the number of genes DE in each cluster and then their indices
-        nde = np.squeeze(
-          np.round(
-            np.random.dirichlet(
-              np.ones(num_clusters) * dirichlet_parameter_num_de_genes, size=1
-            ) * (0.6 * num_genes)
-          )
-        ) + 1 #Why +1?
-        nde_cumsum = np.cumsum(nde).astype(int)
-        nde_cumsum_zero = np.insert(nde_cumsum, 0, 0).astype(int)
-        
-        #Define the 'true' population mean expression levels
-        true_means = np.random.gamma(gamma_shape, scale=1 / float(gamma_rate), size=num_genes)
+def recursive_generate_counts(cluster_nums, num_genes, true_means,
+                              parent_logfc, nb_dispersion,
+                              min_prop_genes_de, max_prop_genes_de,
+                              mean_de_logfc, sd_de_logfc):
 
-        for cluster_ind in range(num_clusters):
+    cluster_counts = [0] * len(cluster_nums)
+        
+    for i,num_cells in enumerate(cluster_nums):
 
-            #Per cell noise
-            all_facs = np.power(
-              2, 
-              np.random.normal(
-                loc=0, scale=0.5, size=cluster_sizes[cluster_ind]
+        #Set DE for this cluster or set of clusters
+        prop_genes_de = np.random.uniform(min_prop_genes_de, max_prop_genes_de)
+        de_logfc      = np.random.normal(mean_de_logfc, sd_de_logfc)
+        logfc = np.add(
+          parent_logfc, 
+          generate_de_logfc(num_genes, prop_genes_de, de_logfc)
+        )
+
+        if type(num_cells) is list:
+            cluster_counts[i] = \
+              recursive_generate_counts(
+                num_cells, num_genes, true_means, logfc, nb_dispersion,
+                min_prop_genes_de, max_prop_genes_de,
+                mean_de_logfc, sd_de_logfc
               )
-            )
-            effective_means = np.outer(true_means, all_facs)
-
-            #Select DE genes for this cluster
-            chosen = range(
-              nde_cumsum_zero[cluster_ind],
-              nde_cumsum[cluster_ind]
-            )
-            up_down = np.sign(np.random.normal(size=len(chosen)))
-            effective_means[chosen, ] = \
-              np.transpose(
-                np.multiply(
-                  np.transpose(effective_means[chosen, ]),
-                  np.power(2, (de_logfc[cluster_ind] * up_down))
-                )
+        else:
+            cluster_counts[i] = \
+              generate_counts(
+                num_cells, num_genes, true_means, logfc, nb_dispersion
               )
+            
+    return(np.hstack(cluster_counts))
+    
+def generate_counts(num_cells, num_genes, true_means, logfc, nb_dispersion):
+    
+    #Per cell noise
+    all_facs = np.power(
+      2, 
+      np.random.normal(
+        loc = 0, scale = 0.5, size = num_cells
+      )
+    )
+    effective_means = np.outer(true_means, all_facs)
 
-            # Generate data
-            sample = np.random.negative_binomial(
-              p=(1/nb_dispersion)/((1/nb_dispersion)+effective_means),
-              n=1/nb_dispersion, size=[num_genes, cluster_sizes[cluster_ind]]
-            )
+    effective_means = np.transpose(
+      np.multiply(np.transpose(effective_means), np.power(2, logfc))
+    )
+    
+    # Generate data
+    sample = np.random.negative_binomial(
+      p = (1 / nb_dispersion) / ((1/nb_dispersion) + effective_means),
+      n = 1 / nb_dispersion, size = [num_genes, num_cells]
+    )
+    
+    return(sample)
+    
+def generate_toy_data(
+                      num_genes = 10000, num_cells = 1000, 
 
-            # the abundance plot
-            # plt.plot(np.sort(np.sum(sample, axis=1))[::-1], 'o')
-            # plt.show()
+                      num_clusters = 4,
+                      cluster_spec = None,
+                      dirichlet_parameter_cluster_size = 10,
 
-            data_complete.append(np.asarray(sample))
-            labels_now.append(
-              np.tile(cluster_ind + 1, cluster_sizes[cluster_ind])
-            )
+                      gamma_shape = 2, gamma_rate = 2,
+                      nb_dispersion = 0.1,
+                      min_prop_genes_de = 0.1,
+                      max_prop_genes_de = 0.4,
+                      mean_de_logfc     = 1,
+                      sd_de_logfc       = 0.5,
+                     ):
+                      
+    # Toy experiment parameters
+    # Data generation parameters
 
-        data = np.squeeze(np.hstack(data_complete))
-        labels = np.hstack(labels_now)
+    # num_genes = 10000  # 10000, number of genes
+    # num_cells = 1000  # 1000, number of cells
 
-    # Our simulation
-    else:
-        for cluster_ind in range(num_clusters):
+    # num_clusters = 4  # 4, number of clusters
+    # Cluster spec = None # Definition of cluster hierarchy
+    # dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
 
-            # Draw samples from the power law distribution or negative binomial
-            # pdb.set_trace()
-            if mode == 1:
-                sample = np.round(np.random.power(shape_power_law, num_genes) * upper_bound_counts)
-            elif mode == 2:
-                sample = np.random.negative_binomial(1, binomial_parameter, num_genes)
-            else:
-                print "Wrong mode!"
+    # Generate Cluster sizes
+    cluster_sizes = recursive_dirichlet(
+      cluster_spec,
+      num_cells,
+      dirichlet_parameter_cluster_size
+    )
+    
+    #Define the 'true' population mean expression levels
+    true_means = np.random.gamma(
+      gamma_shape, scale=1 / float(gamma_rate), size=num_genes
+    )
 
-            # the abundance plot
-            # plt.plot(np.sort(sample)[::-1], 'o')
-            # plt.plot(np.sort(sample_nb)[::-1], 'o')
-            # plt.show()
+    counts = recursive_generate_counts(
+      cluster_sizes,
+      num_genes,
+      true_means,
+      [0] * num_genes,
+      nb_dispersion,
+      min_prop_genes_de,
+      max_prop_genes_de,
+      mean_de_logfc,
+      sd_de_logfc
+    )
+    
+    def flatten(l): 
+        if type(l) is list:
+            return flatten(l[0]) + (flatten(l[1:]) if len(l) > 1 else [])
+        else:
+            return([l])
 
-            # Generate data
-            data_now = []
-            for i in range(num_genes):
-                row_total = int(sample[i])
-                one_gene = np.round(np.random.dirichlet(np.ones(cluster_sizes[cluster_ind]) * dirichlet_parameter_counts, size=1) * row_total)
-                data_now.append(one_gene)
+    flat_sizes = flatten(cluster_sizes)
+    flat_labels = flatten(cluster_spec)
 
-            data_complete.append(np.squeeze(np.asarray(data_now)))
-            labels_now.append(np.tile(cluster_ind+1, cluster_sizes[cluster_ind]))
+    labels = []
 
-        data = np.squeeze(np.hstack(data_complete))
-        labels = np.hstack(labels_now)
-    return [data, labels]
+    for x in zip(flat_labels, flat_sizes):
+        labels = labels + ([x[0]] * x[1])
 
+    return [counts, labels]
 
-def split_source_target(toy_data, true_toy_labels, proportion_target=0.4, mode=2):
+def split_source_target(toy_data, true_toy_labels, 
+                        proportion_target=0.4, mode=2):
     # Parameters for splitting data in source and target set
     # proportion_target = 0.4 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
     # splitting_mode = 2  # 2, Splitting mode: 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters,
