@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import ast
+import sys
 import pdb
 from sklearn.cross_validation import train_test_split
 
@@ -109,7 +110,6 @@ def generate_counts(num_cells, num_genes, true_means, logfc, nb_dispersion):
 def generate_toy_data(
                       num_genes = 10000, num_cells = 1000, 
 
-                      num_clusters = 4,
                       cluster_spec = None,
                       dirichlet_parameter_cluster_size = 10,
 
@@ -127,7 +127,6 @@ def generate_toy_data(
     # num_genes = 10000  # 10000, number of genes
     # num_cells = 1000  # 1000, number of cells
 
-    # num_clusters = 4  # 4, number of clusters
     # Cluster spec = None # Definition of cluster hierarchy
     # dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
 
@@ -172,24 +171,75 @@ def generate_toy_data(
     return [counts, labels]
 
 def split_source_target(toy_data, true_toy_labels, 
-                        proportion_target=0.4, mode=2):
-    # Parameters for splitting data in source and target set
-    # proportion_target = 0.4 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
-    # splitting_mode = 2  # 2, Splitting mode: 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters,
-    # 4 = have only non-overlapping clusters
+                        target_ncells=1000, source_ncells=1000,
+                        mode=2, source_clusters = None,
+                        noise_target=False, noise_sd=0.5):
+    # Parameters for splitting data in source and target set:
+    # target_ncells = 1000 # How much of the data will be target data?
+    # source_ncells = 1000 # How much of the data will be source data?
+    # splitting_mode = 2
+    # Splitting mode: 1 = split randomly,
+    #                 2 = split randomly, but stratified,
+    #                 3 = split randomly, but anti-stratified [not implemented]
+    #                 4 = Have some overlapping and some exclusive clusters,
+    #                 5 = have only non-overlapping clusters
+    #                 6 = Define source matrix clusters
+    # source_clusters = None # Array of cluster ids to use in mode 6
+    # noise_target = False # Add some per gene gaussian noise to the target?
+    # noise_sd = 0.5 # SD of gaussian noise
+    
+    assert (target_ncells + source_ncells <= toy_data.shape[1])
+
+    #First split the 'truth' matrix into a set we will use and a set we wont
+    #For mode 6 we do this differently
+    if target_ncells + source_ncells < toy_data.shape[1] and mode != 6:
+      
+        toy_data, _, true_toy_labels, _ = \
+            train_test_split(
+                np.transpose(toy_data),
+                true_toy_labels,
+                test_size = toy_data.shape[1] - (target_ncells + source_ncells),
+                stratify = true_toy_labels
+            )
+        toy_data = np.transpose(toy_data)
+    
+    proportion_target = float(target_ncells) / (source_ncells + target_ncells) 
+    
     if mode == 1:
-        toy_data_source_now, toy_data_target_now, true_toy_labels_source, true_toy_labels_target = train_test_split(np.transpose(toy_data), true_toy_labels,
-                                                                                                            test_size=proportion_target)
-        toy_data_source = np.transpose(toy_data_source_now)
-        toy_data_target = np.transpose(toy_data_target_now)
+        toy_data_source, \
+        toy_data_target, \
+        true_toy_labels_source, \
+        true_toy_labels_target = \
+            train_test_split(
+                np.transpose(toy_data),
+                true_toy_labels,
+                test_size = target_ncells
+            )
+        toy_data_source = np.transpose(toy_data_source)
+        toy_data_target = np.transpose(toy_data_target)
 
     elif mode == 2:
-        toy_data_source_now, toy_data_target_now, true_toy_labels_source, true_toy_labels_target = train_test_split(np.transpose(toy_data), true_toy_labels,
-                                                                                                            test_size=proportion_target, stratify=true_toy_labels)
-        toy_data_source = np.transpose(toy_data_source_now)
-        toy_data_target = np.transpose(toy_data_target_now)
+        toy_data_source, \
+        toy_data_target, \
+        true_toy_labels_source, \
+        true_toy_labels_target = \
+            train_test_split(
+                np.transpose(toy_data),
+                true_toy_labels,
+                test_size = target_ncells,
+                stratify = true_toy_labels
+            )
+        toy_data_source = np.transpose(toy_data_source)
+        toy_data_target = np.transpose(toy_data_target)
 
     elif mode == 3:
+        print "Mode 3 not implemented!"
+        toy_data_source=[]
+        toy_data_target=[]
+        true_toy_labels_source=[]
+        true_toy_labels_target = []
+
+    elif mode == 4:
         cluster_names = np.unique(true_toy_labels)
 
         # Assign exclusive clusters
@@ -214,28 +264,43 @@ def split_source_target(toy_data, true_toy_labels,
         toy_data_random = toy_data[:, random_indices]
         true_toy_labels_random = true_toy_labels[random_indices]
 
-        toy_data_source_random, toy_data_target_random, true_toy_labels_source_random, true_toy_labels_target_random = train_test_split(np.transpose(toy_data_random),
-                                                                                                                 true_toy_labels_random, test_size=proportion_target)
+        toy_data_source_random, 
+        toy_data_target_random,
+        true_toy_labels_source_random,
+        true_toy_labels_target_random = \
+            train_test_split(
+                np.transpose(toy_data_random),
+                true_toy_labels_random,
+                test_size = target_ncells
+            )
 
         # Combine exclusive and random data
-        toy_data_source = np.concatenate((toy_data_source_exclusive, np.transpose(toy_data_source_random)), axis=1)
-        toy_data_target = np.concatenate((toy_data_target_exclusive, np.transpose(toy_data_target_random)), axis=1)
-        true_toy_labels_source = np.concatenate((true_toy_labels_source_exclusive, np.transpose(true_toy_labels_source_random)))
-        true_toy_labels_target = np.concatenate((true_toy_labels_target_exclusive, np.transpose(true_toy_labels_target_random)))
+        toy_data_source = np.concatenate(
+            (toy_data_source_exclusive,
+             np.transpose(toy_data_source_random)
+            ), axis = 1)
+        toy_data_target = np.concatenate(
+            (toy_data_target_exclusive,
+             np.transpose(toy_data_target_random)
+            ), axis = 1)
+        true_toy_labels_source = np.concatenate(
+            (true_toy_labels_source_exclusive, 
+             np.transpose(true_toy_labels_source_random)
+            ))
+        true_toy_labels_target = np.concatenate(
+            (true_toy_labels_target_exclusive, 
+             np.transpose(true_toy_labels_target_random)
+            ))
 
-        # toy_data_rebuilt = np.concatenate((toy_data_source, toy_data_target), axis=1)
-        # toy_labels_rebuilt = np.concatenate((true_toy_labels_source, true_toy_labels_target), axis=0)
-        # pdb.set_trace()
-        # TSNE_plot(toy_data_rebuilt, toy_labels_rebuilt)
-        # TSNE_plot(toy_data, true_toy_labels)
-        # TSNE_plot(toy_data_source, true_toy_labels_source)
-        # TSNE_plot(toy_data_target, true_toy_labels_target)
-
-    elif mode == 4:
+    elif mode == 5:
         proportion_source = 1-proportion_target
         cluster_names = np.unique(true_toy_labels)
-        source_clusters = cluster_names[0: int(len(cluster_names) * proportion_source)]
-        target_clusters = cluster_names[int(len(cluster_names) * proportion_source):len(cluster_names)]
+        source_clusters = cluster_names[
+            0: int(len(cluster_names) * proportion_source)
+        ]
+        target_clusters = cluster_names[
+            int(len(cluster_names) * proportion_source):len(cluster_names)
+        ]
 
         source_indices_mat = []
         for i in range(len(source_clusters)):
@@ -251,6 +316,44 @@ def split_source_target(toy_data, true_toy_labels,
         toy_data_target = toy_data[:,target_indices]
         true_toy_labels_target = true_toy_labels[target_indices]
 
+    elif mode == 6:
+
+        assert(source_clusters != None)
+        
+        source_cluster_indices = \
+            [i for i, x in enumerate(true_toy_labels) if x in source_clusters]
+                
+        toy_data_source = toy_data[:, source_cluster_indices]
+        true_toy_labels_source = \
+            [true_toy_labels[i] for i in source_cluster_indices]
+                
+        try:
+            assert(source_ncells <= toy_data_source.shape[1])
+        except AssertionError:
+            print("There aren't enough cells in the source clusters. Raise ncells")
+            sys.exit()
+        
+        #Now take the source from these clusters only in a stratified way
+        toy_data_source, _, true_toy_labels_source, _ = \
+            train_test_split(
+                np.transpose(toy_data_source),
+                true_toy_labels_source,
+                test_size = toy_data_source.shape[1] - source_ncells,
+                stratify = true_toy_labels_source
+            )
+        toy_data_source = np.transpose(toy_data_source)
+                
+        #Now take the target from the whole dataset again stratified
+        toy_data_target, _, true_toy_labels_target, _ = \
+            train_test_split(
+                np.transpose(toy_data),
+                true_toy_labels,
+                test_size = toy_data.shape[1] - target_ncells,
+                stratify = true_toy_labels
+            )
+        toy_data_target = np.transpose(toy_data_target)
+
+
     else:
         print "Unknown mode!"
         toy_data_source=[]
@@ -258,4 +361,11 @@ def split_source_target(toy_data, true_toy_labels,
         true_toy_labels_source=[]
         true_toy_labels_target = []
 
-    return toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target
+    if noise_target:
+        toy_data_target = np.transpose(
+            np.transpose(toy_data_target) + 
+            np.random.normal(size = toy_data.shape[0], scale = noise_sd)
+        )
+
+    return toy_data_source, toy_data_target, \
+           true_toy_labels_source, true_toy_labels_target
