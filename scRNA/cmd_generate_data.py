@@ -166,6 +166,7 @@ print 'Data dimension: ', data.shape
 
 output_fmt = "%u"
 
+#Perform FPKM and log2 normalisation if required
 if args.normalise:
     data = np.log2(data.astype(float) / (np.sum(data, 0) / 1e6) + 1)
     output_fmt = "%f"
