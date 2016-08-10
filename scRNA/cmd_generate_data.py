@@ -108,17 +108,48 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--proportion_target",
-    help = "How much of data will be target data (default 0.4)",
-    default = 0.4,
+    "--target_ncells",
+    help = "How much of data will be target data (default 250)",
+    default = 250,
+    type = int
+)
+parser.add_argument(
+    "--source_ncells",
+    help = "How much of data will be source data (default 250)",
+    default = 250,
+    type = int
+)
+parser.add_argument(
+    "--noise_target",
+    help = "Add noise to target data",
+    dest = "noise_target",
+    action = 'store_true'
+)
+parser.add_argument(
+    "--no-noise_target",
+    help = "Do not add noise to target",
+    dest = "noise_target",
+    action = 'store_false'
+)
+parser.set_defaults(noise_target = False)
+parser.add_argument(
+    "--noise_sd",
+    help = "Standard deviation of target noise",
+    default = 0.5,
     type = float
 )
 
 parser.add_argument(
     "--splitting_mode",
-    help = "Splitting mode:\n\t- 1 = split randomly\n\t- 2 = split randomly, but stratified\n\t- 3 = Have some overlapping and some exclusive clusters\n\t- 4 = Have only exclusive clusters\n\t(default 2)",
+    help = "Splitting mode:\n\t- 1 = split randomly\n\t- 2 = split randomly, but stratified\n\t- 3 = Split randomly but antistratified\n\t- 4 = Have some overlapping and some exclusive clusters\n\t- 5 = Have only exclusive clusters\n\t- 6 = Have some defined clusters as the source\n\t(default 2)",
     default = 2,
     type = int
+)
+parser.add_argument(
+    "--source_clusters",
+    help = "Clusters to use as source when splitting. Define as Python list",
+    default = "[",
+    type = str
 )
 
 parser.add_argument(
@@ -144,6 +175,16 @@ try:
 except SyntaxError:
     sys.stderr.write("Error: Invalid cluster specification.")
     sys.exit()
+
+
+try:
+    source_clusters = None
+    if args.splitting_mode == 6:
+        source_clusters = ast.literal_eval(args.source_clusters)
+except SyntaxError:
+    sys.stderr.write("Error: Invalid source cluster specification.")
+    sys.exit()
+
 
 # 1. GENERATE TOY DATA
 print('\nGenerate artificial single-cell RNA-seq data.')
@@ -177,7 +218,11 @@ data_source, data_target, true_labels_source, true_labels_target = \
     split_source_target(
         data,
         labels,
-        proportion_target = args.proportion_target,
+        target_ncells = args.target_ncells,
+        source_ncells = args.source_ncells,
+        source_clusters = source_clusters,
+        noise_target = args.noise_target,
+        noise_sd = args.noise_sd,
         mode = args.splitting_mode
     )
 print 'Target data dimension: ', data_target.shape
