@@ -1,6 +1,7 @@
 import argparse
 import sys
 import ast
+import os
 
 from simulation import generate_toy_data, split_source_target
 from utils import *
@@ -120,6 +121,18 @@ parser.add_argument(
     type = int
 )
 parser.add_argument(
+  "--source_ncells_range",
+      help = "How much of data will be source data (range)",
+      default = "[]",
+      type = str
+)
+parser.add_argument(
+  "--target_ncells_range",
+      help = "How much of data will be target data (range)",
+      default = "[]",
+      type = str
+)
+parser.add_argument(
     "--noise_target",
     help = "Add noise to target data",
     dest = "noise_target",
@@ -147,7 +160,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--source_clusters",
-    help = "Clusters to use as source when splitting. Define as Python list",
+    help = "Clusters to use as source when splitting by mode 6. Define as Python list",
     default = "[",
     type = str
 )
@@ -213,57 +226,85 @@ if args.normalise:
     output_fmt = "%f"
 
 # 2. SPLIT TOY DATA IN TARGET AND SOURCE DATA
-print('\nSplit artificial single-cell RNA-seq data in target and source data.')
-data_source, data_target, true_labels_source, true_labels_target = \
-    split_source_target(
-        data,
-        labels,
-        target_ncells = args.target_ncells,
-        source_ncells = args.source_ncells,
-        source_clusters = source_clusters,
-        noise_target = args.noise_target,
-        noise_sd = args.noise_sd,
-        mode = args.splitting_mode
-    )
-print 'Target data dimension: ', data_target.shape
-print 'Source data dimension: ', data_source.shape
+try:
+    source_ncells_range = ast.literal_eval(args.source_ncells_range)
+    target_ncells_range = ast.literal_eval(args.target_ncells_range)
+except SyntaxError:
+    sys.stderr.write("Error: Invalid source/target size specification.")
+    sys.exit()
 
-# 3. GENERATE GENE AND CELL NAMES
-gene_ids = np.arange(args.num_genes)
+if len(source_ncells_range) == 0:
+    source_ncells_range = [args.source_ncells]
 
-# 4. SAVE RESULTS
-print('Saving target data to \'{0}\'.'.format(args.fout_target_data))
-np.savetxt(
-    args.fout_target_data,
-    data_target,
-    fmt = output_fmt,
-    delimiter = '\t'
-)
-np.savetxt(
-    args.fout_target_labels,
-    true_labels_target,
-    fmt = '%u',
-    delimiter = '\t'
-)
-np.savetxt(
-    args.fout_geneids,
-    gene_ids,
-    fmt = '%u',
-    delimiter = '\t'
-)
+if len(target_ncells_range) == 0:
+    target_ncells_range = [args.target_ncells]
 
-print('Saving source data to \'{0}\'.'.format(args.fout_source_data))
-np.savetxt(
-    args.fout_source_data,
-    data_source, 
-    fmt = output_fmt, 
-    delimiter = '\t'
-)
-np.savetxt(
-    args.fout_source_labels,
-    true_labels_source,
-    fmt = '%u',
-    delimiter = '\t'
-)
+for sidx, source_ncells in enumerate(source_ncells_range):
+    for tidx, target_ncells in enumerate(target_ncells_range):
+
+        print('\nSplit artificial single-cell RNA-seq data in target and source data.')
+        data_source, data_target, true_labels_source, true_labels_target = \
+            split_source_target(
+                data,
+                labels,
+                target_ncells = target_ncells,
+                source_ncells = source_ncells,
+                source_clusters = source_clusters,
+                noise_target = args.noise_target,
+                noise_sd = args.noise_sd,
+                mode = args.splitting_mode
+            )
+        print 'Target data dimension: ', data_target.shape
+        print 'Source data dimension: ', data_source.shape
+
+        # 3. GENERATE GENE AND CELL NAMES
+        gene_ids = np.arange(args.num_genes)
+
+        # 4. SAVE RESULTS
+        print('Saving target data to \'{0}\'.'.format(args.fout_target_data))
+        np.savetxt(
+            os.path.splitext(args.fout_target_data)[0] + 
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
+             os.path.splitext(args.fout_target_data)[1],
+            data_target,
+            fmt = output_fmt,
+            delimiter = '\t'
+        )
+        np.savetxt(
+            os.path.splitext(args.fout_target_labels)[0] + 
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
+             os.path.splitext(args.fout_target_labels)[1],
+            true_labels_target,
+            fmt = '%u',
+            delimiter = '\t'
+        )
+        np.savetxt(
+            args.fout_geneids,
+            gene_ids,
+            fmt = '%u',
+            delimiter = '\t'
+        )
+
+        print('Saving source data to \'{0}\'.'.format(args.fout_source_data))
+        np.savetxt(
+            os.path.splitext(args.fout_source_data)[0] + 
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
+             os.path.splitext(args.fout_source_data)[1],
+            data_source, 
+            fmt = output_fmt, 
+            delimiter = '\t'
+        )
+        np.savetxt(
+            os.path.splitext(args.fout_source_labels)[0] + 
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
+             os.path.splitext(args.fout_source_labels)[1],
+            true_labels_source,
+            fmt = '%u',
+            delimiter = '\t'
+        )
 
 print('Done.')

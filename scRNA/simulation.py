@@ -367,5 +367,12 @@ def split_source_target(toy_data, true_toy_labels,
             np.random.normal(size = toy_data.shape[0], scale = noise_sd)
         )
 
+    #Some modes can by chance gives us n+1 column matrices. This just neatens
+    #this by throwing away the additional column
+    toy_data_source = toy_data_source[:,0:source_ncells]
+    toy_data_target = toy_data_target[:,0:target_ncells]
+    true_toy_labels_source = true_toy_labels_source[0:source_ncells]
+    true_toy_labels_target = true_toy_labels_target[0:target_ncells]
+
     return toy_data_source, toy_data_target, \
            true_toy_labels_source, true_toy_labels_target
