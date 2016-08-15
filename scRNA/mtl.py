@@ -118,13 +118,18 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
+    # normalize distance
+    print 'Max dists: ', np.max(dist1), np.max(dist2)
+    normalizer = np.max(dist1) / np.max(dist2)
+    dist2 *= normalizer
+
     return mixture*dist2 + (1.-mixture)*dist1
 
 
 def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None, metric='euclidean', mixture=0.75, nmf_k=4):
     # transform data
     X = data_transformation(src_data[gene_ids, :])
-    nmf = decomp.NMF(alpha=10., init='nndsvdar', l1_ratio=0.9, max_iter=1000,
+    nmf = decomp.NMF(alpha=1., init='nndsvdar', l1_ratio=0.9, max_iter=1000,
         n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
@@ -155,6 +160,11 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     dist1 = distances(data, [], metric=metric)
     # dist2 = distances(W.dot(H), [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
+
+    # normalize distance
+    print 'Max dists: ', np.max(dist1), np.max(dist2)
+    normalizer = np.max(dist1) / np.max(dist2)
+    dist2 *= normalizer
 
     print np.max(dist1), np.max(dist2)
     return mixture*dist2 + (1.-mixture)*dist1

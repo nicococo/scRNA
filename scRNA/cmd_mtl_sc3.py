@@ -12,6 +12,7 @@ from utils import *
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
 parser.add_argument("--fname", help="Target TSV dataset filename", required=True, type=str)
+parser.add_argument("--flabels", help="Target TSV labels filename", default=None, type=str)
 parser.add_argument("--fgeneids", help="Target TSV gene ids filename", required=True, type=str)
 parser.add_argument("--fmtl", help="MTL source TSV dataset filename", required=True, type=str)
 parser.add_argument("--fmtl_geneids", help="MTL source TSV gene ids filename", required=True, type=str)
@@ -40,7 +41,7 @@ print arguments
 # 1. LOAD DATA
 print("\nLoading target dataset ({0} with {1} gene ids).".format(arguments.fname, arguments.fgeneids))
 dataset = arguments.fname
-data, gene_ids, labels = load_dataset_tsv(dataset, arguments.fgeneids)
+data, gene_ids, labels = load_dataset_tsv(dataset, arguments.fgeneids, flabels=arguments.flabels)
 print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 
 # 2. BUILD SC3 PIPELINE
@@ -83,7 +84,7 @@ cp.apply(pc_range=[min_pca_comp, max_pca_comp])
 print cp
 
 # Check if labels are available:
-if not labels is None:
+if labels is not None:
     print('\nLabels are available!')
     print 'ARI for max-assignment: ', adjusted_rand_score(labels[cp.remain_cell_inds], cp.cluster_labels)
 

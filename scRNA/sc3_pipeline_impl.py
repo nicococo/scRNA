@@ -142,22 +142,15 @@ def transformations(dm, components=5, method='pca'):
     return vecs[:, inds].dot(D.dot(vecs[:, inds].T)), vecs[:, inds]
 
 
-def intermediate_kmeans_clustering(X, k=5, cutoff=15):
+def intermediate_kmeans_clustering(X, k=5):
     """
     :param X: cells x d vector
     :param k: number of clusters
-    :param cutoff: cutoff dimension (if more than this value
-            then sub-sample 'cutoff' dimensions randomly (if cutoff==-1 use all)
     :return: cells x 1 labels
     """
-    dims = X.shape[1]
-    if cutoff == -1:
-        cutoff = dims
     kmeans = cluster.KMeans(n_clusters=k, precompute_distances=True, n_init=250, max_iter=10000,
                             init='k-means++', n_jobs=1)
-    rinds = np.random.permutation(np.arange(dims))
-    rinds = rinds[:cutoff]
-    labels = kmeans.fit_predict(X[:, rinds])
+    labels = kmeans.fit_predict(X)
     assert labels.size == X.shape[0]
     return labels
 

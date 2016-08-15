@@ -9,6 +9,7 @@ from utils import *
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
 parser.add_argument("--fname", help="Target TSV dataset filename", required=True, type=str)
+parser.add_argument("--flabels", help="Target TSV labels filename", default=None, type=str)
 parser.add_argument("--fout", help="Result filename (no extension)", default='out', type=str)
 
 parser.add_argument("--cf_min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
@@ -28,7 +29,7 @@ print arguments
 # 1. LOAD DATA
 print("\nLoading target dataset ({0}).".format(arguments.fname))
 dataset = arguments.fname
-data, _, labels = load_dataset_tsv(dataset)
+data, _, labels = load_dataset_tsv(dataset, flabels=arguments.flabels)
 print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 
 num_transcripts, num_cells = data.shape
