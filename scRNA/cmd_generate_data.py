@@ -239,8 +239,8 @@ if len(source_ncells_range) == 0:
 if len(target_ncells_range) == 0:
     target_ncells_range = [args.target_ncells]
 
-for source_ncells in source_ncells_range:
-    for target_ncells in target_ncells_range:
+for sidx, source_ncells in enumerate(source_ncells_range):
+    for tidx, target_ncells in enumerate(target_ncells_range):
 
         print('\nSplit artificial single-cell RNA-seq data in target and source data.')
         data_source, data_target, true_labels_source, true_labels_target = \
@@ -264,7 +264,8 @@ for source_ncells in source_ncells_range:
         print('Saving target data to \'{0}\'.'.format(args.fout_target_data))
         np.savetxt(
             os.path.splitext(args.fout_target_data)[0] + 
-            "_T" + str(target_ncells) + "_S" + str(source_ncells) +
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
              os.path.splitext(args.fout_target_data)[1],
             data_target,
             fmt = output_fmt,
@@ -272,7 +273,8 @@ for source_ncells in source_ncells_range:
         )
         np.savetxt(
             os.path.splitext(args.fout_target_labels)[0] + 
-            "_T" + str(target_ncells) + "_S" + str(source_ncells) +
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
              os.path.splitext(args.fout_target_labels)[1],
             true_labels_target,
             fmt = '%u',
@@ -288,7 +290,8 @@ for source_ncells in source_ncells_range:
         print('Saving source data to \'{0}\'.'.format(args.fout_source_data))
         np.savetxt(
             os.path.splitext(args.fout_source_data)[0] + 
-            "_T" + str(target_ncells) + "_S" + str(source_ncells) +
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
              os.path.splitext(args.fout_source_data)[1],
             data_source, 
             fmt = output_fmt, 
@@ -296,7 +299,8 @@ for source_ncells in source_ncells_range:
         )
         np.savetxt(
             os.path.splitext(args.fout_source_labels)[0] + 
-            "_T" + str(target_ncells) + "_S" + str(source_ncells) +
+            "_T" + str(tidx+1) + "_" + str(target_ncells) + 
+            "_S" + str(sidx+1) + "_" + str(source_ncells) +
              os.path.splitext(args.fout_source_labels)[1],
             true_labels_source,
             fmt = '%u',
