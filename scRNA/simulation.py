@@ -192,7 +192,7 @@ def split_source_target(toy_data, true_toy_labels,
 
     #First split the 'truth' matrix into a set we will use and a set we wont
     #For mode 6 we do this differently
-    if target_ncells + source_ncells < toy_data.shape[1] and mode != 6:
+    if target_ncells + source_ncells < toy_data.shape[1] and mode != 6 and mode != 4:
       
         toy_data, _, true_toy_labels, _ = \
             train_test_split(
@@ -240,57 +240,41 @@ def split_source_target(toy_data, true_toy_labels,
         true_toy_labels_target = []
 
     elif mode == 4:
+      
+        true_toy_labels = np.array(true_toy_labels)
         cluster_names = np.unique(true_toy_labels)
 
         # Assign exclusive clusters
         # To source data set
         source_cluster = cluster_names[0]
-        source_indices = (true_toy_labels == source_cluster)
+        source_indices = (true_toy_labels != source_cluster)
         toy_data_source_exclusive = toy_data[:, source_indices]
         true_toy_labels_source_exclusive = true_toy_labels[source_indices]
 
         # To target data set
         target_cluster = cluster_names[1]
-        target_indices = (true_toy_labels == target_cluster)
+        target_indices = (true_toy_labels != target_cluster)
         toy_data_target_exclusive = toy_data[:, target_indices]
         true_toy_labels_target_exclusive = true_toy_labels[target_indices]
 
-        # Distribute the rest randomly
-        random_clusters = cluster_names[2:]
-        random_indices_mat = []
-        for i in range(len(random_clusters)):
-            random_indices_mat.append(true_toy_labels == random_clusters[i])
-        random_indices = np.any(random_indices_mat, 0)
-        toy_data_random = toy_data[:, random_indices]
-        true_toy_labels_random = true_toy_labels[random_indices]
-
-        toy_data_source_random, 
-        toy_data_target_random,
-        true_toy_labels_source_random,
-        true_toy_labels_target_random = \
+        toy_data_source, _, true_toy_labels_source, _ = \
             train_test_split(
-                np.transpose(toy_data_random),
-                true_toy_labels_random,
-                test_size = target_ncells
+                np.transpose(toy_data_source_exclusive),
+                true_toy_labels_source_exclusive,
+                test_size = target_ncells,
+                stratify = true_toy_labels_source_exclusive
             )
+        toy_data_target, _, true_toy_labels_target, _ = \
+            train_test_split(
+                np.transpose(toy_data_target_exclusive),
+                true_toy_labels_target_exclusive,
+                test_size = source_ncells,
+                stratify = true_toy_labels_target_exclusive
+            )
+            
+        toy_data_source = np.transpose(toy_data_source)
+        toy_data_target = np.transpose(toy_data_target)
 
-        # Combine exclusive and random data
-        toy_data_source = np.concatenate(
-            (toy_data_source_exclusive,
-             np.transpose(toy_data_source_random)
-            ), axis = 1)
-        toy_data_target = np.concatenate(
-            (toy_data_target_exclusive,
-             np.transpose(toy_data_target_random)
-            ), axis = 1)
-        true_toy_labels_source = np.concatenate(
-            (true_toy_labels_source_exclusive, 
-             np.transpose(true_toy_labels_source_random)
-            ))
-        true_toy_labels_target = np.concatenate(
-            (true_toy_labels_target_exclusive, 
-             np.transpose(true_toy_labels_target_random)
-            ))
 
     elif mode == 5:
         proportion_source = 1-proportion_target
