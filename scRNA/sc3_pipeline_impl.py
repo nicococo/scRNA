@@ -1,6 +1,7 @@
 import scipy.cluster.hierarchy as spc
 import scipy.spatial.distance as dist
 import scipy.stats as stats
+import scipy.linalg as sl
 import sklearn.cluster as cluster
 
 from utils import *
@@ -118,20 +119,27 @@ def transformations(dm, components=5, method='pca'):
     else:
         # column-wise scaling and normalizing
         num_cells = dm.shape[0]
-        dm = dm - np.repeat(np.mean(dm, axis=1).reshape((num_cells, 1)), num_cells, axis=1)
-        dm = dm / np.repeat(np.std(dm, axis=1).reshape((num_cells, 1)), num_cells, axis=1)
+        # J = np.eye(num_cells) - 1./np.float(num_cells)*np.ones((num_cells, num_cells))
+        # dm = 0.5*J.dot(dm.dot(J))
+
+        dm = dm - np.repeat(np.mean(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
+        dm = dm / np.repeat(np.std(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
 
     # vals: the eigenvalues in ascending order, each repeated according to its multiplicity.
     # vecs: the column v[:, i] is the normalized eigenvector corresponding to the eigenvalue w[i]
-    vals, vecs = np.linalg.eigh(dm)
+    # vals, vecs = np.linalg.eigh(dm)
+    _, vals, ev = sl.svd(dm)
+    vecs = ev.T
+    vals /= np.sqrt(np.max((1, num_cells - 1)))
 
     if method == 'pca':
         # This part is done to imitate sc3 behavior which only sorts absolute Eigenvalues
         # making the highest Eigenvalue first followed by the smallest (ascending) Eigenvalues
-        x = np.sqrt(vals*vals)
-        inds = np.argsort(-x) # argsort is ascending order
-        inds = np.argsort(vals) # argsort is ascending order
-        inds = inds[:components]
+        # x = np.sqrt(vals*vals)
+        # inds = np.argsort(-x)  # argsort is ascending order
+        # inds = np.argsort(vals)  # argsort is ascending order
+        # inds = inds[:components]
+        inds = np.arange(components)
         # print inds
 
     # inds = range(vals.size-components, vals.size)
@@ -142,13 +150,13 @@ def transformations(dm, components=5, method='pca'):
     return vecs[:, inds].dot(D.dot(vecs[:, inds].T)), vecs[:, inds]
 
 
-def intermediate_kmeans_clustering(X, k=5):
+def intermediate_kmeans_clustering(X, k=5, n_init=10, max_iter=10000):
     """
     :param X: cells x d vector
     :param k: number of clusters
     :return: cells x 1 labels
     """
-    kmeans = cluster.KMeans(n_clusters=k, precompute_distances=True, n_init=250, max_iter=10000,
+    kmeans = cluster.KMeans(n_clusters=k, precompute_distances=True, n_init=n_init, max_iter=max_iter,
                             init='k-means++', n_jobs=1)
     labels = kmeans.fit_predict(X)
     assert labels.size == X.shape[0]

@@ -7,7 +7,7 @@ from simulation import *
 from mtl import *
 
 
-def single_run(trg, trg_labels, src, src_labels, mix=0.5, n_cluster=4):
+def single_run(trg, trg_labels, src, src_labels, mix=0.5, n_cluster=4, k_nmf=4):
     cp = SC3Pipeline(trg)
 
     max_pca_comp = np.ceil(cp.num_cells*0.07).astype(np.int)
@@ -17,10 +17,10 @@ def single_run(trg, trg_labels, src, src_labels, mix=0.5, n_cluster=4):
     # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=1, num_expr_genes=2000))
     cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
-    cp.set_data_transformation(sc.data_transformation)
+    # cp.set_data_transformation(sc.data_transformation)
     # cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
     cp.add_distance_calculation(partial(mtl_toy_distance, src_data=src, src_labels=src_labels,
-                                        trg_labels=trg_labels, metric='euclidean', mixture=mix, nmf_k=n_cluster))
+                                        trg_labels=trg_labels, metric='pearson', mixture=mix, nmf_k=k_nmf))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
 
@@ -39,6 +39,7 @@ def plot_results(fname):
     aris = foo['aris']
     mix = foo['mix']
     percs = foo['percs']
+    n_trg = foo['n_trg']
 
     plt.figure(1)
     np.random.seed(8)
@@ -57,7 +58,7 @@ def plot_results(fname):
         legend.append('Influence of src={0}%'.format(np.int(mix[m]*100.)))
 
     plt.xlabel('Fraction of target samples ('
-               '1.0=600 samples)', fontsize=14)
+               '1.0={0} samples)'.format(n_trg), fontsize=14)
     plt.ylabel('Accuracy', fontsize=14)
     plt.xlim([4e-2, 1.3])
     plt.ylim([0., 1.])
@@ -67,48 +68,81 @@ def plot_results(fname):
     plt.show()
 
 
-if __name__ == "__main__":
+def main(mode=2, reps=10, cluster_spec=[1,2,3,[4,5],[6,[7,8]]]):
     flatten = lambda l: flatten(l[0]) + (flatten(l[1:]) if len(l) > 1 else []) if type(l) is list else [l]
-    cluster_spec = [1, 2, [3, 4]]
     n_cluster = len(flatten(cluster_spec))
+    k_nmf = n_cluster
     print n_cluster
 
-    fname = 'res_mtl_1v2.npz'
-    plot_results(fname)
+    fname = 'res_mtl_m{0}_r{1}.npz'.format(mode, reps)
 
-    n_trg = 600
-    n_src = 600
+    n_trg = 1500
+    n_src = 1500
 
-    reps = 30
-    mix = [0.0, 0.05, 0.1, 0.2]
+    mix = [0.0, 0.05, 0.1, 0.2, 0.3, 1.0]
     percs = np.logspace(-1.3, -0, 12)[[0,1,2,3,4,5,6,9,11]]
-    #percs = [0.05, 0.075, 0.1, 0.2, 0.5, 1.0]
-
     aris = np.zeros((reps, len(percs), len(mix)))
 
-    # np.random.seed(1)
+    # mix = [0.0, 0.2]
+    # percs = np.array([0.25, 0.5, 0.75, 1.0])
+    # aris = np.zeros((reps, len(percs), len(mix)))
+
+    np.random.seed(1)
     for r in range(reps):
+        # 1. Generate scRNA data
         data, labels = generate_toy_data(num_genes=1000,
                                          num_cells= n_trg+n_src,
                                          cluster_spec=cluster_spec)
-        print data.shape
-        print len(labels)
-        # convert labels to np.array
-        labels = np.array(labels, dtype=np.int)
-        inds = np.random.permutation(n_trg+n_src)
-
+        # 2. Split source and target according to specified mode/setting
+        src, trg, src_labels, trg_labels = split_source_target(data, labels,
+                                            target_ncells=n_trg, source_ncells=n_src,
+                                            mode=mode, source_clusters = None,
+                                            noise_target=False, noise_sd=0.1)
+        trg_labels = np.array(trg_labels, dtype=np.int)
+        src_labels = np.array(src_labels, dtype=np.int)
+        # 3.a. Subsampling order for target
+        inds = np.random.permutation(trg_labels.size)
+        # 3.b. Use perfect number of latent states for nmf and sc3
+        if not mode == 2:
+            n_cluster = np.unique(trg_labels).size
+            k_nmf = np.unique(src_labels).size
+        # 3.c. Target data subsampling loop
         for i in range(len(percs)):
             n_trg_perc = np.int(n_trg*percs[i])
-            trg = data[:, inds[:n_trg_perc]].copy()
-            trg_labels = labels[inds[:n_trg_perc]].copy()
-            src = data[:, inds[n_trg:]].copy()
-            src_labels = labels[inds[n_trg:]].copy()
-
+            p_trg = trg[:, inds[:n_trg_perc]].copy()
+            p_trg_labels = trg_labels[inds[:n_trg_perc]].copy()
+            # 4. MTL/DA mixing parameter loop
             for m in range(len(mix)):
-                aris[r, i, m] = single_run(trg, trg_labels, src, src_labels, mix=mix[m], n_cluster=n_cluster)
+                aris[r, i, m] = single_run(p_trg.copy(), p_trg_labels.copy(), src.copy(), src_labels.copy(),
+                                           mix=mix[m], n_cluster=n_cluster, k_nmf=k_nmf)
 
     # save the result and then plot
-    np.savez(fname, aris=aris, percs=percs, reps=reps, mix=mix)
+    np.savez(fname, aris=aris, percs=percs, reps=reps, mix=mix, n_src=n_src, n_trg=n_trg)
     plot_results(fname)
-
     print('Done.')
+
+
+if __name__ == "__main__":
+    main(mode=2, reps=10)
+
+    # fname = 'res_mtl_m4_r50.npz'
+    # plot_results(fname)
+
+    # np.random.seed(2)
+    # data, labels = generate_toy_data(num_genes=1000,
+    #                                  num_cells= 1000,
+    #                                  cluster_spec=[1,2,3,4])
+    #
+    # src, trg, src_labels, trg_labels = split_source_target(data, labels,
+    #                                         target_ncells=80, source_ncells=500,
+    #                                         mode=4, source_clusters = None,
+    #                                         noise_target=False, noise_sd=0.1)
+    # trg_labels = np.array(trg_labels, dtype=np.int)
+    # src_labels = np.array(src_labels, dtype=np.int)
+    #
+    # print 'Src: ', np.unique(src_labels), src_labels.size
+    # print 'Trg: ', np.unique(trg_labels), trg_labels.size
+    #
+    # ari = single_run(trg, trg_labels, src, src_labels, mix=0.5, n_cluster=4)
+    #
+    # print 'Result: ', ari

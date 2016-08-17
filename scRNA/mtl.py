@@ -127,17 +127,21 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
 
 
 def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None, metric='euclidean', mixture=0.75, nmf_k=4):
+    if mixture == 0.0:
+        print('No MTL used (mixture={0})'.format(mixture))
+        return distances(data, [], metric=metric)
+
     # transform data
     X = data_transformation(src_data[gene_ids, :])
-    nmf = decomp.NMF(alpha=1., init='nndsvdar', l1_ratio=0.9, max_iter=1000,
+    nmf = decomp.NMF(alpha=1., init='nndsvdar', l1_ratio=0.5, max_iter=1000,
         n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
     H = nmf.components_
     # print nmf.reconstruction_err_
     # print H
     if src_labels is not None:
+        print 'Labels in src: ', np.unique(src_labels)
         print 'ARI: ', metrics.adjusted_rand_score(src_labels, np.argmax(H, axis=0))
-
 
     # reconstruct given dataset using the Pfizer dictionary
     H = np.random.randn(nmf_k, data.shape[1])
@@ -150,10 +154,12 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
         H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
 
     if trg_labels is not None:
+        print 'Labels in trg: ', np.unique(trg_labels)
         print 'ARI: ', metrics.adjusted_rand_score(trg_labels, np.argmax(H, axis=0))
 
     H2 = np.zeros((nmf_k, data.shape[1]))
-    H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = 1
+    H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = 1.
+    # H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = np.max(H, axis=0)
     print H2
 
     # convex combination of vanilla distance and nmf distance
@@ -165,6 +171,40 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     print 'Max dists: ', np.max(dist1), np.max(dist2)
     normalizer = np.max(dist1) / np.max(dist2)
     dist2 *= normalizer
+
+    # import scipy.stats as stats
+    # import matplotlib.pyplot as plt
+    #
+    # plt.figure(1)
+    # print 'Number of class 2 datapoints is {0} of {1}'.format(np.sum(trg_labels==1), trg_labels.size)
+    #
+    # plt.subplot(1, 3, 1)
+    # kurts = stats.kurtosis(H, fisher=False, axis=0)
+    # sinds = np.argsort(kurts)
+    # inds = np.where(trg_labels[sinds] == 1)[0]
+    #
+    # plt.plot(np.arange(sinds.size), kurts[sinds], '.r', markersize=4)
+    # plt.plot(inds, kurts[sinds[inds]], '.b', markersize=4)
+    #
+    #
+    # plt.subplot(1, 3, 2)
+    # dists = np.sum( (np.abs(Y - W.dot(H))**2. ), axis=0)
+    # sinds = np.argsort(dists)
+    # inds = np.where(trg_labels[sinds] == 1)[0]
+    #
+    # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
+    # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
+    #
+    #
+    # plt.subplot(1, 3, 3)
+    # dists = np.sum( (np.abs(Y - W.dot(H2))**2. ), axis=0)
+    # sinds = np.argsort(dists)
+    # inds = np.where(trg_labels[sinds] == 1)[0]
+    #
+    # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
+    # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
+    #
+    # plt.show()
 
     print np.max(dist1), np.max(dist2)
     return mixture*dist2 + (1.-mixture)*dist1
