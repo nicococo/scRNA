@@ -58,7 +58,7 @@ def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
     return np.where((res_l >= lower_bound) & (res_h <= upper_bound))[0]
 
 
-def data_transformation(data):
+def data_transformation_log2(data):
     """
     :param data: transcripts x cells data matrix
     :return: log2 transformed data
@@ -66,6 +66,13 @@ def data_transformation(data):
     print('SC3 log2 data transformation.')
     return np.log2(data + 1.)
 
+def data_transformation_null(data):
+    """
+    :param data: transcripts x cells data matrix
+    :return: log2 transformed data
+    """
+    print('SC3 null data transformation.')
+    return data
 
 def distances(data, gene_ids, metric='euclidean'):
     """

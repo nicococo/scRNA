@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import decomposition as decomp
 import sklearn.metrics as metrics
 
-from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation, distances
+from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation_log2, data_transformation_null, distances
 from utils import load_dataset_tsv
 
 
@@ -39,7 +39,7 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
 
 
 def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
-                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75):
+                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None):
     pdata, pgene_ids, labels = load_dataset_tsv(fmtl, fgenes=fmtl_geneids)
     num_transcripts, num_cells = data.shape
 
@@ -55,7 +55,7 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     remain_inds = np.intersect1d(remain_inds, res)
 
     # transform data
-    X = data_transformation(A[remain_inds, :])
+    X = data_transformation_fun(A[remain_inds, :])
     pgene_ids = pgene_ids[remain_inds]
 
     # find (and translate) a common set of genes
