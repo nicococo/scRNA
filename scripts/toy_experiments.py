@@ -60,10 +60,10 @@ def SC3_clustering(target_data, num_clusters=4):
     min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
 
     # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=2, num_expr_genes=20))
-    # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
+    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
-    cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(sc.distances, metric='euclidean'))
+    # cp.set_data_transformation(sc.data_transformation)
+    cp.add_distance_calculation(partial(sc.distances, metric='pearson'))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
@@ -73,8 +73,46 @@ def SC3_clustering(target_data, num_clusters=4):
     cp.apply(pc_range=[min_pca_comp, max_pca_comp])
 
     SC3_labels = cp.cluster_labels
-
     return SC3_labels
+
+
+def SC3_original_clustering(target_data, num_clusters=4):
+    import rpy2.robjects as robjects
+    from rpy2.robjects.packages import importr
+
+    # doParallel = importr('doParallel', lib_loc="C:/Users/Bettina/Documents/R/win-library/3.3")
+    # base = importr('base')
+    # print(base._libPaths())
+    # base._libPaths("C:/Users/Bettina/Documents/R/win-library/3.3")
+    # print(base._libPaths())
+    SC3_original = importr('SC3')
+    # doParallel = importr('doParallel')
+
+    data_as_row = np.reshape(np.transpose(target_data), newshape=(1, -1))
+    data_in_r_as_row = robjects.IntVector(data_as_row[0])
+    data_in_r = robjects.r['matrix'](data_in_r_as_row, nrow=target_data.shape[0])
+    data_in_r.colnames = robjects.StrVector(map(str, np.array(range(target_data.shape[1]))))
+    data_in_r.rownames = robjects.StrVector(map(str, np.array(range(target_data.shape[0]))))
+
+    SC3_original.sc3(data_in_r, ks=num_clusters, interactivity=False, cell_filter=False, gene_filter=True)
+
+    robjects.r('d <- sc3.interactive.arg$cons.table')
+    robjects.r('res <- d[d[,1] == "pearson" & d[,2] == "PCA" & d[,3] == "4"]')
+    robjects.r('clust_res <- res[[4]]')
+    robjects.r('hc <- clust_res[[3]]')
+    robjects.r('clusts <- cutree(hc, 4)')
+
+    clusts = robjects.r('clusts')
+    SC3_original_labels = np.asarray(clusts)
+
+    # R statements to convert:
+    # d <- sc3.interactive.arg$cons.table
+    # res <- d[1,]    % bzw. res <- d[d[,1] == "euclidean" & d[,2] == "PCA" & d[,3] == "4"]
+    # clust_res <- res[[4]]
+    # hc <- clust.res[[3]]
+    # clusts <- cutree(hc, 4) % bzw. 4 = num_clusters
+
+    return SC3_original_labels
 
 
 def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6):
@@ -86,10 +124,10 @@ def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6):
     min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
 
     # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=2, num_expr_genes=20))
-    # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.98, non_zero_threshold=0))
+    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
-    cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric='euclidean', mixture=mixture))
+    # cp.set_data_transformation(sc.data_transformation)
+    cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric='pearson', mixture=mixture, nmf_k=num_clusters))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
@@ -141,79 +179,78 @@ def NMF_clustering(data, num_clusters=4):
 
 if __name__ == "__main__":
     # Toy experiment parameters
-    reps = 10  # 10, number of repetitions
+    reps = 10  # 50, number of repetitions
 
     # Data generation parameters
-    num_genes = 5000  # 10000, number of genes
+    num_genes = 1000  # 5000, number of genes
     # num_cells = 1000  # 1000, number of cells
-    num_cells_source = 500  # 1000
-    target_sizes = [50, 100, 500]  # [50, 100, 500, 1000, 5000, 10000]
-    true_num_clusters = 4  # 4, number of clusters
+    num_cells_overall = 1000  # 500
+    target_sizes = [50, 100, 500, 950]  # [50, 100, 250, 500]
+    # true_num_clusters = 4  # 4, number of clusters
+    cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
-    total_counts_mode = 3  # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3=simulation from Len et al
+    # total_counts_mode = 3  # 3, How to generate the total counts, 1 = Power law, 2 = Negative Binomial Distribution, 3=simulation from Len et al
 
     # Parameters for splitting data in source and target set
     # proportion_target = 0.5 # 0.4, How much of the data will be target data? Not exact for mode 3 and 4, where the proportion is applied to clusters not cells.
-    splitting_mode = 2  # 2, Splitting mode: 1 = split randomly, 2 = split randomly, but stratified, 3 = Have some overlapping and some exclusive clusters,
-    # 4 = have only non-overlapping clusters
+    splitting_mode = 2
+    # Splitting mode: 1 = split randomly,
+    #                 2 = split randomly, but stratified,
+    #                 3 = split randomly, but anti-stratified [not implemented]
+    #                 4 = Have some overlapping and some exclusive clusters,
+    #                 5 = have only non-overlapping clusters
+    #                 6 = Define source matrix clusters
+    source_clusters = None  # for splitting_mode=6
 
     # new Parameters from R code
     # gene_length = 1000  # 1000, assumed length of genes
-    dirichlet_parameter_num_de_genes = 10  # 10, Dirichlet parameter for number of DE genes, between 0 and inf, bigger values numbers more similar
+    # dirichlet_parameter_num_de_genes = 10  # 10, Dirichlet parameter for number of DE genes, between 0 and inf, bigger values numbers more similar
     gamma_shape = 2
     gamma_rate = 2
     # nb_dispersion = 0.1
 
     # Parameters of other simulations (not needed for total_counts_mode = 3)
-    shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
-    upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
-    dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
+    # shape_power_law = 0.1  # 0.1, shape parameter of the power law -  between 0 and 1, the smaller this value the more extreme the power law
+    # upper_bound_counts = 1000000  # 1000000, upper bound for the total counts
+    # dirichlet_parameter_counts = 0.05  # 0.05, Dirichlet parameter for the individual counts, between 0 and inf (not too high - otherwise error),
     # inverse noise parameter: bigger values make counts within cluster more similar (splitting the total abundances in more equal parts for each cell)
-    binomial_parameter = 1e-05  # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
+    # binomial_parameter = 1e-05  # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
 
     #  Clustering parameters
     NMF_num_clusters = 4  # 4, number of clusters for NMF
     SC3_num_clusters = 4  # 4, number of clusters for SC3
     SC3_MTL_num_clusters = 4  # 4, number of clusters for SC3_MTL
     # SC3_MTL_mixture_parameter = 0.1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
-    SC3_MTL_mixtures = [0.2, 0.5, 0.7]  # [0.1, 0.2, 0.5, 0.8]
+    SC3_MTL_mixtures = [0.1, 0.3, 1.0]  # [0.1, 0.2, 0.5, 0.8]
 
     # Save directories
     fig_filename = 'simulation_results.png'
     npz_filename = 'simulation_results.npz'
 
-    # Initialization
-    SC3_ARI_means = np.zeros(len(target_sizes))
-    SC3_ARI_errorbars = np.zeros(len(target_sizes))
-    NMF_ARI_means = np.zeros(len(target_sizes))
-    NMF_ARI_errorbars = np.zeros(len(target_sizes))
-    SC3_MTL_ARI_means = np.zeros((len(target_sizes), len(SC3_MTL_mixtures)))
-    SC3_MTL_ARI_errorbars = np.zeros((len(target_sizes), len(SC3_MTL_mixtures)))
+    # Run toy experiments
+    ARIs_SC3 = np.zeros((reps, len(target_sizes)))
+    ARIs_SC3_original = np.zeros((reps, len(target_sizes)))
+    ARIs_NMF = np.zeros((reps, len(target_sizes)))
+    ARIs_SC3_MTL = np.zeros((reps, len(target_sizes), len(SC3_MTL_mixtures)))
+    # ARIs_MTL_NMF = np.zeros((reps, len(target_sizes), len(SC3_MTL_mixtures)))
+    for repetition in range(reps):
+        print str(((np.float(repetition) + 1) / reps) * 100), "% of repetitions done."
+        # Generate toy data
+        [toy_data, true_toy_labels] = generate_toy_data(num_genes=num_genes, num_cells=num_cells_overall, cluster_spec=cluster_spec,
+                                                        dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size,
+                                                        gamma_shape=gamma_shape, gamma_rate=gamma_rate)
 
-    for target_size_index in range(len(target_sizes)):
-        num_cells_target = target_sizes[target_size_index]
-        # Run toy experiments
-        ARIs_SC3 = np.zeros(reps)
-        ARIs_NMF = np.zeros(reps)
-        ARIs_SC3_MTL = np.zeros((reps, len(SC3_MTL_mixtures)))
-        # ARIs_MTL_NMF = np.zeros(reps)
-
-        num_cells = num_cells_source+num_cells_target
-        proportion_target = float(num_cells_target)/num_cells
-
-        for repetition in range(reps):
-            print str(((np.float(repetition)+1)/reps)*100), "% of repetitions of target size ", str(num_cells_target), " done."
-            # Generate toy data
-
-            [toy_data, true_toy_labels] = generate_toy_data(num_genes=num_genes, num_cells=num_cells, num_clusters=true_num_clusters,
-                                                            dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, mode=total_counts_mode,
-                                                            shape_power_law=shape_power_law, upper_bound_counts=upper_bound_counts,
-                                                            dirichlet_parameter_counts=dirichlet_parameter_counts, binomial_parameter=binomial_parameter,
-                                                            dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, gamma_shape=gamma_shape,
-                                                            gamma_rate=gamma_rate)
+        for target_size_index in range(len(target_sizes)):
+            num_cells_target = target_sizes[target_size_index]
+            num_cells_source = num_cells_overall - num_cells_target
 
             # Split in source and target data
-            toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data, true_toy_labels, proportion_target, splitting_mode)
+            toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data=toy_data, true_toy_labels=true_toy_labels,
+                                                                                                                   target_ncells=num_cells_target,
+                                                                                                                   source_ncells=num_cells_source, mode=splitting_mode,
+                                                                                                                   source_clusters=source_clusters, noise_target=False,
+                                                                                                                   noise_sd=0.5)
+
             # print "source data:", toy_data_source.shape
             # print "target data:", toy_data_target.shape
 
@@ -225,39 +262,46 @@ if __name__ == "__main__":
 
             # Run SC3 on target data
             SC3_labels = SC3_clustering(toy_data_target, SC3_num_clusters)
-            ARIs_SC3[repetition] = adjusted_rand_score(true_toy_labels_target, SC3_labels)
+            SC3_original_labels = SC3_original_clustering(toy_data_target, SC3_num_clusters)
+            ARIs_SC3[repetition, target_size_index] = adjusted_rand_score(true_toy_labels_target, SC3_labels)
+            ARIs_SC3_original[repetition, target_size_index] = adjusted_rand_score(true_toy_labels_target, SC3_original_labels)
 
             # Run SC3 with MTL distances
             for mixture_index in range(len(SC3_MTL_mixtures)):
                 SC3_MTL_mixture_parameter = SC3_MTL_mixtures[mixture_index]
                 SC3_MTL_labels = SC3_MTL_clustering(toy_data_target, toy_data_source, SC3_MTL_num_clusters, SC3_MTL_mixture_parameter)
-                ARIs_SC3_MTL[repetition, mixture_index] = adjusted_rand_score(true_toy_labels_target, SC3_MTL_labels)
+                ARIs_SC3_MTL[repetition, target_size_index, mixture_index] = adjusted_rand_score(true_toy_labels_target, SC3_MTL_labels)
 
             # Run NMF on target data
             NMF_labels = NMF_clustering(toy_data_target, NMF_num_clusters)
-            ARIs_NMF[repetition] = adjusted_rand_score(true_toy_labels_target, NMF_labels)
+            ARIs_NMF[repetition, target_size_index] = adjusted_rand_score(true_toy_labels_target, NMF_labels)
 
             # Run MTL NMF on target data
             # TODO
             # MTL_NMF_labels = MTL_NMF_clustering(toy_data_target, toy_data_source, num_clusters=MTL_NMF_num_clusters)
             # ARIs_MTL_NMF[repetition] = adjusted_rand_score(true_toy_labels_target, MTL_NMF_labels)
 
-        SC3_ARI_means[target_size_index] = np.mean(ARIs_SC3)
-        SC3_ARI_CIs = sms.DescrStatsW(ARIs_SC3).tconfint_mean()
-        SC3_ARI_errorbars[target_size_index] = (SC3_ARI_CIs[1] - SC3_ARI_CIs[0])/2
-        NMF_ARI_means[target_size_index] = np.mean(ARIs_NMF)
-        NMF_ARI_CIs = sms.DescrStatsW(ARIs_NMF).tconfint_mean()
-        NMF_ARI_errorbars[target_size_index] = (NMF_ARI_CIs[1] - NMF_ARI_CIs[0])/2
-        SC3_MTL_ARI_means[target_size_index] = np.mean(ARIs_SC3_MTL, axis=0)
-        SC3_MTL_ARI_CIs = sms.DescrStatsW(ARIs_SC3_MTL).tconfint_mean()
-        SC3_MTL_ARI_errorbars[target_size_index] = (SC3_MTL_ARI_CIs[1] - SC3_MTL_ARI_CIs[0])/2
+        # np.savez(npz_filename, SC3_ARI_means=SC3_ARI_means, SC3_ARI_errorbars=SC3_ARI_errorbars, NMF_ARI_means=NMF_ARI_means, NMF_ARI_errorbars=NMF_ARI_errorbars,
+        #         SC3_MTL_ARI_means=SC3_MTL_ARI_means, SC3_MTL_ARI_errorbars=SC3_MTL_ARI_errorbars, SC3_MTL_mixtures=SC3_MTL_mixtures,
+        #         SC3_MTL_num_clusters=SC3_MTL_num_clusters, SC3_num_clusters=SC3_num_clusters, NMF_num_clusters=NMF_num_clusters, gamma_rate=gamma_rate,
+        #         gamma_shape=gamma_shape, dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, splitting_mode=splitting_mode,
+        #         total_counts_mode=total_counts_mode, dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, true_num_clusters=true_num_clusters,
+        #         target_sizes=target_sizes, num_cells_source=num_cells_source, num_genes=num_genes, reps=reps)
 
-        np.savez(npz_filename, SC3_ARI_means=SC3_ARI_means, SC3_ARI_errorbars=SC3_ARI_errorbars, NMF_ARI_means=NMF_ARI_means, NMF_ARI_errorbars=NMF_ARI_errorbars,
-                 SC3_MTL_ARI_means=SC3_MTL_ARI_means, SC3_MTL_ARI_errorbars=SC3_MTL_ARI_errorbars, SC3_MTL_mixtures=SC3_MTL_mixtures,
-                 SC3_MTL_num_clusters=SC3_MTL_num_clusters, SC3_num_clusters=SC3_num_clusters, NMF_num_clusters=NMF_num_clusters, gamma_rate=gamma_rate,
-                 gamma_shape=gamma_shape, dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, splitting_mode=splitting_mode,
-                 total_counts_mode=total_counts_mode, dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, true_num_clusters=true_num_clusters,
-                 target_sizes=target_sizes, num_cells_source=num_cells_source, num_genes=num_genes, reps=reps)
+    SC3_ARI_means = np.mean(ARIs_SC3, axis=0)
+    SC3_ARI_CIs = sms.DescrStatsW(ARIs_SC3).tconfint_mean()
+    SC3_ARI_errorbars = (SC3_ARI_CIs[1] - SC3_ARI_CIs[0])/2
+    SC3_original_ARI_means = np.mean(ARIs_SC3_original, axis=0)
+    SC3_original_ARI_CIs = sms.DescrStatsW(ARIs_SC3_original).tconfint_mean()
+    SC3_original_ARI_errorbars = (SC3_original_ARI_CIs[1] - SC3_original_ARI_CIs[0]) / 2
+    NMF_ARI_means = np.mean(ARIs_NMF, axis=0)
+    NMF_ARI_CIs = sms.DescrStatsW(ARIs_NMF).tconfint_mean()
+    NMF_ARI_errorbars = (NMF_ARI_CIs[1] - NMF_ARI_CIs[0])/2
+    SC3_MTL_ARI_means = np.mean(ARIs_SC3_MTL, axis=0)
+    SC3_MTL_ARI_errorbars = np.zeros((len(target_sizes), len(SC3_MTL_mixtures)))
+    for mixture_index in range(len(SC3_MTL_mixtures)):
+        SC3_MTL_ARI_CIs = sms.DescrStatsW(ARIs_SC3_MTL[:, :, mixture_index]).tconfint_mean()
+        SC3_MTL_ARI_errorbars[:, mixture_index] = (SC3_MTL_ARI_CIs[1] - SC3_MTL_ARI_CIs[0])/2
 
     # Plot
     fig = plt.figure()
@@ -268,35 +312,40 @@ if __name__ == "__main__":
     ax.axis([0, max(target_sizes)+100, -0.1, 1.1])
     linestyle = {"linestyle":"--", "linewidth":4, "markeredgewidth":5, "elinewidth":5, "capsize":10}
     linestyle2 = {"linestyle":":", "linewidth":4, "markeredgewidth":5, "elinewidth":5, "capsize":10}
-    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(SC3_MTL_mixtures)+2)))
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(SC3_MTL_mixtures)+3)))
     c = next(color)
     ax.errorbar(target_sizes, SC3_ARI_means, yerr=SC3_ARI_errorbars, color=c, label='SC3', **linestyle)
+    c = next(color)
+    ax.errorbar(target_sizes, SC3_original_ARI_means, yerr=SC3_original_ARI_errorbars, color=c, label='SC3 original', **linestyle)
     c = next(color)
     ax.errorbar(target_sizes, NMF_ARI_means, yerr=NMF_ARI_errorbars, color=c, label='NMF', **linestyle)
 
     for mixture_index in range(len(SC3_MTL_mixtures)):
         c = next(color)
-        ax.errorbar(target_sizes, SC3_MTL_ARI_means[:, mixture_index], yerr=NMF_ARI_errorbars[mixture_index], color=c, label='SC3_MTL with mixture ' + str(SC3_MTL_mixtures[mixture_index]),
+        ax.errorbar(target_sizes, SC3_MTL_ARI_means[:, mixture_index], yerr=SC3_MTL_ARI_errorbars[:,mixture_index], color=c, label='SC3_MTL with mixture ' +
+                                                                                                                                   str(SC3_MTL_mixtures[mixture_index]),
                     **linestyle2)
     ax.legend(loc='best', fontsize='12')
-    fig.savefig(fig_filename)
-    np.savez(npz_filename, SC3_ARI_means=SC3_ARI_means, SC3_ARI_errorbars=SC3_ARI_errorbars, NMF_ARI_means=NMF_ARI_means, NMF_ARI_errorbars=NMF_ARI_errorbars,
-             SC3_MTL_ARI_means=SC3_MTL_ARI_means, SC3_MTL_ARI_errorbars=SC3_MTL_ARI_errorbars, SC3_MTL_mixtures=SC3_MTL_mixtures,
-             SC3_MTL_num_clusters=SC3_MTL_num_clusters, SC3_num_clusters=SC3_num_clusters, NMF_num_clusters=NMF_num_clusters, gamma_rate=gamma_rate,
-             gamma_shape=gamma_shape, dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, splitting_mode=splitting_mode,
-             total_counts_mode=total_counts_mode, dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, true_num_clusters=true_num_clusters,
-             target_sizes=target_sizes, num_cells_source=num_cells_source, num_genes=num_genes, reps=reps)
+    # fig.savefig(fig_filename)
+    # np.savez(npz_filename, SC3_ARI_means=SC3_ARI_means, SC3_ARI_errorbars=SC3_ARI_errorbars, NMF_ARI_means=NMF_ARI_means, NMF_ARI_errorbars=NMF_ARI_errorbars,
+    #         SC3_MTL_ARI_means=SC3_MTL_ARI_means, SC3_MTL_ARI_errorbars=SC3_MTL_ARI_errorbars, SC3_MTL_mixtures=SC3_MTL_mixtures,
+    #         SC3_MTL_num_clusters=SC3_MTL_num_clusters, SC3_num_clusters=SC3_num_clusters, NMF_num_clusters=NMF_num_clusters, gamma_rate=gamma_rate,
+    #         gamma_shape=gamma_shape, dirichlet_parameter_num_de_genes=dirichlet_parameter_num_de_genes, splitting_mode=splitting_mode,
+    #         total_counts_mode=total_counts_mode, dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size, true_num_clusters=true_num_clusters,
+    #         target_sizes=target_sizes, num_cells_source=num_cells_source, num_genes=num_genes, reps=reps)
     plt.show()
-    pdb.set_trace()
 
 # To save the last rep as an example dataset as npz
 # SC3_ARI = adjusted_rand_score(true_toy_labels_target, SC3_labels)
 # NMF_ARI = adjusted_rand_score(true_toy_labels_target, NMF_labels)
-# np.savez('example_toy_data.npz', toy_data_target=toy_data_target, true_toy_labels_target=true_toy_labels_target, SC3_labels=SC3_labels, NMF_labels=NMF_labels, NMF_num_clusters=NMF_num_clusters, SC3_num_clusters=SC3_num_clusters, SC3_ARI=SC3_ARI, NMF_ARI=NMF_ARI)
+# np.savez('example_toy_data.npz', toy_data_target=toy_data_target, true_toy_labels_target=true_toy_labels_target, SC3_labels=SC3_labels, NMF_labels=NMF_labels,
+# NMF_num_clusters=NMF_num_clusters, SC3_num_clusters=SC3_num_clusters, SC3_ARI=SC3_ARI, NMF_ARI=NMF_ARI)
 
 # Load npz data and save as tsv
 # data=np.load('example_toy_data.npz')
 # np.savetxt('example_toy_data.tsv', data["toy_data_target"], fmt='%u', delimiter='\t')
 # np.savetxt('example_toy_data_labels.tsv', data["true_toy_labels_target"], fmt='%u', delimiter='\t')
 # np.savetxt('example_toy_data_SC3labels.tsv', data["SC3_labels"], fmt='%u', delimiter='\t')
+
+
 
