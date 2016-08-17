@@ -34,6 +34,21 @@ parser.add_argument("--nmf_k", help="(NMF) Number of latent components (default 
 parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=1.0, type = float)
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
 
+parser.add_argument(
+    "--transform",
+    help = "Transform data to log2(x+1)",
+    dest = "transform",
+    action = 'store_true'
+)
+parser.add_argument(
+    "--no-transform",
+    help = "Disable transform data to log2(x+1)",
+    dest = "transform",
+    action = 'store_false'
+)
+parser.set_defaults(transform = True)
+
+
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
 print arguments
@@ -56,7 +71,10 @@ print('(Max/Min) PCA components: ({0}/{1})'.format(max_pca_comp, min_pca_comp))
 cp.add_cell_filter(partial(sc.cell_filter, num_expr_genes=arguments.cf_min_expr_genes, non_zero_threshold=arguments.cf_non_zero_threshold))
 cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=arguments.gf_perc_consensus_genes, non_zero_threshold=arguments.gf_non_zero_threshold))
 
-cp.set_data_transformation(sc.data_transformation)
+if arguments.transform:
+    cp.set_data_transformation(sc.data_transformation_log2)
+else:
+    cp.set_data_transformation(sc.data_transformation_null)
 
 dist_list = arguments.sc3_dists.split(",")
 print('\nThere are {0} distances given.'.format(len(dist_list)))
@@ -69,7 +87,8 @@ for ds in dist_list:
                                         mixture=arguments.mtl_mixture,
                                         nmf_alpha=arguments.nmf_alpha,
                                         nmf_k=arguments.nmf_k,
-                                        nmf_l1=arguments.nmf_l1))
+                                        nmf_l1=arguments.nmf_l1,
+                                        data_transformation_fun=cp.data_transf))
 
 transf_list = arguments.sc3_transf.split(",")
 print('\nThere are {0} transformations given.'.format(len(transf_list)))
