@@ -110,6 +110,10 @@ class SC3Pipeline(object):
 
 
     def apply(self, pc_range=[4, 10]):
+        # check range
+        assert pc_range[0] > 0
+        assert pc_range[1] <= self.num_cells
+
         # 1. cell filter
         self.remain_cell_inds = np.arange(0, self.num_cells)
         for c in self.cell_filter_list:
@@ -155,20 +159,19 @@ class SC3Pipeline(object):
 
         # 6. intermediate  clustering
         print '6. Intermediate clustering.'
+        range_inds = range(pc_range[0], pc_range[1]+1)
+        if len(range_inds) > 15:
+            # subsample 15 inds from this range
+            range_inds = np.random.permutation(range_inds)[:15]
+            print 'Subsample 15 eigenvectors for intermediate clustering: ', range_inds
+        else:
+            print('Using complete range of eigenvectors from {0} to {1}.'.format(pc_range[0], pc_range[1]))
         labels = list()
         for cluster in self.intermediate_clustering_list:
             for t in range(len(transf)):
                 _, deigv = transf[t]
-
-                range_inds = range(pc_range[0], pc_range[1]+1)
-                if len(range_inds) > 15:
-                    # subsample 15 inds from this range
-                    range_inds = np.random.permutation(range_inds)[:15]
-
                 for d in range_inds:
                     labels.append(cluster(deigv[:, :d].reshape((deigv.shape[0], d))))
-
-        print '\nrange inds:\n', range_inds
 
         # 7. consensus clustering
         print '7. Consensus clustering.'
