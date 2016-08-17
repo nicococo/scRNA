@@ -179,7 +179,7 @@ def NMF_clustering(data, num_clusters=4):
 
 if __name__ == "__main__":
     # Toy experiment parameters
-    reps = 10  # 50, number of repetitions
+    reps = 5  # 50, number of repetitions
 
     # Data generation parameters
     num_genes = 1000  # 5000, number of genes
@@ -217,11 +217,11 @@ if __name__ == "__main__":
     # binomial_parameter = 1e-05  # 1e-05, parameter of the negative binomial distribution, between 0 and 1, the greater this value the more extreme the shape
 
     #  Clustering parameters
-    NMF_num_clusters = 4  # 4, number of clusters for NMF
-    SC3_num_clusters = 4  # 4, number of clusters for SC3
-    SC3_MTL_num_clusters = 4  # 4, number of clusters for SC3_MTL
+    NMF_num_clusters = 8  # 4, number of clusters for NMF
+    SC3_num_clusters = 8  # 4, number of clusters for SC3
+    SC3_MTL_num_clusters = 8  # 4, number of clusters for SC3_MTL
     # SC3_MTL_mixture_parameter = 0.1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
-    SC3_MTL_mixtures = [0.1, 0.3, 1.0]  # [0.1, 0.2, 0.5, 0.8]
+    SC3_MTL_mixtures = [0.1, 0.3]  # [0.1, 0.2, 0.5, 0.8]
 
     # Save directories
     fig_filename = 'simulation_results.png'
@@ -239,17 +239,17 @@ if __name__ == "__main__":
         [toy_data, true_toy_labels] = generate_toy_data(num_genes=num_genes, num_cells=num_cells_overall, cluster_spec=cluster_spec,
                                                         dirichlet_parameter_cluster_size=dirichlet_parameter_cluster_size,
                                                         gamma_shape=gamma_shape, gamma_rate=gamma_rate)
-
+        # Split in source and target data
+        toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data=toy_data, true_toy_labels=true_toy_labels,
+                                                                                                               target_ncells=max(target_sizes),
+                                                                                                               source_ncells=num_cells_overall-max(target_sizes),
+                                                                                                               mode=splitting_mode, source_clusters=source_clusters,
+                                                                                                               noise_target=False, noise_sd=0.5)
         for target_size_index in range(len(target_sizes)):
             num_cells_target = target_sizes[target_size_index]
             num_cells_source = num_cells_overall - num_cells_target
 
-            # Split in source and target data
-            toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data=toy_data, true_toy_labels=true_toy_labels,
-                                                                                                                   target_ncells=num_cells_target,
-                                                                                                                   source_ncells=num_cells_source, mode=splitting_mode,
-                                                                                                                   source_clusters=source_clusters, noise_target=False,
-                                                                                                                   noise_sd=0.5)
+
 
             # print "source data:", toy_data_source.shape
             # print "target data:", toy_data_target.shape
