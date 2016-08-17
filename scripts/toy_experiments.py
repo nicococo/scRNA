@@ -168,7 +168,7 @@ def NMF_clustering(data, num_clusters=4):
 
     # Perform NMF clustering
     if num_cells >= num_clusters:
-        nmf = decomp.NMF(alpha=10.1, init='nndsvdar', l1_ratio=0.9, max_iter=1000, n_components=num_clusters, random_state=0, shuffle=True, solver='cd', tol=0.00001,
+        nmf = decomp.NMF(alpha=1., init='nndsvdar', l1_ratio=0.5, max_iter=1000, n_components=num_clusters, random_state=0, shuffle=True, solver='cd', tol=0.00001,
                          verbose=0)
         nmf.fit_transform(X)
         H = nmf.components_
@@ -184,8 +184,8 @@ if __name__ == "__main__":
     # Data generation parameters
     num_genes = 1000  # 5000, number of genes
     # num_cells = 1000  # 1000, number of cells
-    num_cells_overall = 1000  # 500
-    target_sizes = [50, 100, 500, 950]  # [50, 100, 250, 500]
+    num_cells_overall = 500  # 500
+    target_sizes = [50, 100, 250]  # [50, 100, 250, 500]
     # true_num_clusters = 4  # 4, number of clusters
     cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
