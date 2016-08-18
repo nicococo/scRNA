@@ -94,7 +94,8 @@ def SC3_original_clustering(target_data, num_clusters=4):
     data_in_r.colnames = robjects.StrVector(map(str, np.array(range(target_data.shape[1]))))
     data_in_r.rownames = robjects.StrVector(map(str, np.array(range(target_data.shape[0]))))
 
-    SC3_original.sc3(data_in_r, ks=num_clusters, interactivity=False, cell_filter=False, gene_filter=True)
+    SC3_original.sc3(data_in_r, ks=num_clusters, interactivity=False,
+                     cell_filter=False, gene_filter=False, log_scale=False)
 
     robjects.r('d <- sc3.interactive.arg$cons.table')
     robjects.r('res <- d[d[,1] == "pearson" & d[,2] == "PCA" & d[,3] == "{0}"]'.format(num_clusters))

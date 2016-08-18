@@ -24,6 +24,20 @@ parser.add_argument("--sc3_k", help="(SC3) Number of latent components (default 
 parser.add_argument("--sc3_dists", help="(SC3) Comma-separated distances (default euclidean)", default='euclidean', type = str)
 parser.add_argument("--sc3_transf", help="(SC3) Comma-separated transformations (default pca)", default='pca', type = str)
 
+parser.add_argument(
+    "--transform",
+    help="Transform data to log2(x+1)",
+    dest="transform",
+    action='store_true'
+)
+parser.add_argument(
+    "--no-transform",
+    help="Disable transform data to log2(x+1)",
+    dest="transform",
+    action='store_false'
+)
+parser.set_defaults(transform=True)
+
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
 print arguments
@@ -46,7 +60,8 @@ print('(Max/Min) PCA components: ({0}/{1})'.format(max_pca_comp, min_pca_comp))
 cp.add_cell_filter(partial(sc.cell_filter, num_expr_genes=arguments.cf_min_expr_genes, non_zero_threshold=arguments.cf_non_zero_threshold))
 cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=arguments.gf_perc_consensus_genes, non_zero_threshold=arguments.gf_non_zero_threshold))
 
-cp.set_data_transformation(sc.data_transformation)
+if arguments.transform:
+    cp.set_data_transformation(sc.data_transformation_log2)
 
 dist_list = arguments.sc3_dists.split(",")
 print('\nThere are {0} distances given.'.format(len(dist_list)))
@@ -61,8 +76,9 @@ for ts in transf_list:
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method=ts))
 
 cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_cluster))
+cp.set_build_consensus_matrix(sc.build_consensus_matrix)
 cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_cluster))
-cp.apply(pc_range=[min_pca_comp, max_pca_comp])
+cp.apply(pc_range=[min_pca_comp, max_pca_comp], consensus_mode=0)
 
 print cp
 

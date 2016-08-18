@@ -73,8 +73,6 @@ cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=arguments.gf_per
 
 if arguments.transform:
     cp.set_data_transformation(sc.data_transformation_log2)
-else:
-    cp.set_data_transformation(sc.data_transformation_null)
 
 dist_list = arguments.sc3_dists.split(",")
 print('\nThere are {0} distances given.'.format(len(dist_list)))
@@ -97,6 +95,7 @@ for ts in transf_list:
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method=ts))
 
 cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_cluster))
+cp.set_build_consensus_matrix(sc.build_consensus_matrix)
 cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_cluster))
 cp.apply(pc_range=[min_pca_comp, max_pca_comp])
 

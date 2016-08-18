@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import decomposition as decomp
 import sklearn.metrics as metrics
 
-from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation_log2, data_transformation_null, distances
+from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation_log2, distances
 from utils import load_dataset_tsv
 
 
@@ -20,7 +20,6 @@ def gene_names_conversion(gene_ids1, gene_ids2):
 
 def filter_and_sort_genes(gene_ids1, gene_ids2):
     gene_id_map = gene_names_conversion(gene_ids1, gene_ids2)
-
     inds1 = []
     inds2 = []
     # print gene_ids1.size, gene_ids2.size
@@ -33,7 +32,6 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
                 # exactly 1 id found
                 inds1.append(i)
                 inds2.append(ind[0])
-
     # print len(inds1), len(inds2)
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
