@@ -66,13 +66,6 @@ def data_transformation_log2(data):
     print('SC3 log2 data transformation.')
     return np.log2(data + 1.)
 
-def data_transformation_null(data):
-    """
-    :param data: transcripts x cells data matrix
-    :return: log2 transformed data
-    """
-    print('SC3 null data transformation.')
-    return data
 
 def distances(data, gene_ids, metric='euclidean'):
     """
@@ -157,20 +150,29 @@ def transformations(dm, components=5, method='pca'):
     return vecs[:, inds].dot(D.dot(vecs[:, inds].T)), vecs[:, inds]
 
 
-def intermediate_kmeans_clustering(X, k=5, n_init=10, max_iter=10000):
+def intermediate_kmeans_clustering(X, k=5, n_init=10, max_iter=10000, init='k-means++'):
     """
     :param X: cells x d vector
     :param k: number of clusters
+    :param n_init: number of re-starts for k-means
+    :param max_iter: maximum number of iterations per run
+    :param init: initialization strategy for k-means (either 'k-means++' or 'random')
     :return: cells x 1 labels
     """
     kmeans = cluster.KMeans(n_clusters=k, precompute_distances=True, n_init=n_init, max_iter=max_iter,
-                            init='k-means++', n_jobs=1)
+                            init=init, n_jobs=1)
     labels = kmeans.fit_predict(X)
     assert labels.size == X.shape[0]
     return labels
 
 
 def build_consensus_matrix(X):
+    """
+    :param X: n x cells label matrix
+    :return: cells x cells consensus matrix
+    """
+    if len(X.shape) == 1:
+        X = X[np.newaxis, :]
     n, cells = X.shape
     consensus = np.zeros((cells, cells), dtype=np.float)
     for i in range(n):
@@ -186,34 +188,18 @@ def build_consensus_matrix(X):
     return consensus
 
 
-def consensus_clustering(X, n_components=5):
+def consensus_clustering(consensus, n_components=5):
     """
-    :param X: n x cells matrix
+    :param consensus: cells x cells consensus matrix
     :param n_components: number of clusters
     :return: cells x 1 labels
     """
-    cells = X.shape[1]
-    n = X.shape[0]
-    print 'SC3 Build consensus matrix with inputs', X.shape
-    consensus = build_consensus_matrix(X)
-
     print 'SC3 Agglomorative hierarchical clustering.'
     # condensed distance matrix
     cdm = dist.pdist(consensus)
-    #print dm.shape
-    #cdm = dist.squareform(dm)
-    #print cdm.shape, consensus.size
+    # hierarchical clustering
     hclust = spc.linkage(cdm)
-
     labels = spc.fcluster(hclust, n_components, criterion='maxclust')
-    # print np.sort(np.unique(labels)), labels
-
     # import matplotlib.pyplot as plt
     #spc.dendrogram(hclust, truncate_mode='lastp', p=40, show_contracted=True)
-
-    inds = np.argsort(labels)
-    consensus = build_consensus_matrix(X[:, inds])
-    # plt.imshow(consensus, cmap='rainbow')
-    # plt.show()
-
-    return labels, consensus, dist.squareform(cdm)
+    return labels, dist.squareform(cdm)

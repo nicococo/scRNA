@@ -1,5 +1,4 @@
 import numpy as np
-import pdb
 
 
 class SC3Pipeline(object):
@@ -12,6 +11,7 @@ class SC3Pipeline(object):
     dists_list  = None
     dimred_list = None
     intermediate_clustering_list = None
+    build_consensus_matrix = None
     consensus_clustering = None
 
     gene_ids = None
@@ -24,15 +24,13 @@ class SC3Pipeline(object):
     remain_gene_inds = None
     filtered_transf_data = None
 
-    consensus = None
     dists = None
-    intermediate_label_matrix = None
 
     def __init__(self, data, gene_ids=None):
         # init lists
         self.cell_filter_list = list()
         self.gene_filter_list = list()
-        self.data_transf = lambda X: X
+        self.data_transf = lambda x: x
         self.dists_list = list()
         self.dimred_list = list()
         self.intermediate_clustering_list = list()
@@ -48,14 +46,14 @@ class SC3Pipeline(object):
         self.cluster_labels = np.zeros((self.num_cells, 1))
         print('Number of cells = {0}, number of transcripts = {1}'.format(self.num_cells, self.num_transcripts))
 
-
     def set_consensus_clustering(self, consensus_clustering):
         self.consensus_clustering = consensus_clustering
 
+    def set_build_consensus_matrix(self, build_consensus_matrix):
+        self.build_consensus_matrix = build_consensus_matrix
 
     def set_data_transformation(self, data_transf):
         self.data_transf = data_transf
-
 
     def add_cell_filter(self, cell_filter):
         if self.cell_filter_list is None:
@@ -63,13 +61,11 @@ class SC3Pipeline(object):
         else:
             self.cell_filter_list.append(cell_filter)
 
-
     def add_gene_filter(self, gene_filter):
         if self.gene_filter_list is None:
             self.gene_filter_list = list(gene_filter)
         else:
             self.gene_filter_list.append(gene_filter)
-
 
     def add_distance_calculation(self, dist_calculation):
         if self.dists_list is None:
@@ -77,20 +73,17 @@ class SC3Pipeline(object):
         else:
             self.dists_list.append(dist_calculation)
 
-
     def add_dimred_calculation(self, dimred_computation):
         if self.dimred_list is None:
             self.dimred_list = list(dimred_computation)
         else:
             self.dimred_list.append(dimred_computation)
 
-
     def add_intermediate_clustering(self, intermediate_clustering):
         if self.intermediate_clustering_list is None:
             self.intermediate_clustering_list = list(intermediate_clustering)
         else:
             self.intermediate_clustering_list.append(intermediate_clustering)
-
 
     def __str__(self):
         if self.cluster_labels is None:
@@ -108,11 +101,10 @@ class SC3Pipeline(object):
             ret = '{0}-------------------------------------\n'.format(ret)
         return ret
 
-
-    def apply(self, pc_range=[4, 10]):
+    def apply(self, pc_range=[4, 10], sub_sample=True, consensus_mode=0):
         # check range
         assert pc_range[0] > 0
-        assert pc_range[1] <= self.num_cells
+        assert pc_range[1] < self.num_cells
 
         # 1. cell filter
         self.remain_cell_inds = np.arange(0, self.num_cells)
@@ -157,26 +149,34 @@ class SC3Pipeline(object):
                 dres, deigv = t(d)
                 transf.append((dres, deigv))
 
-        # 6. intermediate  clustering
-        print '6. Intermediate clustering.'
+        # 6. intermediate  clustering and consensus matrix generation
+        print '6. Intermediate clustering and consensus matrix generation.'
         range_inds = range(pc_range[0], pc_range[1]+1)
-        if len(range_inds) > 15:
+        if sub_sample and len(range_inds) > 15:
             # subsample 15 inds from this range
             range_inds = np.random.permutation(range_inds)[:15]
             print 'Subsample 15 eigenvectors for intermediate clustering: ', range_inds
         else:
             print('Using complete range of eigenvectors from {0} to {1}.'.format(pc_range[0], pc_range[1]))
-        labels = list()
+
+        cnt = 0.
+        consensus2 = np.zeros((self.remain_cell_inds.size, self.remain_cell_inds.size))
         for cluster in self.intermediate_clustering_list:
             for t in range(len(transf)):
                 _, deigv = transf[t]
+
+                labels = list()
                 for d in range_inds:
-                    labels.append(cluster(deigv[:, :d].reshape((deigv.shape[0], d))))
+                    labels.append(cluster(deigv[:, 0:d].reshape((deigv.shape[0], d))))
+                    if consensus_mode == 0:
+                        consensus2 += self.build_consensus_matrix(np.array(labels[-1]))
+                        cnt += 1.
+
+                if consensus_mode == 1:
+                    consensus2 += self.build_consensus_matrix(np.array(labels))
+                    cnt += 1.
+        consensus2 /= cnt
 
         # 7. consensus clustering
         print '7. Consensus clustering.'
-        self.intermediate_label_matrix = np.array(labels)
-        lbl, consensus, dists  = self.consensus_clustering(np.array(labels))
-        self.cluster_labels = lbl
-        self.consensus = consensus
-        self.dists = dists
+        self.cluster_labels, self.dists  = self.consensus_clustering(consensus2)

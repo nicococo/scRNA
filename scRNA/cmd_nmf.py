@@ -22,6 +22,20 @@ parser.add_argument("--nmf_k", help="(NMF) Number of latent components (default 
 parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=1.0, type = float)
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
 
+parser.add_argument(
+    "--transform",
+    help="Transform data to log2(x+1)",
+    dest="transform",
+    action='store_true'
+)
+parser.add_argument(
+    "--no-transform",
+    help="Disable transform data to log2(x+1)",
+    dest="transform",
+    action='store_false'
+)
+parser.set_defaults(transform=True)
+
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
 print arguments
@@ -43,7 +57,9 @@ A = data[:, remain_cell_inds]
 remain_gene_inds = np.arange(0, num_transcripts)
 res = sc.gene_filter(data, perc_consensus_genes=0.98, non_zero_threshold=arguments.gf_non_zero_threshold)
 remain_gene_inds = np.intersect1d(remain_gene_inds, res)
-X = sc.data_transformation(A[remain_gene_inds, :])
+X = A[remain_gene_inds, :]
+if arguments.transform:
+    X = sc.data_transformation_log2(X)
 print X.shape, np.min(X), np.max(X)
 num_transcripts, num_cells = X.shape
 
@@ -62,7 +78,7 @@ print 'dim(W): ', W.shape
 print 'dim(H): ', H.shape
 
 # Check if labels are available:
-if not labels is None:
+if labels is not None:
     print('\nLabels are available!')
     print 'ARI for max-assignment: ', adjusted_rand_score(labels[remain_cell_inds], np.argmax(H, axis=0))
 
