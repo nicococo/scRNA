@@ -130,7 +130,7 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
         return distances(data, [], metric=metric)
 
     # transform data
-    X = data_transformation(src_data[gene_ids, :])
+    X = data_transformation_log2(src_data[gene_ids, :])
     nmf = decomp.NMF(alpha=1., init='nndsvdar', l1_ratio=0.5, max_iter=1000,
         n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W = nmf.fit_transform(X)
