@@ -53,7 +53,7 @@ def data_transformation(data):
     return np.log2(data + 1.)
 
 
-def SC3_clustering(target_data, num_clusters=4):
+def SC3_clustering(target_data, num_clusters=4, SC3_norm='pearson'):
 
     cp = SC3Pipeline(target_data)
     max_pca_comp = np.ceil(cp.num_cells * 0.07).astype(np.int)
@@ -63,7 +63,7 @@ def SC3_clustering(target_data, num_clusters=4):
     # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
     # cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(sc.distances, metric='pearson'))
+    cp.add_distance_calculation(partial(sc.distances, metric=SC3_norm))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
@@ -77,7 +77,7 @@ def SC3_clustering(target_data, num_clusters=4):
     return SC3_labels
 
 
-def SC3_original_clustering(target_data, num_clusters=4):
+def SC3_original_clustering(target_data, num_clusters=4, SC3_norm='pearson'):
     import rpy2.robjects as robjects
     from rpy2.robjects.packages import importr
 
@@ -99,7 +99,7 @@ def SC3_original_clustering(target_data, num_clusters=4):
                      cell_filter=False, gene_filter=False, log_scale=False)
 
     robjects.r('d <- sc3.interactive.arg$cons.table')
-    robjects.r('res <- d[d[,1] == "euclidean" & d[,2] == "PCA" & d[,3] == "{0}"]'.format(num_clusters))
+    robjects.r('res <- d[d[,1] == "{0}" & d[,2] == "PCA" & d[,3] == "{1}"]'.format(SC3_norm, num_clusters))
     robjects.r('clust_res <- res[[4]]')
     robjects.r('hc <- clust_res[[3]]')
     robjects.r('clusts <- cutree(hc, {0})'.format(num_clusters))
@@ -116,7 +116,7 @@ def SC3_original_clustering(target_data, num_clusters=4):
     return SC3_original_labels
 
 
-def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6, nmf_k=4):
+def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6, nmf_k=4, SC3_norm='pearson'):
     # SC3_MTL_num_clusters = 4 # 4, number of clusters for SC3_MTL
     # SC3_MTL_mixture_parameter = 0.6 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
     cp = SC3Pipeline(target_data)
@@ -128,7 +128,7 @@ def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6, nm
     # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
     # cp.set_data_transformation(sc.data_transformation)
-    cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric='pearson', mixture=mixture, nmf_k=nmf_k))
+    cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric=SC3_norm, mixture=mixture, nmf_k=nmf_k))
 
     cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
@@ -181,13 +181,13 @@ def NMF_clustering(data, num_clusters=4):
 
 if __name__ == "__main__":
     # Toy experiment parameters
-    reps = 10  # 50, number of repetitions
+    reps = 5  # 50, number of repetitions
 
     # Data generation parameters
-    num_genes = 500  # 5000, number of genes
+    num_genes = 200  # 5000, number of genes
     # num_cells = 1000  # 1000, number of cells
-    num_cells_source = 300  # 500
-    target_sizes = [50, 100, 200, 300]  # [50, 100, 250, 500]
+    num_cells_source = 100  # 500
+    target_sizes = [50, 100]  # [50, 100, 250, 500]
     # true_num_clusters = 4  # 4, number of clusters
     cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
     dirichlet_parameter_cluster_size = 10  # 10, Dirichlet parameter for cluster sizes, between 0 and inf, bigger values make cluster sizes more similar
@@ -222,7 +222,8 @@ if __name__ == "__main__":
     num_clusters = 8  # 4, number of clusters
     k_nmf = 8
     # SC3_MTL_mixture_parameter = 0.1 # 0.6, Mixture of distance calculation, between 0 and 1, 0 = use only target data, 1 = use only source data
-    SC3_MTL_mixtures = [0.1, 0.5, 0.9]  # [0.1, 0.2, 0.5, 0.8]
+    SC3_MTL_mixtures = [0.1, 0.9]  # [0.1, 0.2, 0.5, 0.8]
+    SC3_norm = 'euclidean'  # 'euclidean', 'pearson'
 
     # Save directories
     fig_filename = 'simulation_results.png'
@@ -242,11 +243,11 @@ if __name__ == "__main__":
                                                         gamma_shape=gamma_shape, gamma_rate=gamma_rate)
         # Split in source and target data
         toy_data_source, toy_data_target, true_toy_labels_source, true_toy_labels_target = split_source_target(toy_data=toy_data, true_toy_labels=true_toy_labels,
-                                                                                                               target_ncells=max(target_sizes),
+                                                                                                               target_ncells=np.max(target_sizes),
                                                                                                                source_ncells=num_cells_source,
                                                                                                                mode=splitting_mode, source_clusters=source_clusters,
                                                                                                                noise_target=False, noise_sd=0.5)
-        inds = np.random.permutation(np.max(target_sizes))-1
+        inds = np.random.permutation(len(true_toy_labels_target))
 
         # Use perfect number of latent states for nmf and sc3
         if not splitting_mode == 2:
@@ -269,15 +270,15 @@ if __name__ == "__main__":
             # np.savetxt('SC3_labels.txt', SC3_labels, delimiter=' ')
 
             # Run SC3 on target data
-            SC3_labels = SC3_clustering(target_data, num_clusters)
-            SC3_original_labels = SC3_original_clustering(target_data, num_clusters)
+            SC3_labels = SC3_clustering(target_data, num_clusters, SC3_norm)
+            SC3_original_labels = SC3_original_clustering(target_data, num_clusters, SC3_norm)
             ARIs_SC3[repetition, target_size_index] = adjusted_rand_score(target_labels, SC3_labels)
             ARIs_SC3_original[repetition, target_size_index] = adjusted_rand_score(target_labels, SC3_original_labels)
 
             # Run SC3 with MTL distances
             for mixture_index in range(len(SC3_MTL_mixtures)):
                 SC3_MTL_mixture_parameter = SC3_MTL_mixtures[mixture_index]
-                SC3_MTL_labels = SC3_MTL_clustering(target_data, toy_data_source, num_clusters, SC3_MTL_mixture_parameter, k_nmf)
+                SC3_MTL_labels = SC3_MTL_clustering(target_data, toy_data_source, num_clusters, SC3_MTL_mixture_parameter, k_nmf, SC3_norm)
                 ARIs_SC3_MTL[repetition, target_size_index, mixture_index] = adjusted_rand_score(target_labels, SC3_MTL_labels)
 
             # Run NMF on target data
