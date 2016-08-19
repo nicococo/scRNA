@@ -179,4 +179,4 @@ class SC3Pipeline(object):
 
         # 7. consensus clustering
         print '7. Consensus clustering.'
-        self.cluster_labels, self.dists  = self.consensus_clustering(consensus2)
+        self.cluster_labels, self.dists = self.consensus_clustering(consensus2)

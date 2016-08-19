@@ -44,7 +44,8 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
 
 
 def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
-                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None):
+                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
+                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94):
     """
     Multitask SC3 distance function.
     :param data: Target dataset (trg-genes x trg-cells)
@@ -57,6 +58,9 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     :param nmf_alpha: Regularization influence
     :param nmf_l1: [0,1] strength of l1-regularizer within regularization
     :param data_transformation_fun: Target data transformation function (e.g. log2+1 transfor, or None)
+    :param num_expr_genes: cell filter parameter
+    :param non_zero_threshold: cell- and gene-filter parameter
+    :param perc_consensus_genes: gene filter parameter
     :return: Distance matrix trg-cells x trg-cells
     """
     pdata, pgene_ids, labels = load_dataset_tsv(fmtl, fgenes=fmtl_geneids)
@@ -64,13 +68,13 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
 
     # filter cells
     remain_inds = np.arange(0, num_cells)
-    res = cell_filter(pdata, num_expr_genes=2000, non_zero_threshold=2)
+    res = cell_filter(pdata, num_expr_genes=num_expr_genes, non_zero_threshold=non_zero_threshold)
     remain_inds = np.intersect1d(remain_inds, res)
     A = pdata[:, remain_inds]
 
     # filter genes
     remain_inds = np.arange(0, num_transcripts)
-    res = gene_filter(A, perc_consensus_genes=0.94, non_zero_threshold=2)
+    res = gene_filter(A, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
     remain_inds = np.intersect1d(remain_inds, res)
 
     # transform data
@@ -125,7 +129,7 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     return mixture*dist2 + (1.-mixture)*dist1
 
 
-def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, verbosity=1):
+def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel_err=1e-6, verbosity=1):
     """
     Multitask clustering. The source dataset 'Xsrc' is clustered using NMF. Resulting
     dictionary 'W' is then used to reconstruct 'Xtrg'
@@ -145,17 +149,27 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, verbosity=1):
     H = np.random.randn(nmf_k, Xtrg.shape[1])
     a1, a2 = np.where(H < 0.)
     H[a1, a2] *= -1.
-    # TODO: some NMF MU steps
-    for i in range(800):
-        # print 'Iteration: ', i
-        # print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
-        # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
+    n_iter = 0
+    err = 1e10
+    while n_iter < max_iter:
+        n_iter += 1
         H *= W.T.dot(Xtrg) / W.T.dot(W.dot(H))
+        new_err = np.sum(np.abs(Xtrg - W.dot(H)))/np.float(Xtrg.size)  # absolute
+        # new_err = np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)  # frobenius
+        if np.abs((err - new_err) / err) <= rel_err:
+            break
+        err = new_err
+    print '  Number of iterations for reconstruction     : ', n_iter
+    print '  Elementwise absolute reconstruction error   : ', np.sum(np.abs(Xtrg - W.dot(H))) / np.float(Xtrg.size)
+    print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)
 
     H2 = np.zeros((nmf_k, Xtrg.shape[1]))
-    H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = 1
+    H2[(np.argmax(H, axis=0), np.arange(Xtrg.shape[1]))] = 1
     # H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = np.sum(H, axis=0)
-    print H2
+
+    print '  H2 Elementwise absolute reconstruction error: ', np.sum(np.abs(Xtrg - W.dot(H2))) / np.float(Xtrg.size)
+    print '  H2 Fro-norm reconstruction error            : ', np.sqrt(np.sum((Xtrg - W.dot(H2))*(Xtrg - W.dot(H2)))) / np.float(Xtrg.size)
+
     return W, H, H2, Hsrc
 
 
@@ -189,7 +203,7 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     dist1 = distances(data, [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
     # normalize distance
-    print 'Max dists: ', np.max(dist1), np.max(dist2)
+    print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
     dist2 *= np.max(dist1) / np.max(dist2)
 
     # import scipy.stats as stats
@@ -222,6 +236,13 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
     # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
     # plt.show()
-
-    print np.max(dist1), np.max(dist2)
-    return mixture*dist2 + (1.-mixture)*dist1
+    print 'Max dists after normalization: ', np.max(dist1), np.max(dist2)
+    fdist = mixture*dist2 + (1.-mixture)*dist1
+    print mixture
+    if np.any(fdist < 0.0):
+        raise Exception('Final distance matrix contains negative values.')
+    if np.any(np.isnan(fdist)):
+        raise Exception('Final distance matrix contains NaNs.')
+    if np.any(np.isinf(fdist)):
+        raise Exception('Final distance matrix contains Infs.')
+    return fdist

@@ -197,9 +197,11 @@ def consensus_clustering(consensus, n_components=5):
     print 'SC3 Agglomorative hierarchical clustering.'
     # condensed distance matrix
     cdm = dist.pdist(consensus)
-    # hierarchical clustering
-    hclust = spc.linkage(cdm)
-    labels = spc.fcluster(hclust, n_components, criterion='maxclust')
-    # import matplotlib.pyplot as plt
-    #spc.dendrogram(hclust, truncate_mode='lastp', p=40, show_contracted=True)
+    # hierarchical clustering (SC3: complete agglomeration + cutree)
+    hclust = spc.complete(cdm)
+    cutree = spc.cut_tree(hclust, n_clusters=n_components)
+    labels = cutree.reshape(consensus.shape[0])
+    # Below is the hclust code for the older version, fyi
+    # hclust = spc.linkage(cdm)
+    # labels = spc.fcluster(hclust, n_components, criterion='maxclust')
     return labels, dist.squareform(cdm)
