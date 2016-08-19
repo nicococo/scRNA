@@ -83,14 +83,14 @@ def main(mode=2, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]]):
 
     fname = 'res_mtl_m{0}_r{1}.npz'.format(mode, reps)
 
-    n_trg = 2000
-    n_src = 100
+    n_trg = 1000
+    n_src = 1000
 
     mix = [0.0, 0.05, 0.1, 0.2, 0.3, 1.0]
     percs = np.logspace(-1.3, -0, 12)[[0,1,2,3,4,5,6,9,11]]
     aris = np.zeros((reps, len(percs), len(mix)))
 
-    mix = [-1.0, 0.0]
+    mix = [-2.0, -1.0, 0.0, 0.25, 0.99, 1.0]
     # percs = np.array([0.5, 1.0])
     percs = np.logspace(-1.3, -0, 12)[[2,3,4,5,6,9,11]]
     aris = np.zeros((reps, len(percs), len(mix)))
@@ -110,10 +110,11 @@ def main(mode=2, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]]):
         src_labels = np.array(src_labels, dtype=np.int)
         # 3.a. Subsampling order for target
         inds = np.random.permutation(trg_labels.size)
+
         # 3.b. Use perfect number of latent states for nmf and sc3
-        # if not mode == 2:
-        #     n_cluster = np.unique(trg_labels).size
-        #     k_nmf = np.unique(src_labels).size
+        n_cluster = np.unique(trg_labels).size
+        k_nmf = np.unique(src_labels).size
+
         # 3.c. Target data subsampling loop
         for i in range(len(percs)):
             n_trg_perc = np.int(n_trg*percs[i])
@@ -141,7 +142,7 @@ def main(mode=2, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]]):
 
 
 if __name__ == "__main__":
-    main(mode=1, reps=1)
+    main(mode=1, reps=15, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]])
 
     # fname = 'res_mtl_m2_r10.npz'
     # plot_results(fname)

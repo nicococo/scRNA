@@ -6,7 +6,10 @@ from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation_log2
 from utils import load_dataset_tsv
 
 
-def gene_names_conversion(gene_ids1, gene_ids2):
+def gene_names_conversion():
+    """
+    :return: a dictionary for gene ids
+    """
     import utils
     mypath = utils.__file__
     mypath = mypath.rsplit('/', 1)[0]
@@ -19,10 +22,15 @@ def gene_names_conversion(gene_ids1, gene_ids2):
 
 
 def filter_and_sort_genes(gene_ids1, gene_ids2):
+    """
+    Remove genes from either list that do not appear in the other. Sort the indices.
+    :param gene_ids1: list of gene names
+    :param gene_ids2: list of gene names
+    :return: (same-size) lists of indices
+    """
     gene_id_map = gene_names_conversion(gene_ids1, gene_ids2)
     inds1 = []
     inds2 = []
-    # print gene_ids1.size, gene_ids2.size
     for i in range(gene_ids1.size):
         id = gene_ids1[i]
         if gene_id_map.has_key(id):
@@ -32,12 +40,25 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
                 # exactly 1 id found
                 inds1.append(i)
                 inds2.append(ind[0])
-    # print len(inds1), len(inds2)
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
 
 def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
                  mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None):
+    """
+    Multitask SC3 distance function.
+    :param data: Target dataset (trg-genes x trg-cells)
+    :param gene_ids: Target gene ids
+    :param fmtl: Filename of the scRNA source dataset (src-genes x src-cells)
+    :param fmtl_geneids: Filename for corresponding source gene ids
+    :param metric: Which metric should be applied.
+    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
+    :param nmf_k: Number of latent components (cluster)
+    :param nmf_alpha: Regularization influence
+    :param nmf_l1: [0,1] strength of l1-regularizer within regularization
+    :param data_transformation_fun: Target data transformation function (e.g. log2+1 transfor, or None)
+    :return: Distance matrix trg-cells x trg-cells
+    """
     pdata, pgene_ids, labels = load_dataset_tsv(fmtl, fgenes=fmtl_geneids)
     num_transcripts, num_cells = data.shape
 
@@ -53,7 +74,9 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     remain_inds = np.intersect1d(remain_inds, res)
 
     # transform data
-    X = data_transformation_fun(A[remain_inds, :])
+    X = A[remain_inds, :]
+    if data_transformation_fun is not None:
+        X = data_transformation_fun(X)
     pgene_ids = pgene_ids[remain_inds]
 
     # find (and translate) a common set of genes
@@ -90,85 +113,84 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     print 'MTL source {0} genes -> {1} genes.'.format(pgene_ids.size, inds2.size)
     print 'MTL target {0} genes -> {1} genes.'.format(gene_ids.size, inds1.size)
 
-    X = X[inds2, :]
+    W, H, H2, Hsrc = mtl_nmf(X[inds2, :], data[inds1, :], nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1)
+
+    # convex combination of vanilla distance and nmf distance
+    dist1 = distances(data, [], metric=metric)
+    dist2 = distances(W.dot(H2), [], metric=metric)
+    # normalize distance
+    print 'Max dists: ', np.max(dist1), np.max(dist2)
+    normalizer = np.max(dist1) / np.max(dist2)
+    dist2 *= normalizer
+    return mixture*dist2 + (1.-mixture)*dist1
+
+
+def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, verbosity=1):
+    """
+    Multitask clustering. The source dataset 'Xsrc' is clustered using NMF. Resulting
+    dictionary 'W' is then used to reconstruct 'Xtrg'
+    :param Xsrc: genes x src_cells matrix
+    :param Xtrg: genes x trg_cells matrix
+    :param nmf_k: number of latent components (cluster)
+    :param nmf_alpha: regularization influence
+    :param nmf_l1: [0,1] strength of influence of l1-regularizer within regularization
+    :return: dictionary W (genes x nmf_k), trg-data matrix H (nmf_k x trg-cells), trg-data matrix H2,
+    and src-data matrix (nmf_k x src-cells)
+    """
     nmf = decomp.NMF(alpha=nmf_alpha, init='nndsvdar', l1_ratio=nmf_l1, max_iter=1000,
         n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
-    W = nmf.fit_transform(X)
-    H = nmf.components_
-    # print nmf.reconstruction_err_
+    W = nmf.fit_transform(Xsrc)
+    Hsrc = nmf.components_
 
-    # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(nmf_k, data.shape[1])
+    H = np.random.randn(nmf_k, Xtrg.shape[1])
     a1, a2 = np.where(H < 0.)
     H[a1, a2] *= -1.
-    Y = data[inds1, :].copy()
     # TODO: some NMF MU steps
     for i in range(800):
         # print 'Iteration: ', i
         # print '  Elementwise absolute reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
         # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
-        H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
+        H *= W.T.dot(Xtrg) / W.T.dot(W.dot(H))
 
-    H2 = np.zeros((nmf_k, data.shape[1]))
-    H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = 1
+    H2 = np.zeros((nmf_k, Xtrg.shape[1]))
+    H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = 1
+    # H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = np.sum(H, axis=0)
     print H2
-
-    # convex combination of vanilla distance and nmf distance
-    dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H2), [], metric=metric)
-    # normalize distance
-    print 'Max dists: ', np.max(dist1), np.max(dist2)
-    normalizer = np.max(dist1) / np.max(dist2)
-    dist2 *= normalizer
-
-    return mixture*dist2 + (1.-mixture)*dist1
+    return W, H, H2, Hsrc
 
 
 def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None, metric='euclidean', mixture=0.75, nmf_k=4):
+    """
+    Multitask SC3 distance function for toy data (i.e. no transformation, no gene id matching).
+    :param data:
+    :param gene_ids: (not used)
+    :param src_data:
+    :param src_labels: (optional)
+    :param trg_labels: (optional)
+    :param metric: Which metric should be applied.
+    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
+    :param nmf_k: Number of latent components (cluster)
+    :return:
+    """
     if mixture == 0.0:
         print('No MTL used (mixture={0})'.format(mixture))
         return distances(data, [], metric=metric)
 
-    # transform data
-    X = data_transformation_log2(src_data[gene_ids, :])
-    nmf = decomp.NMF(alpha=1., init='nndsvdar', l1_ratio=0.5, max_iter=1000,
-        n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
-    W = nmf.fit_transform(X)
-    H = nmf.components_
-    # print nmf.reconstruction_err_
-    # print H
+    W, H, H2, Hsrc = mtl_nmf(src_data, data, nmf_k=nmf_k, nmf_alpha=1.)
+
     if src_labels is not None:
         print 'Labels in src: ', np.unique(src_labels)
-        print 'ARI: ', metrics.adjusted_rand_score(src_labels, np.argmax(H, axis=0))
-
-    # reconstruct given dataset using the Pfizer dictionary
-    H = np.random.randn(nmf_k, data.shape[1])
-    Y = data.copy()
-    # TODO: some NMF MU steps
-    for i in range(800):
-        # print 'Iteration: ', i
-        # print '  Absolute elementwise reconstruction error: ', np.sum(np.abs(Y - W.dot(H)))/np.float(Y.size)
-        # print '  Fro-norm reconstruction error: ', np.sqrt(np.sum((Y - W.dot(H))*(Y - W.dot(H))))
-        H = H * W.T.dot(Y) / W.T.dot(W.dot(H))
-
+        print 'ARI: ', metrics.adjusted_rand_score(src_labels, np.argmax(Hsrc, axis=0))
     if trg_labels is not None:
         print 'Labels in trg: ', np.unique(trg_labels)
         print 'ARI: ', metrics.adjusted_rand_score(trg_labels, np.argmax(H, axis=0))
 
-    H2 = np.zeros((nmf_k, data.shape[1]))
-    H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = 1.
-    # H2[ (np.argmax(H, axis=0), np.arange(data.shape[1])) ] = np.max(H, axis=0)
-    print H2
-
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
-    # dist2 = distances(W.dot(H), [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
-
     # normalize distance
     print 'Max dists: ', np.max(dist1), np.max(dist2)
-    normalizer = np.max(dist1) / np.max(dist2)
-    dist2 *= normalizer
+    dist2 *= np.max(dist1) / np.max(dist2)
 
     # import scipy.stats as stats
     # import matplotlib.pyplot as plt
@@ -184,7 +206,6 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     # plt.plot(np.arange(sinds.size), kurts[sinds], '.r', markersize=4)
     # plt.plot(inds, kurts[sinds[inds]], '.b', markersize=4)
     #
-    #
     # plt.subplot(1, 3, 2)
     # dists = np.sum( (np.abs(Y - W.dot(H))**2. ), axis=0)
     # sinds = np.argsort(dists)
@@ -193,7 +214,6 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
     # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
     #
-    #
     # plt.subplot(1, 3, 3)
     # dists = np.sum( (np.abs(Y - W.dot(H2))**2. ), axis=0)
     # sinds = np.argsort(dists)
@@ -201,7 +221,6 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     #
     # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
     # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
-    #
     # plt.show()
 
     print np.max(dist1), np.max(dist2)

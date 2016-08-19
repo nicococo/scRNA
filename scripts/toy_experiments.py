@@ -98,21 +98,20 @@ def SC3_original_clustering(target_data, num_clusters=4):
                      cell_filter=False, gene_filter=False, log_scale=False)
 
     robjects.r('d <- sc3.interactive.arg$cons.table')
-    robjects.r('res <- d[d[,1] == "pearson" & d[,2] == "PCA" & d[,3] == "{0}"]'.format(num_clusters))
+    robjects.r('res <- d[d[,1] == "euclidean" & d[,2] == "PCA" & d[,3] == "{0}"]'.format(num_clusters))
     robjects.r('clust_res <- res[[4]]')
     robjects.r('hc <- clust_res[[3]]')
     robjects.r('clusts <- cutree(hc, {0})'.format(num_clusters))
 
     clusts = robjects.r('clusts')
     SC3_original_labels = np.asarray(clusts)
-
+    #
     # R statements to convert:
     # d <- sc3.interactive.arg$cons.table
     # res <- d[1,]    % bzw. res <- d[d[,1] == "euclidean" & d[,2] == "PCA" & d[,3] == "4"]
     # clust_res <- res[[4]]
     # hc <- clust.res[[3]]
     # clusts <- cutree(hc, 4) % bzw. 4 = num_clusters
-
     return SC3_original_labels
 
 
