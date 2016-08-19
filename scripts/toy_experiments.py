@@ -60,7 +60,7 @@ def SC3_clustering(target_data, num_clusters=4):
     min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
 
     # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=2, num_expr_genes=20))
-    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
+    # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
     # cp.set_data_transformation(sc.data_transformation)
     cp.add_distance_calculation(partial(sc.distances, metric='pearson'))
@@ -69,6 +69,7 @@ def SC3_clustering(target_data, num_clusters=4):
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
 
     cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=num_clusters))
+    cp.set_build_consensus_matrix(sc.build_consensus_matrix)
     cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=num_clusters))
     cp.apply(pc_range=[min_pca_comp, max_pca_comp])
 
@@ -124,7 +125,7 @@ def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6, nm
     min_pca_comp = np.floor(cp.num_cells * 0.04).astype(np.int)
 
     # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=2, num_expr_genes=20))
-    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
+    # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
 
     # cp.set_data_transformation(sc.data_transformation)
     cp.add_distance_calculation(partial(mtl.mtl_toy_distance, src_data=source_data, metric='pearson', mixture=mixture, nmf_k=nmf_k))
@@ -133,6 +134,7 @@ def SC3_MTL_clustering(target_data, source_data, num_clusters=4, mixture=0.6, nm
     # cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='spectral'))
 
     cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=num_clusters))
+    cp.set_build_consensus_matrix(sc.build_consensus_matrix)
     cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=num_clusters))
     cp.apply(pc_range=[min_pca_comp, max_pca_comp])
 
