@@ -8,6 +8,7 @@ class SC3Pipeline(object):
     cell_filter_list = None
     gene_filter_list = None
     data_transf = None
+
     dists_list  = None
     dimred_list = None
     intermediate_clustering_list = None
