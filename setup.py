@@ -4,7 +4,7 @@ except ImportError:
     from distutils.core import setup
 
 config = {
-    'description': 'scRNA - scRNA-seq clustering toolbox',
+    'description': 'Single-cell RNA-seq multitask clustering toolbox',
     'url': 'https://github.com/nicococo/scRNA',
     'author': 'Nico Goernitz & Bettina Mieth',
     'author_email': 'nico.goernitz@tu-berlin.de',
@@ -12,8 +12,10 @@ config = {
     'install_requires': ['nose', 'cvxopt','scikit-learn','numpy', 'scipy'],
     'packages': ['scRNA'],
     'package_dir' : {'scRNA': 'scRNA'},
-    'package_data': {'scRNA': ['gene_names.txt']},
-    'scripts': ['bin/scRNA-nmf.sh','bin/scRNA-generate-data.sh','bin/scRNA-evaluate.sh','bin/scRNA-sc3.sh','bin/scRNA-mtl-sc3.sh'],
+    # 'package_data': {'scRNA': ['gene_names.txt']},
+    'scripts': ['bin/scRNA-nmf.sh','bin/scRNA-generate-data.sh',
+                'bin/scRNA-evaluate.sh','bin/scRNA-sc3.sh',
+                'bin/scRNA-mtl-sc3.sh','bin/scRNA-mtl-nmf.sh'],
     'name': 'scRNA',
     'classifiers':['Intended Audience :: Science/Research',
                    'Programming Language :: Python',

@@ -86,7 +86,10 @@ for ds in dist_list:
                                         nmf_alpha=arguments.nmf_alpha,
                                         nmf_k=arguments.nmf_k,
                                         nmf_l1=arguments.nmf_l1,
-                                        data_transformation_fun=cp.data_transf))
+                                        data_transformation_fun=cp.data_transf,
+                                        num_expr_genes=2000,
+                                        non_zero_threshold=2,
+                                        perc_consensus_genes=0.94))
 
 transf_list = arguments.sc3_transf.split(",")
 print('\nThere are {0} transformations given.'.format(len(transf_list)))

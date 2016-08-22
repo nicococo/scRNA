@@ -55,7 +55,7 @@ remain_cell_inds = np.intersect1d(remain_cell_inds, res)
 A = data[:, remain_cell_inds]
 
 remain_gene_inds = np.arange(0, num_transcripts)
-res = sc.gene_filter(data, perc_consensus_genes=0.98, non_zero_threshold=arguments.gf_non_zero_threshold)
+res = sc.gene_filter(data, perc_consensus_genes=arguments.gf_perc_consensus_genes, non_zero_threshold=arguments.gf_non_zero_threshold)
 remain_gene_inds = np.intersect1d(remain_gene_inds, res)
 X = A[remain_gene_inds, :]
 if arguments.transform:

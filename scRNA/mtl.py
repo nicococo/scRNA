@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn import decomposition as decomp
 import sklearn.metrics as metrics
+import scipy.stats as stats
 
 from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation_log2, distances
 from utils import load_dataset_tsv
@@ -43,17 +44,16 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
 
-def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
-                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
-                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94):
+def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
+                 nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
+                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94,
+                 max_iter=5000, rel_err=1e-6):
     """
     Multitask SC3 distance function.
     :param data: Target dataset (trg-genes x trg-cells)
     :param gene_ids: Target gene ids
     :param fmtl: Filename of the scRNA source dataset (src-genes x src-cells)
     :param fmtl_geneids: Filename for corresponding source gene ids
-    :param metric: Which metric should be applied.
-    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
     :param nmf_k: Number of latent components (cluster)
     :param nmf_alpha: Regularization influence
     :param nmf_l1: [0,1] strength of l1-regularizer within regularization
@@ -117,7 +117,40 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     print 'MTL source {0} genes -> {1} genes.'.format(pgene_ids.size, inds2.size)
     print 'MTL target {0} genes -> {1} genes.'.format(gene_ids.size, inds1.size)
 
-    W, H, H2, Hsrc = mtl_nmf(X[inds2, :], data[inds1, :], nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1)
+    W, H, H2, Hsrc, reject = mtl_nmf(X[inds2, :], data[inds1, :],
+                                     nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1,
+                                     max_iter=max_iter, rel_err=rel_err)
+    src_gene_inds = inds2
+    trg_gene_inds = inds1
+    return W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds
+
+
+def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
+                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
+                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94):
+    """
+    Multitask SC3 distance function.
+    :param data: Target dataset (trg-genes x trg-cells)
+    :param gene_ids: Target gene ids
+    :param fmtl: Filename of the scRNA source dataset (src-genes x src-cells)
+    :param fmtl_geneids: Filename for corresponding source gene ids
+    :param metric: Which metric should be applied.
+    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
+    :param nmf_k: Number of latent components (cluster)
+    :param nmf_alpha: Regularization influence
+    :param nmf_l1: [0,1] strength of l1-regularizer within regularization
+    :param data_transformation_fun: Target data transformation function (e.g. log2+1 transfor, or None)
+    :param num_expr_genes: cell filter parameter
+    :param non_zero_threshold: cell- and gene-filter parameter
+    :param perc_consensus_genes: gene filter parameter
+    :return: Distance matrix trg-cells x trg-cells
+    """
+    W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds = nmf_mtl_full(
+        data, gene_ids, fmtl=fmtl, fmtl_geneids=fmtl_geneids,
+        nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1,
+        data_transformation_fun=data_transformation_fun,
+        num_expr_genes=num_expr_genes, non_zero_threshold=non_zero_threshold,
+        perc_consensus_genes=perc_consensus_genes)
 
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
@@ -129,7 +162,7 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     return mixture*dist2 + (1.-mixture)*dist1
 
 
-def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel_err=1e-6, verbosity=1):
+def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel_err=1e-6):
     """
     Multitask clustering. The source dataset 'Xsrc' is clustered using NMF. Resulting
     dictionary 'W' is then used to reconstruct 'Xtrg'
@@ -138,8 +171,10 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     :param nmf_k: number of latent components (cluster)
     :param nmf_alpha: regularization influence
     :param nmf_l1: [0,1] strength of influence of l1-regularizer within regularization
+    :param max_iter: max number of iterations for trg-matrix fit
+    :param rel_err: threshold for reconstruction error decrease before stopping
     :return: dictionary W (genes x nmf_k), trg-data matrix H (nmf_k x trg-cells), trg-data matrix H2,
-    and src-data matrix (nmf_k x src-cells)
+    and src-data matrix (nmf_k x src-cells) and list of reject measures per trg-cell
     """
     nmf = decomp.NMF(alpha=nmf_alpha, init='nndsvdar', l1_ratio=nmf_l1, max_iter=1000,
         n_components=nmf_k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
@@ -156,7 +191,7 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
         H *= W.T.dot(Xtrg) / W.T.dot(W.dot(H))
         new_err = np.sum(np.abs(Xtrg - W.dot(H)))/np.float(Xtrg.size)  # absolute
         # new_err = np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)  # frobenius
-        if np.abs((err - new_err) / err) <= rel_err:
+        if np.abs((err - new_err) / err) <= rel_err and err > new_err:
             break
         err = new_err
     print '  Number of iterations for reconstruction     : ', n_iter
@@ -170,53 +205,14 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     print '  H2 Elementwise absolute reconstruction error: ', np.sum(np.abs(Xtrg - W.dot(H2))) / np.float(Xtrg.size)
     print '  H2 Fro-norm reconstruction error            : ', np.sqrt(np.sum((Xtrg - W.dot(H2))*(Xtrg - W.dot(H2)))) / np.float(Xtrg.size)
 
-    return W, H, H2, Hsrc
-
-
-def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None, metric='euclidean', mixture=0.75, nmf_k=4):
-    """
-    Multitask SC3 distance function for toy data (i.e. no transformation, no gene id matching).
-    :param data:
-    :param gene_ids: (not used)
-    :param src_data:
-    :param src_labels: (optional)
-    :param trg_labels: (optional)
-    :param metric: Which metric should be applied.
-    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
-    :param nmf_k: Number of latent components (cluster)
-    :return:
-    """
-    if mixture == 0.0:
-        print('No MTL used (mixture={0})'.format(mixture))
-        return distances(data, [], metric=metric)
-
-    W, H, H2, Hsrc = mtl_nmf(src_data, data, nmf_k=nmf_k, nmf_alpha=1.)
-
-    if src_labels is not None:
-        print 'Labels in src: ', np.unique(src_labels)
-        print 'ARI: ', metrics.adjusted_rand_score(src_labels, np.argmax(Hsrc, axis=0))
-    if trg_labels is not None:
-        print 'Labels in trg: ', np.unique(trg_labels)
-        print 'ARI: ', metrics.adjusted_rand_score(trg_labels, np.argmax(H, axis=0))
-
-    # convex combination of vanilla distance and nmf distance
-    dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H2), [], metric=metric)
-    # normalize distance
-    print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
-    dist2 *= np.max(dist1) / np.max(dist2)
-
-    # import scipy.stats as stats
-    # import matplotlib.pyplot as plt
-    #
-    # plt.figure(1)
-    # print 'Number of class 2 datapoints is {0} of {1}'.format(np.sum(trg_labels==1), trg_labels.size)
-    #
-    # plt.subplot(1, 3, 1)
-    # kurts = stats.kurtosis(H, fisher=False, axis=0)
+    reject = list()
+    reject.append(('kurtosis', stats.kurtosis(H, fisher=False, axis=0)))
+    reject.append(('Dist L2 H', np.sum( (np.abs(Xtrg - W.dot(H))**2. ), axis=0)))
+    reject.append(('Dist L2 H2', np.sum( (np.abs(Xtrg - W.dot(H2))**2. ), axis=0)))
+    reject.append(('Dist L1 H', np.sum( np.abs(Xtrg - W.dot(H)), axis=0)))
+    reject.append(('Dist L1 H2', np.sum( np.abs(Xtrg - W.dot(H2)), axis=0)))
     # sinds = np.argsort(kurts)
     # inds = np.where(trg_labels[sinds] == 1)[0]
-    #
     # plt.plot(np.arange(sinds.size), kurts[sinds], '.r', markersize=4)
     # plt.plot(inds, kurts[sinds[inds]], '.b', markersize=4)
     #
@@ -236,6 +232,45 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
     # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
     # plt.show()
+    return W, H, H2, Hsrc, reject
+
+
+def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
+                     metric='euclidean', mixture=0.75, nmf_k=4, nmf_alpha=1.0, nmf_l1=0.75):
+    """
+    Multitask SC3 distance function for toy data (i.e. no transformation, no gene id matching).
+    :param data:
+    :param gene_ids: (not used)
+    :param src_data:
+    :param src_labels: (optional)
+    :param trg_labels: (optional)
+    :param metric: Which metric should be applied.
+    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
+    :param nmf_k: Number of latent components (cluster)
+    :param nmf_alpha: strength of regularization
+    :param nmf_l1: [0,1] influence of L1-regularizer within regularization
+    :return: trg-cells x trg-cells distance matrix
+    """
+    if mixture == 0.0:
+        print('No MTL used (mixture={0})'.format(mixture))
+        return distances(data, [], metric=metric)
+
+    W, H, H2, Hsrc, _ = mtl_nmf(src_data, data, nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1)
+
+    if src_labels is not None:
+        print 'Labels in src: ', np.unique(src_labels)
+        print 'ARI: ', metrics.adjusted_rand_score(src_labels, np.argmax(Hsrc, axis=0))
+    if trg_labels is not None:
+        print 'Labels in trg: ', np.unique(trg_labels)
+        print 'ARI: ', metrics.adjusted_rand_score(trg_labels, np.argmax(H, axis=0))
+
+    # convex combination of vanilla distance and nmf distance
+    dist1 = distances(data, [], metric=metric)
+    dist2 = distances(W.dot(H2), [], metric=metric)
+    # normalize distance
+    print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+    dist2 *= np.max(dist1) / np.max(dist2)
+
     print 'Max dists after normalization: ', np.max(dist1), np.max(dist2)
     fdist = mixture*dist2 + (1.-mixture)*dist1
     print mixture
