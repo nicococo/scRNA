@@ -114,8 +114,10 @@ np.savez('{0}.npz'.format(arguments.fout), type='NMF-mtl',
          src_gene_inds=src_gene_inds, trg_gene_inds=trg_gene_inds,
          args=arguments)
 
-print('\nSaving inferred labeling as TSV file to \'{0}.labels.tsv\'.'.format(arguments.fout))
-np.savetxt('{0}.labels.tsv'.format(arguments.fout), (pred_lbls, remain_cell_inds), fmt='%u', delimiter='\t')
+print reject[0][1]
+print reject[0][0]
 
+print('\nSaving inferred labeling as TSV file to \'{0}.labels.tsv\'.'.format(arguments.fout))
+np.savetxt('{0}.labels.tsv'.format(arguments.fout), (pred_lbls.T, remain_cell_inds.T, reject[0][1].T), fmt='%g', delimiter='\t')
 
 print('Done.')
