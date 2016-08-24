@@ -64,13 +64,13 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
     :return: Distance matrix trg-cells x trg-cells
     """
     pdata, pgene_ids, labels = load_dataset_tsv(fmtl, fgenes=fmtl_geneids)
-    num_transcripts, num_cells = data.shape
+    num_transcripts, num_cells = pdata.shape
 
     # filter cells
-    remain_inds = np.arange(0, num_cells)
+    remain_cell_inds = np.arange(0, num_cells)
     res = cell_filter(pdata, num_expr_genes=num_expr_genes, non_zero_threshold=non_zero_threshold)
-    remain_inds = np.intersect1d(remain_inds, res)
-    A = pdata[:, remain_inds]
+    remain_cell_inds = np.intersect1d(remain_cell_inds, res)
+    A = pdata[:, remain_cell_inds]
 
     # filter genes
     remain_inds = np.arange(0, num_transcripts)

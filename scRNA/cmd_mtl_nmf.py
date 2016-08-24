@@ -12,7 +12,7 @@ from utils import *
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
 parser.add_argument("--fname", help="Target TSV dataset filename", required=True, type=str)
-parser.add_argument("--flabels", help="Target TSV labels filename", default=None, type=str)
+parser.add_argument("--flabels", help="Target TSV labels filename", required=True, type=str)
 parser.add_argument("--fgeneids", help="Target TSV gene ids filename", required=True, type=str)
 parser.add_argument("--fmtl", help="MTL source TSV dataset filename", required=True, type=str)
 parser.add_argument("--fmtl_geneids", help="MTL source TSV gene ids filename", required=True, type=str)
@@ -20,11 +20,11 @@ parser.add_argument("--fout", help="Result filename", default='out', type=str)
 
 parser.add_argument("--min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
 parser.add_argument("--non_zero_threshold", help="Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
-parser.add_argument("--perc_consensus_genes", help="(Gene filter) Filter genes that have a consensus greater than this value across all cells (default 0.98)", default=0.96, type = float)
+parser.add_argument("--perc_consensus_genes", help="(Gene filter) Filter genes that have a consensus greater than this value across all cells (default 0.98)", default=0.98, type = float)
 
-parser.add_argument("--nmf_k", help="(NMF) Number of latent components (default 10)", default=7, type = int)
-parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=10., type = float)
-parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.05, type = float)
+parser.add_argument("--nmf_k", help="(NMF) Number of latent components (default 10)", default=10, type = int)
+parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=1.0, type = float)
+parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
 
 parser.add_argument(
     "--transform",
@@ -69,6 +69,7 @@ remain_gene_inds = np.arange(0, num_transcripts)
 res = sc.gene_filter(data, perc_consensus_genes=arguments.perc_consensus_genes, non_zero_threshold=arguments.non_zero_threshold)
 remain_gene_inds = np.intersect1d(remain_gene_inds, res)
 X = A[remain_gene_inds, :]
+
 if arguments.transform:
     X = sc.data_transformation_log2(X)
 
@@ -90,7 +91,8 @@ W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds = mtl.nmf_mtl_full(X, gene_
     max_iter=2000,
     rel_err=1e-3)
 
-pred_lbls = np.argmax(H2, axis=0)
+
+pred_lbls = np.argmax(H, axis=0)
 
 # decode reject
 rej = np.zeros((remain_cell_inds.size, len(reject)))

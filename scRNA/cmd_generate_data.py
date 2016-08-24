@@ -55,7 +55,7 @@ parser.add_argument(
 parser.add_argument(
     "--cluster_spec",
     help = "Cluster specification as Python list",
-    default = "[1,2,3,4]",
+    default = "[1, 2, 3, [4, 5], [6, [7, 8]]]",
     type = str
 )
 parser.add_argument(
@@ -110,14 +110,14 @@ parser.add_argument(
 
 parser.add_argument(
     "--target_ncells",
-    help = "How much of data will be target data (default 250)",
-    default = 250,
+    help = "How much of data will be target data (default 200)",
+    default = 200,
     type = int
 )
 parser.add_argument(
     "--source_ncells",
-    help = "How much of data will be source data (default 250)",
-    default = 250,
+    help = "How much of data will be source data (default 800)",
+    default = 800,
     type = int
 )
 parser.add_argument(
@@ -177,7 +177,7 @@ parser.add_argument(
     dest = "normalise",
     action = 'store_false'
 )
-parser.set_defaults(normalise = True)
+parser.set_defaults(normalise = False)
 
 args = parser.parse_args(sys.argv[1:])
 print('Command line argumentss:')
