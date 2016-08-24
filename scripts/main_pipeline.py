@@ -117,10 +117,9 @@ def exp_percs_accs(mode=2, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]],
     percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
 
     # mix = [-1.0, 0.0, 0.25, 0.99, 1.0]
-    # mix = [-2.0, 0.0]
+    mix = [-2.0, 0.0]
     # # percs = np.array([0.5, 1.0])
     # percs = np.logspace(-1.3, -0, 12)[[2, 3, 4, 5, 6, 9, 11]]
-    # aris = np.zeros((reps, len(percs), len(mix)))
 
     aris = np.zeros((reps, len(percs), len(mix)))
     aris_strat = np.zeros((reps, len(percs), len(mix)))
@@ -146,6 +145,10 @@ def exp_percs_accs(mode=2, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]],
         src_lbl_set = np.unique(src_labels)
         n_cluster = np.unique(trg_labels).size
         k_nmf = src_lbl_set.size
+
+        # target label randomization (sanity check)
+        trg_labels = np.random.permutation(trg_labels)
+
         # 3.c. Target data subsampling loop
         for i in range(len(percs)):
             n_trg_perc = np.int(n_trg * percs[i])
@@ -211,7 +214,7 @@ if __name__ == "__main__":
     # exp_percs_accs(mode=1, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
     # exp_percs_accs(mode=1, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='pearson')
 
-    # exp_percs_accs(mode=4, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
+    exp_percs_accs(mode=4, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
     # exp_percs_accs(mode=4, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='pearson')
 
     # fname = 'res_mtl_m4_r1_euc.npz'
