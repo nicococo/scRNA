@@ -156,9 +156,15 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     dist1 = distances(data, [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
     # normalize distance
-    print 'Max dists: ', np.max(dist1), np.max(dist2)
-    normalizer = np.max(dist1) / np.max(dist2)
-    dist2 *= normalizer
+    if np.max(dist2) < 1e-10:
+        if mixture == 1.0:
+            raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
+                            ' data do not go well together.')
+        else:
+            print 'Warning! Max distance is 0.0.'
+    else:
+        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+        dist2 *= np.max(dist1) / np.max(dist2)
     return mixture*dist2 + (1.-mixture)*dist1
 
 
@@ -181,6 +187,14 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     W = nmf.fit_transform(Xsrc)
     Hsrc = nmf.components_
 
+    # check solution: if regularizer is too strong this can result in 'NaN's
+    if np.any(np.isnan(W)):
+        raise Exception('W contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+            nmf_alpha, nmf_k, nmf_l1, Xsrc.shape[0], Xsrc.shape[1]))
+    if np.any(np.isnan(Hsrc)):
+        raise Exception('Hsrc contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+            nmf_alpha, nmf_k, nmf_l1, Xsrc.shape[0], Xsrc.shape[1]))
+
     H = np.random.randn(nmf_k, Xtrg.shape[1])
     a1, a2 = np.where(H < 0.)
     H[a1, a2] *= -1.
@@ -198,6 +212,10 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     print '  Elementwise absolute reconstruction error   : ', np.sum(np.abs(Xtrg - W.dot(H))) / np.float(Xtrg.size)
     print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)
 
+    if np.any(np.isnan(H)):
+        raise Exception('Htrg contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+            nmf_alpha, nmf_k, nmf_l1, Xsrc.shape[0], Xsrc.shape[1]))
+
     H2 = np.zeros((nmf_k, Xtrg.shape[1]))
     H2[(np.argmax(H, axis=0), np.arange(Xtrg.shape[1]))] = 1
     # H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = np.sum(H, axis=0)
@@ -205,12 +223,40 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     print '  H2 Elementwise absolute reconstruction error: ', np.sum(np.abs(Xtrg - W.dot(H2))) / np.float(Xtrg.size)
     print '  H2 Fro-norm reconstruction error            : ', np.sqrt(np.sum((Xtrg - W.dot(H2))*(Xtrg - W.dot(H2)))) / np.float(Xtrg.size)
 
+    kurts = stats.kurtosis(H, fisher=False, axis=0)
+    K1 = Xtrg.T.dot(Xtrg)
+    K2 = W.dot(H).T.dot(W.dot(H))
+    K3 = W.dot(H2).T.dot(W.dot(H2))
+
+    def classifier(K, kurts):
+        from utils import kta_align_binary, normalize_kernel, center_kernel
+        sinds = np.argsort(kurts)
+        K = center_kernel(K)
+        K = normalize_kernel(K)
+        max_kta = -1.0
+        max_kta_ind = -1
+        for i in range(Xtrg.shape[1]-2):
+            # 1. build binary label matrix
+            labels = np.ones(kurts.size, dtype=np.int)
+            labels[sinds[:i+1]] = -1
+            kta = kta_align_binary(K, labels)
+            if kta > max_kta:
+                max_kta = kta
+                max_kta_ind = i+1
+
+        labels = np.ones(kurts.size, dtype=np.int)
+        labels[sinds[:max_kta_ind]] = -1
+        return labels
+
     reject = list()
     reject.append(('kurtosis', stats.kurtosis(H, fisher=False, axis=0)))
-    reject.append(('Dist L2 H', np.sum( (np.abs(Xtrg - W.dot(H))**2. ), axis=0)))
-    reject.append(('Dist L2 H2', np.sum( (np.abs(Xtrg - W.dot(H2))**2. ), axis=0)))
-    reject.append(('Dist L1 H', np.sum( np.abs(Xtrg - W.dot(H)), axis=0)))
-    reject.append(('Dist L1 H2', np.sum( np.abs(Xtrg - W.dot(H2)), axis=0)))
+    reject.append(('KTA kurt1', classifier(K1, kurts)))
+    reject.append(('KTA kurt2', classifier(K2, kurts)))
+    reject.append(('KTA kurt3', classifier(K3, kurts)))
+    reject.append(('Dist L2 H', -np.sum( (np.abs(Xtrg - W.dot(H))**2. ), axis=0)))
+    reject.append(('Dist L2 H2', -np.sum( (np.abs(Xtrg - W.dot(H2))**2. ), axis=0)))
+    reject.append(('Dist L1 H', -np.sum( np.abs(Xtrg - W.dot(H)), axis=0)))
+    reject.append(('Dist L1 H2', -np.sum( np.abs(Xtrg - W.dot(H2)), axis=0)))
     # sinds = np.argsort(kurts)
     # inds = np.where(trg_labels[sinds] == 1)[0]
     # plt.plot(np.arange(sinds.size), kurts[sinds], '.r', markersize=4)
@@ -268,8 +314,18 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     dist1 = distances(data, [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
     # normalize distance
-    print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
-    dist2 *= np.max(dist1) / np.max(dist2)
+
+    if np.max(dist2) < 1e-10:
+        if mixture == 1.0:
+            print 'Warning! Max distance is 0.0 and mixture=1.0: reducing mixture to 0.9.'
+            mixture = 0.9
+            # raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
+            #                 ' data do not go well together.')
+        else:
+            print 'Warning! Max distance is 0.0.'
+    else:
+        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+        dist2 *= np.max(dist1) / np.max(dist2)
 
     print 'Max dists after normalization: ', np.max(dist1), np.max(dist2)
     fdist = mixture*dist2 + (1.-mixture)*dist1

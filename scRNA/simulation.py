@@ -277,7 +277,7 @@ def split_source_target(toy_data, true_toy_labels,
 
 
     elif mode == 5:
-        proportion_source = 1-proportion_target
+        proportion_source = 1.-proportion_target
         cluster_names = np.unique(true_toy_labels)
         source_clusters = cluster_names[
             0: int(len(cluster_names) * proportion_source)
@@ -291,14 +291,21 @@ def split_source_target(toy_data, true_toy_labels,
             source_indices_mat.append(true_toy_labels == source_clusters[i])
         source_indices = np.any(source_indices_mat, 0)
         toy_data_source = toy_data[:, source_indices]
-        true_toy_labels_source = true_toy_labels[source_indices]
+
+        source_indices_ind = np.argwhere(source_indices == True)[:, 0]
+        true_toy_labels_arr = np.array(true_toy_labels, dtype=np.int)
+
+        true_toy_labels_source = true_toy_labels_arr[source_indices_ind]
 
         target_indices_mat = []
         for i in range(len(target_clusters)):
             target_indices_mat.append(true_toy_labels == target_clusters[i])
         target_indices = np.any(target_indices_mat,0)
         toy_data_target = toy_data[:,target_indices]
-        true_toy_labels_target = true_toy_labels[target_indices]
+
+        target_indices_ind = np.argwhere(target_indices == True)[:, 0]
+
+        true_toy_labels_target = true_toy_labels_arr[target_indices_ind]
 
     elif mode == 6:
 
