@@ -45,11 +45,11 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
 
 
 def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
-                 nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
-                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94,
+                 nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75,
+                 data_transf_fun=None, cell_filter_fun=None, gene_filter_fun=None,
                  max_iter=5000, rel_err=1e-6):
     """
-    Multitask SC3 distance function.
+    Multitask SC3 distance function + Pre-processing.
     :param data: Target dataset (trg-genes x trg-cells)
     :param gene_ids: Target gene ids
     :param fmtl: Filename of the scRNA source dataset (src-genes x src-cells)
@@ -57,10 +57,11 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
     :param nmf_k: Number of latent components (cluster)
     :param nmf_alpha: Regularization influence
     :param nmf_l1: [0,1] strength of l1-regularizer within regularization
-    :param data_transformation_fun: Target data transformation function (e.g. log2+1 transfor, or None)
-    :param num_expr_genes: cell filter parameter
-    :param non_zero_threshold: cell- and gene-filter parameter
-    :param perc_consensus_genes: gene filter parameter
+    :param data_transf_fun: Source data transformation function (e.g. log2+1 transfor, or None)
+    :param cell_filter_fun: Source cell filter function
+    :param gene_filter_fun: Source gene filter function
+    :param max_iter: maximum number of iterations for target nmf
+    :param rel_err: maximum relative error before target nmf stops
     :return: Distance matrix trg-cells x trg-cells
     """
     pdata, pgene_ids, labels = load_dataset_tsv(fmtl, fgenes=fmtl_geneids)
@@ -68,19 +69,18 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
 
     # filter cells
     remain_cell_inds = np.arange(0, num_cells)
-    res = cell_filter(pdata, num_expr_genes=num_expr_genes, non_zero_threshold=non_zero_threshold)
+    res = cell_filter_fun(pdata)
     remain_cell_inds = np.intersect1d(remain_cell_inds, res)
     A = pdata[:, remain_cell_inds]
 
     # filter genes
     remain_inds = np.arange(0, num_transcripts)
-    res = gene_filter(A, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
+    res = gene_filter_fun(A)
     remain_inds = np.intersect1d(remain_inds, res)
 
     # transform data
     X = A[remain_inds, :]
-    if data_transformation_fun is not None:
-        X = data_transformation_fun(X)
+    X = data_transf_fun(X)
     pgene_ids = pgene_ids[remain_inds]
 
     # find (and translate) a common set of genes
@@ -126,8 +126,8 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
 
 
 def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
-                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
-                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94):
+                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75,
+                 data_transf_fun=None, cell_filter_fun=None, gene_filter_fun=None):
     """
     Multitask SC3 distance function.
     :param data: Target dataset (trg-genes x trg-cells)
@@ -139,18 +139,15 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     :param nmf_k: Number of latent components (cluster)
     :param nmf_alpha: Regularization influence
     :param nmf_l1: [0,1] strength of l1-regularizer within regularization
-    :param data_transformation_fun: Target data transformation function (e.g. log2+1 transfor, or None)
-    :param num_expr_genes: cell filter parameter
-    :param non_zero_threshold: cell- and gene-filter parameter
-    :param perc_consensus_genes: gene filter parameter
+    :param data_transf_fun: Source data transformation function (e.g. log2+1 transfor, or None)
+    :param cell_filter_fun: Source cell filter function
+    :param gene_filter_fun: Source gene filter function
     :return: Distance matrix trg-cells x trg-cells
     """
     W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds = nmf_mtl_full(
         data, gene_ids, fmtl=fmtl, fmtl_geneids=fmtl_geneids,
         nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1,
-        data_transformation_fun=data_transformation_fun,
-        num_expr_genes=num_expr_genes, non_zero_threshold=non_zero_threshold,
-        perc_consensus_genes=perc_consensus_genes)
+        data_transf_fun=data_transf_fun, cell_filter_fun=cell_filter_fun, gene_filter_fun=gene_filter_fun)
 
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
@@ -257,27 +254,6 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     reject.append(('Dist L2 H2', -np.sum( (np.abs(Xtrg - W.dot(H2))**2. ), axis=0)))
     reject.append(('Dist L1 H', -np.sum( np.abs(Xtrg - W.dot(H)), axis=0)))
     reject.append(('Dist L1 H2', -np.sum( np.abs(Xtrg - W.dot(H2)), axis=0)))
-    # sinds = np.argsort(kurts)
-    # inds = np.where(trg_labels[sinds] == 1)[0]
-    # plt.plot(np.arange(sinds.size), kurts[sinds], '.r', markersize=4)
-    # plt.plot(inds, kurts[sinds[inds]], '.b', markersize=4)
-    #
-    # plt.subplot(1, 3, 2)
-    # dists = np.sum( (np.abs(Y - W.dot(H))**2. ), axis=0)
-    # sinds = np.argsort(dists)
-    # inds = np.where(trg_labels[sinds] == 1)[0]
-    #
-    # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
-    # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
-    #
-    # plt.subplot(1, 3, 3)
-    # dists = np.sum( (np.abs(Y - W.dot(H2))**2. ), axis=0)
-    # sinds = np.argsort(dists)
-    # inds = np.where(trg_labels[sinds] == 1)[0]
-    #
-    # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
-    # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
-    # plt.show()
     return W, H, H2, Hsrc, reject
 
 

@@ -18,11 +18,13 @@ parser.add_argument("--fmtl", help="MTL source TSV dataset filename", required=T
 parser.add_argument("--fmtl_geneids", help="MTL source TSV gene ids filename", required=True, type=str)
 parser.add_argument("--fout", help="Result filename", default='out', type=str)
 
-parser.add_argument("--cf_min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
-parser.add_argument("--cf_non_zero_threshold", help="(Cell filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
+parser.add_argument("--min_expr_genes", help="(Target cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
+parser.add_argument("--non_zero_threshold", help="(Target cell/gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
+parser.add_argument("--perc_consensus_genes", help="(Target gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type = float)
 
-parser.add_argument("--gf_perc_consensus_genes", help="(Gene filter) Filter genes that have a consensus greater than this value across all cells (default 0.98)", default=0.98, type = float)
-parser.add_argument("--gf_non_zero_threshold", help="(Gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
+parser.add_argument("--src_min_expr_genes", help="(Source cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
+parser.add_argument("--src_non_zero_threshold", help="(Source cell/gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
+parser.add_argument("--src_perc_consensus_genes", help="(Source gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type = float)
 
 parser.add_argument("--sc3_k", help="(SC3) Number of latent components (default 10)", default=10, type = int)
 parser.add_argument("--sc3_dists", help="(SC3) Comma-separated MTL distances (default euclidean)", default='euclidean', type = str)
@@ -35,19 +37,40 @@ parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
 
 parser.add_argument(
+    "--cell-filter",
+    help = "Enable cell filter for source and target datasets.",
+    dest = "use_cell_filter",
+    action = 'store_true')
+parser.add_argument(
+    "--no-cell-filter",
+    help = "Disable cell filter for source and target datasets.",
+    dest = "use_cell_filter",
+    action = 'store_false')
+parser.set_defaults(use_cell_filter = True)
+
+parser.add_argument(
+    "--gene-filter",
+    help = "Enable gene filter for source and target datasets.",
+    dest = "use_gene_filter",
+    action = 'store_true')
+parser.add_argument(
+    "--no-gene-filter",
+    help = "Disable gene filter for source and target datasets.",
+    dest = "use_gene_filter",
+    action = 'store_false')
+parser.set_defaults(use_gene_filter = True)
+
+parser.add_argument(
     "--transform",
     help = "Transform data to log2(x+1)",
     dest = "transform",
-    action = 'store_true'
-)
+    action = 'store_true')
 parser.add_argument(
     "--no-transform",
     help = "Disable transform data to log2(x+1)",
     dest = "transform",
-    action = 'store_false'
-)
+    action = 'store_false')
 parser.set_defaults(transform = True)
-
 
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
@@ -68,11 +91,21 @@ min_pca_comp = np.floor(num_cells*0.04).astype(np.int)
 print('(Max/Min) PCA components: ({0}/{1})'.format(max_pca_comp, min_pca_comp))
 
 cp = SC3Pipeline(data, gene_ids, pc_range=[min_pca_comp, max_pca_comp], sub_sample=True, consensus_mode=0)
-cp.add_cell_filter(partial(sc.cell_filter, num_expr_genes=arguments.cf_min_expr_genes, non_zero_threshold=arguments.cf_non_zero_threshold))
-cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=arguments.gf_perc_consensus_genes, non_zero_threshold=arguments.gf_non_zero_threshold))
 
+src_cell_filter_fun = lambda x: np.arange(x.shape[1]).tolist()
+if arguments.use_cell_filter:
+    cp.add_cell_filter(partial(sc.cell_filter, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold))
+    src_cell_filter_fun = partial(sc.cell_filter, num_expr_genes=arguments.src_min_expr_genes, non_zero_threshold=arguments.src_non_zero_threshold)
+
+src_gene_filter_fun = lambda x: np.arange(x.shape[0]).tolist()
+if arguments.use_gene_filter:
+    cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=arguments.perc_consensus_genes, non_zero_threshold=arguments.non_zero_threshold))
+    src_gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=arguments.src_perc_consensus_genes, non_zero_threshold=arguments.src_non_zero_threshold)
+
+src_data_transf_fun = lambda x: x
 if arguments.transform:
     cp.set_data_transformation(sc.data_transformation_log2)
+    src_data_transf_fun = cp.data_transf
 
 dist_list = arguments.sc3_dists.split(",")
 print('\nThere are {0} distances given.'.format(len(dist_list)))
@@ -86,10 +119,9 @@ for ds in dist_list:
                                         nmf_alpha=arguments.nmf_alpha,
                                         nmf_k=arguments.nmf_k,
                                         nmf_l1=arguments.nmf_l1,
-                                        data_transformation_fun=cp.data_transf,
-                                        num_expr_genes=2000,
-                                        non_zero_threshold=2,
-                                        perc_consensus_genes=0.94))
+                                        data_transf_fun=src_data_transf_fun,
+                                        cell_filter_fun=src_cell_filter_fun,
+                                        gene_filter_fun=src_gene_filter_fun))
 
 transf_list = arguments.sc3_transf.split(",")
 print('\nThere are {0} transformations given.'.format(len(transf_list)))
@@ -111,6 +143,10 @@ if labels is not None:
 
 
 # 4. SAVE RESULTS
+cp.cell_filter_list = None
+cp.gene_filter_list = None
+cp.data_transf = None
+cp.dists_list = None
 print('\nSaving data structures and results to \'{0}.npz\'.'.format(arguments.fout))
 np.savez('{0}.npz'.format(arguments.fout), type='SC3-mtl', sc3_pipeline=cp, args=arguments)
 

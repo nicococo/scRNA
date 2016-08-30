@@ -94,7 +94,6 @@ class SC3Pipeline(AbstractClusteringPipeline):
                 _, deigv = transf[t]
                 labels = list()
                 for d in range_inds:
-                    print (deigv.shape, d)
                     labels.append(cluster(deigv[:, 0:d].reshape((deigv.shape[0], d))))
                     if self.consensus_mode == 0:
                         consensus2 += self.build_consensus_matrix(np.array(labels[-1]))
