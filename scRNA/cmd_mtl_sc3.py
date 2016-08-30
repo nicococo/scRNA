@@ -61,13 +61,13 @@ print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.sh
 
 # 2. BUILD SC3 PIPELINE
 print('\n')
-cp = SC3Pipeline(data, gene_ids)
-
 n_cluster = arguments.sc3_k
-max_pca_comp = np.ceil(cp.num_cells*0.07).astype(np.int)
-min_pca_comp = np.floor(cp.num_cells*0.04).astype(np.int)
+num_cells = data.shape[1]
+max_pca_comp = np.ceil(num_cells*0.07).astype(np.int)
+min_pca_comp = np.floor(num_cells*0.04).astype(np.int)
 print('(Max/Min) PCA components: ({0}/{1})'.format(max_pca_comp, min_pca_comp))
 
+cp = SC3Pipeline(data, gene_ids, pc_range=[min_pca_comp, max_pca_comp], sub_sample=True, consensus_mode=0)
 cp.add_cell_filter(partial(sc.cell_filter, num_expr_genes=arguments.cf_min_expr_genes, non_zero_threshold=arguments.cf_non_zero_threshold))
 cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=arguments.gf_perc_consensus_genes, non_zero_threshold=arguments.gf_non_zero_threshold))
 
@@ -95,12 +95,12 @@ transf_list = arguments.sc3_transf.split(",")
 print('\nThere are {0} transformations given.'.format(len(transf_list)))
 for ts in transf_list:
     print('- Adding transformation {0}'.format(ts))
-    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method=ts))
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
 
 cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_cluster))
 cp.set_build_consensus_matrix(sc.build_consensus_matrix)
 cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_cluster))
-cp.apply(pc_range=[min_pca_comp, max_pca_comp])
+cp.apply()
 
 print cp
 

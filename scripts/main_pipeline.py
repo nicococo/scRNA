@@ -207,7 +207,7 @@ def exp_percs_accs(mode=2, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]],
 
 if __name__ == "__main__":
     # exp_percs_accs(mode=5, reps=25, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
-    exp_percs_accs(mode=4, reps=3, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
+    # exp_percs_accs(mode=4, reps=3, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
 
     # exp_percs_accs(mode=1, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
     # exp_percs_accs(mode=1, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='pearson')
@@ -215,8 +215,8 @@ if __name__ == "__main__":
     # exp_percs_accs(mode=4, reps=5, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='euclidean')
     # exp_percs_accs(mode=4, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], metric='pearson')
 
-    # fname = 'res_mtl_m5_r25_euc.npz'
-    fname = 'res_mtl_m4_r3_euc.npz'
+    fname = 'res_mtl_m5_r25_euc.npz'
+    # fname = 'res_mtl_m4_r3_euc.npz'
     # fname = 'res_mtl_m4_r1_pea.npz'
 
     # fname = 'res_mtl_m1_r10_euc.npz'

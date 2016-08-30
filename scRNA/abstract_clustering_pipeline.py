@@ -91,7 +91,7 @@ class AbstractClusteringPipeline(object):
         if self.cluster_labels is None:
             return 'Empty cluster pipeline.'
         ret = 'Cluster Pipeline ({1} processed datapoints, {0} processed features):\n'.format(
-            self.filtered_transf_data.shape[0], self.filtered_transf_data.shape[1])
+            self.pp_data.shape[0], self.pp_data.shape[1])
         ret = '{0}-------------------------------------\n'.format(ret)
         lbls = np.unique(self.cluster_labels)
         for i in range(lbls.size):

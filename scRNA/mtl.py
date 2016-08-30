@@ -95,14 +95,14 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
 
     if not np.unique(pgene_ids).shape[0] == pgene_ids.shape[0]:
         # raise Exception('(MTL) Gene ids are supposed to be unique.')
-        print('\nError! (MTL gene ids) Gene ids are supposed to be unique. '
+        print('Warning! (MTL gene ids) Gene ids are supposed to be unique. '
               'Only {0} of {1}  entries are unique.'.format(np.unique(pgene_ids).shape[0], pgene_ids.shape[0]))
-        print('Only first occurance will be used.\n')
+        print('Only first occurance will be used.')
     if not np.unique(gene_ids).shape[0] == gene_ids.shape[0]:
         # raise Exception('(Target) Gene ids are supposed to be unique.')
-        print('\nError! (Target gene ids) Gene ids are supposed to be unique. '
+        print('Warning! (Target gene ids) Gene ids are supposed to be unique. '
               'Only {0} of {1}  entries are unique.'.format(np.unique(gene_ids).shape[0], gene_ids.shape[0]))
-        print('Only first occurance will be used.\n')
+        print('Only first occurance will be used.')
 
     common_ids = np.intersect1d(gene_ids, pgene_ids)
     print('Both datasets have (after processing) {0} gene ids in common.'.format(common_ids.shape[0]))
