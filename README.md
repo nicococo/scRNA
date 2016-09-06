@@ -1,8 +1,7 @@
 # About
 Python framework for single-cell RNA-seq clustering with special 
-focus on multitask clustering. This package contains methods
-for generating and clustering (single task and
-multitask).
+focus on transfer learning (multitask/domain adaptation). This package contains methods
+for generating and clustering (single task and multitask).
 
 This software was written by Nico Goernitz, Bettina Mieth, Alex Gutteridge. TU Berlin, 2016.
 
@@ -12,7 +11,7 @@ command. Enjoy :)
 - Command line script are available
 
 # How to use
-Basically, the software can be break down into 2 distinct parts: data generation and clustering.
+Basically, the software breaks down into 2 distinct parts: data generation and clustering.
 After the installation using _pip_ is complete, there are
 a couple of (bash) command line scripts that should be accessible from anywhere. Below are some examples and details 
 for each of the parts. 
