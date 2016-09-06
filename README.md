@@ -23,7 +23,7 @@ Calling those scripts without any parameter will give a short list of parameters
 scRNA-generate-data.sh
 
 ## 2.a. Single Task Clustering
-(a) scRNA-sc3.sh 
+(a) scRNA-sc3.sh \\
 (b) scRNA-nmf.sh
 
 Here, at least a input expression matrix is needed as well as the number of clusters.
@@ -37,8 +37,8 @@ will print the adjusted Rand index (ARI), comparing these labels with the inferr
 
 
 ## 2.b. Multitask Clustering
-scRNA-mtl-nmf.sh 
-scRNA-mtl-sc3.sh 
+(a) scRNA-mtl-nmf.sh \\
+(b) scRNA-mtl-sc3.sh 
 
 In addition to the parameters discussed in 2.b., a source dataset needs to be defined as well as 
 gene id description files for the source and the target dataset. Only matching gene ids will be considered
