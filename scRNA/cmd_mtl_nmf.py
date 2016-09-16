@@ -22,9 +22,37 @@ parser.add_argument("--min_expr_genes", help="(Cell filter) Minimum number of ex
 parser.add_argument("--non_zero_threshold", help="Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
 parser.add_argument("--perc_consensus_genes", help="(Gene filter) Filter genes that have a consensus greater than this value across all cells (default 0.98)", default=0.96, type = float)
 
+parser.add_argument("--src_min_expr_genes", help="(Source cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
+parser.add_argument("--src_non_zero_threshold", help="(Source cell/gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
+parser.add_argument("--src_perc_consensus_genes", help="(Source gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type = float)
+
 parser.add_argument("--nmf_k", help="(NMF) Number of latent components (default 10)", default=7, type = int)
 parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=1., type = float)
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
+
+parser.add_argument(
+    "--cell-filter",
+    help = "Enable cell filter for source and target datasets.",
+    dest = "use_cell_filter",
+    action = 'store_true')
+parser.add_argument(
+    "--no-cell-filter",
+    help = "Disable cell filter for source and target datasets.",
+    dest = "use_cell_filter",
+    action = 'store_false')
+parser.set_defaults(use_cell_filter = True)
+
+parser.add_argument(
+    "--gene-filter",
+    help = "Enable gene filter for source and target datasets.",
+    dest = "use_gene_filter",
+    action = 'store_true')
+parser.add_argument(
+    "--no-gene-filter",
+    help = "Disable gene filter for source and target datasets.",
+    dest = "use_gene_filter",
+    action = 'store_false')
+parser.set_defaults(use_gene_filter = True)
 
 parser.add_argument(
     "--transform",
@@ -53,28 +81,31 @@ print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.sh
 # 2. MTL NMF
 print('\n')
 
-fun = lambda x: x
-if arguments.transform:
-    fun = sc.data_transformation_log2
-
 num_transcripts, num_cells = data.shape
-remain_cell_inds = np.arange(0, num_cells)
 
-# 2. FILTER DATA (GENES AND TRANSCRIPTS)
-res = sc.cell_filter(data, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold)
-remain_cell_inds = np.intersect1d(remain_cell_inds, res)
+remain_cell_inds = np.arange(0, num_cells)
+src_cell_filter_fun = lambda x: np.arange(x.shape[1]).tolist()
+if arguments.use_cell_filter:
+    src_cell_filter_fun = partial(sc.cell_filter, num_expr_genes=arguments.src_min_expr_genes, non_zero_threshold=arguments.src_non_zero_threshold)
+    res = sc.cell_filter(data, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold)
+    remain_cell_inds = np.intersect1d(remain_cell_inds, res)
 A = data[:, remain_cell_inds]
 
 remain_gene_inds = np.arange(0, num_transcripts)
-res = sc.gene_filter(data, perc_consensus_genes=arguments.perc_consensus_genes, non_zero_threshold=arguments.non_zero_threshold)
-remain_gene_inds = np.intersect1d(remain_gene_inds, res)
+src_gene_filter_fun = lambda x: np.arange(x.shape[0]).tolist()
+if arguments.use_gene_filter:
+    src_gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=arguments.src_perc_consensus_genes, non_zero_threshold=arguments.src_non_zero_threshold)
+    res = sc.gene_filter(data, perc_consensus_genes=arguments.perc_consensus_genes, non_zero_threshold=arguments.non_zero_threshold)
+    remain_gene_inds = np.intersect1d(remain_gene_inds, res)
 X = A[remain_gene_inds, :]
-if arguments.transform:
-    X = sc.data_transformation_log2(X)
-gene_ids = gene_ids[remain_gene_inds]
 
+src_data_transf_fun = lambda x: x
+if arguments.transform:
+    src_data_transf_fun = sc.data_transformation_log2
+    X = sc.data_transformation_log2(X)
+
+gene_ids = gene_ids[remain_gene_inds]
 print X.shape, np.min(X), np.max(X)
-num_transcripts, num_cells = X.shape
 
 # 3. Do magic
 print('\nNMF MTL:')
@@ -84,10 +115,9 @@ W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds = mtl.nmf_mtl_full(X, gene_
     nmf_alpha=arguments.nmf_alpha,
     nmf_k=arguments.nmf_k,
     nmf_l1=arguments.nmf_l1,
-    data_transformation_fun=fun,
-    num_expr_genes=arguments.min_expr_genes,
-    non_zero_threshold=arguments.non_zero_threshold,
-    perc_consensus_genes=arguments.perc_consensus_genes,
+    data_transf_fun=src_data_transf_fun,
+    cell_filter_fun=src_cell_filter_fun,
+    gene_filter_fun=src_gene_filter_fun,
     max_iter=2000,
     rel_err=1e-3)
 
@@ -114,8 +144,10 @@ np.savez('{0}.npz'.format(arguments.fout), type='NMF-mtl',
          src_gene_inds=src_gene_inds, trg_gene_inds=trg_gene_inds,
          args=arguments)
 
-print('\nSaving inferred labeling as TSV file to \'{0}.labels.tsv\'.'.format(arguments.fout))
-np.savetxt('{0}.labels.tsv'.format(arguments.fout), (pred_lbls, remain_cell_inds), fmt='%u', delimiter='\t')
+print reject[0][1]
+print reject[0][0]
 
+print('\nSaving inferred labeling as TSV file to \'{0}.labels.tsv\'.'.format(arguments.fout))
+np.savetxt('{0}.labels.tsv'.format(arguments.fout), (pred_lbls.T, remain_cell_inds.T, reject[0][1].T), fmt='%g', delimiter='\t')
 
 print('Done.')

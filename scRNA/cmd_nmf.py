@@ -12,15 +12,37 @@ parser.add_argument("--fname", help="Target TSV dataset filename", required=True
 parser.add_argument("--flabels", help="Target TSV labels filename", default=None, type=str)
 parser.add_argument("--fout", help="Result filename (no extension)", default='out', type=str)
 
-parser.add_argument("--cf_min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
-parser.add_argument("--cf_non_zero_threshold", help="(Cell filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
-
-parser.add_argument("--gf_perc_consensus_genes", help="(Gene filter) Filter genes that have a consensus greater than this value across all cells (default 0.98)", default=0.98, type = float)
-parser.add_argument("--gf_non_zero_threshold", help="(Gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
+parser.add_argument("--min_expr_genes", help="(Target cell filter) Minimum number of expressed genes (default 2000)", default=2000, type = int)
+parser.add_argument("--non_zero_threshold", help="(Target cell/gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type = float)
+parser.add_argument("--perc_consensus_genes", help="(Target gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type = float)
 
 parser.add_argument("--nmf_k", help="(NMF) Number of latent components (default 10)", default=10, type = int)
 parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=1.0, type = float)
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
+
+parser.add_argument(
+    "--cell-filter",
+    help = "Enable cell filter for source and target datasets.",
+    dest = "use_cell_filter",
+    action = 'store_true')
+parser.add_argument(
+    "--no-cell-filter",
+    help = "Disable cell filter for source and target datasets.",
+    dest = "use_cell_filter",
+    action = 'store_false')
+parser.set_defaults(use_cell_filter = True)
+
+parser.add_argument(
+    "--gene-filter",
+    help = "Enable gene filter for source and target datasets.",
+    dest = "use_gene_filter",
+    action = 'store_true')
+parser.add_argument(
+    "--no-gene-filter",
+    help = "Disable gene filter for source and target datasets.",
+    dest = "use_gene_filter",
+    action = 'store_false')
+parser.set_defaults(use_gene_filter = True)
 
 parser.add_argument(
     "--transform",
@@ -47,17 +69,20 @@ data, _, labels = load_dataset_tsv(dataset, flabels=arguments.flabels)
 print('Found {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 
 num_transcripts, num_cells = data.shape
-remain_cell_inds = np.arange(0, num_cells)
 
 # 2. FILTER DATA (GENES AND TRANSCRIPTS)
-res = sc.cell_filter(data, num_expr_genes=arguments.cf_min_expr_genes, non_zero_threshold=arguments.cf_non_zero_threshold)
-remain_cell_inds = np.intersect1d(remain_cell_inds, res)
+remain_cell_inds = np.arange(0, num_cells)
+if arguments.use_cell_filter:
+    res = sc.cell_filter(data, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold)
+    remain_cell_inds = np.intersect1d(remain_cell_inds, res)
 A = data[:, remain_cell_inds]
 
 remain_gene_inds = np.arange(0, num_transcripts)
-res = sc.gene_filter(data, perc_consensus_genes=arguments.gf_perc_consensus_genes, non_zero_threshold=arguments.gf_non_zero_threshold)
-remain_gene_inds = np.intersect1d(remain_gene_inds, res)
+if arguments.use_cell_filter:
+    res = sc.gene_filter(data, perc_consensus_genes=arguments.perc_consensus_genes, non_zero_threshold=arguments.non_zero_threshold)
+    remain_gene_inds = np.intersect1d(remain_gene_inds, res)
 X = A[remain_gene_inds, :]
+
 if arguments.transform:
     X = sc.data_transformation_log2(X)
 print X.shape, np.min(X), np.max(X)

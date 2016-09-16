@@ -80,7 +80,7 @@ def kta_align_binary(K, y):
     # Computes the (empirical) alignment of kernel K1 and
     # a corresponding binary label  vector y \in \{+1, -1\}^m
 
-    m = np.float(y.size)
+    m = np.int(y.size)
     YY = y.reshape((m, 1)).dot(y.reshape((1, m)))
     return K.dot(YY).trace() / (m * np.sqrt(K.dot(K.T).trace()))
 

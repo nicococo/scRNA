@@ -45,11 +45,11 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
 
 
 def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
-                 nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
-                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94,
+                 nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75,
+                 data_transf_fun=None, cell_filter_fun=None, gene_filter_fun=None,
                  max_iter=5000, rel_err=1e-6):
     """
-    Multitask SC3 distance function.
+    Multitask SC3 distance function + Pre-processing.
     :param data: Target dataset (trg-genes x trg-cells)
     :param gene_ids: Target gene ids
     :param fmtl: Filename of the scRNA source dataset (src-genes x src-cells)
@@ -57,10 +57,11 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
     :param nmf_k: Number of latent components (cluster)
     :param nmf_alpha: Regularization influence
     :param nmf_l1: [0,1] strength of l1-regularizer within regularization
-    :param data_transformation_fun: Target data transformation function (e.g. log2+1 transfor, or None)
-    :param num_expr_genes: cell filter parameter
-    :param non_zero_threshold: cell- and gene-filter parameter
-    :param perc_consensus_genes: gene filter parameter
+    :param data_transf_fun: Source data transformation function (e.g. log2+1 transfor, or None)
+    :param cell_filter_fun: Source cell filter function
+    :param gene_filter_fun: Source gene filter function
+    :param max_iter: maximum number of iterations for target nmf
+    :param rel_err: maximum relative error before target nmf stops
     :return: Distance matrix trg-cells x trg-cells
     """
     pdata, pgene_ids, labels = load_dataset_tsv(fmtl, fgenes=fmtl_geneids)
@@ -68,19 +69,18 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
 
     # filter cells
     remain_cell_inds = np.arange(0, num_cells)
-    res = cell_filter(pdata, num_expr_genes=num_expr_genes, non_zero_threshold=non_zero_threshold)
+    res = cell_filter_fun(pdata)
     remain_cell_inds = np.intersect1d(remain_cell_inds, res)
     A = pdata[:, remain_cell_inds]
 
     # filter genes
     remain_inds = np.arange(0, num_transcripts)
-    res = gene_filter(A, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
+    res = gene_filter_fun(A)
     remain_inds = np.intersect1d(remain_inds, res)
 
     # transform data
     X = A[remain_inds, :]
-    if data_transformation_fun is not None:
-        X = data_transformation_fun(X)
+    X = data_transf_fun(X)
     pgene_ids = pgene_ids[remain_inds]
 
     # find (and translate) a common set of genes
@@ -95,14 +95,14 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
 
     if not np.unique(pgene_ids).shape[0] == pgene_ids.shape[0]:
         # raise Exception('(MTL) Gene ids are supposed to be unique.')
-        print('\nError! (MTL gene ids) Gene ids are supposed to be unique. '
+        print('Warning! (MTL gene ids) Gene ids are supposed to be unique. '
               'Only {0} of {1}  entries are unique.'.format(np.unique(pgene_ids).shape[0], pgene_ids.shape[0]))
-        print('Only first occurance will be used.\n')
+        print('Only first occurance will be used.')
     if not np.unique(gene_ids).shape[0] == gene_ids.shape[0]:
         # raise Exception('(Target) Gene ids are supposed to be unique.')
-        print('\nError! (Target gene ids) Gene ids are supposed to be unique. '
+        print('Warning! (Target gene ids) Gene ids are supposed to be unique. '
               'Only {0} of {1}  entries are unique.'.format(np.unique(gene_ids).shape[0], gene_ids.shape[0]))
-        print('Only first occurance will be used.\n')
+        print('Only first occurance will be used.')
 
     common_ids = np.intersect1d(gene_ids, pgene_ids)
     print('Both datasets have (after processing) {0} gene ids in common.'.format(common_ids.shape[0]))
@@ -126,8 +126,8 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
 
 
 def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
-                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, data_transformation_fun=None,
-                 num_expr_genes=2000, non_zero_threshold=2, perc_consensus_genes=0.94):
+                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75,
+                 data_transf_fun=None, cell_filter_fun=None, gene_filter_fun=None):
     """
     Multitask SC3 distance function.
     :param data: Target dataset (trg-genes x trg-cells)
@@ -139,26 +139,29 @@ def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean
     :param nmf_k: Number of latent components (cluster)
     :param nmf_alpha: Regularization influence
     :param nmf_l1: [0,1] strength of l1-regularizer within regularization
-    :param data_transformation_fun: Target data transformation function (e.g. log2+1 transfor, or None)
-    :param num_expr_genes: cell filter parameter
-    :param non_zero_threshold: cell- and gene-filter parameter
-    :param perc_consensus_genes: gene filter parameter
+    :param data_transf_fun: Source data transformation function (e.g. log2+1 transfor, or None)
+    :param cell_filter_fun: Source cell filter function
+    :param gene_filter_fun: Source gene filter function
     :return: Distance matrix trg-cells x trg-cells
     """
     W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds = nmf_mtl_full(
         data, gene_ids, fmtl=fmtl, fmtl_geneids=fmtl_geneids,
         nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1,
-        data_transformation_fun=data_transformation_fun,
-        num_expr_genes=num_expr_genes, non_zero_threshold=non_zero_threshold,
-        perc_consensus_genes=perc_consensus_genes)
+        data_transf_fun=data_transf_fun, cell_filter_fun=cell_filter_fun, gene_filter_fun=gene_filter_fun)
 
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
     # normalize distance
-    print 'Max dists: ', np.max(dist1), np.max(dist2)
-    normalizer = np.max(dist1) / np.max(dist2)
-    dist2 *= normalizer
+    if np.max(dist2) < 1e-10:
+        if mixture == 1.0:
+            raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
+                            ' data do not go well together.')
+        else:
+            print 'Warning! Max distance is 0.0.'
+    else:
+        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+        dist2 *= np.max(dist1) / np.max(dist2)
     return mixture*dist2 + (1.-mixture)*dist1
 
 
@@ -181,6 +184,14 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     W = nmf.fit_transform(Xsrc)
     Hsrc = nmf.components_
 
+    # check solution: if regularizer is too strong this can result in 'NaN's
+    if np.any(np.isnan(W)):
+        raise Exception('W contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+            nmf_alpha, nmf_k, nmf_l1, Xsrc.shape[0], Xsrc.shape[1]))
+    if np.any(np.isnan(Hsrc)):
+        raise Exception('Hsrc contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+            nmf_alpha, nmf_k, nmf_l1, Xsrc.shape[0], Xsrc.shape[1]))
+
     H = np.random.randn(nmf_k, Xtrg.shape[1])
     a1, a2 = np.where(H < 0.)
     H[a1, a2] *= -1.
@@ -198,6 +209,10 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     print '  Elementwise absolute reconstruction error   : ', np.sum(np.abs(Xtrg - W.dot(H))) / np.float(Xtrg.size)
     print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)
 
+    if np.any(np.isnan(H)):
+        raise Exception('Htrg contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+            nmf_alpha, nmf_k, nmf_l1, Xsrc.shape[0], Xsrc.shape[1]))
+
     H2 = np.zeros((nmf_k, Xtrg.shape[1]))
     H2[(np.argmax(H, axis=0), np.arange(Xtrg.shape[1]))] = 1
     # H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = np.sum(H, axis=0)
@@ -205,33 +220,40 @@ def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel
     print '  H2 Elementwise absolute reconstruction error: ', np.sum(np.abs(Xtrg - W.dot(H2))) / np.float(Xtrg.size)
     print '  H2 Fro-norm reconstruction error            : ', np.sqrt(np.sum((Xtrg - W.dot(H2))*(Xtrg - W.dot(H2)))) / np.float(Xtrg.size)
 
+    kurts = stats.kurtosis(H, fisher=False, axis=0)
+    K1 = Xtrg.T.dot(Xtrg)
+    K2 = W.dot(H).T.dot(W.dot(H))
+    K3 = W.dot(H2).T.dot(W.dot(H2))
+
+    def classifier(K, kurts):
+        from utils import kta_align_binary, normalize_kernel, center_kernel
+        sinds = np.argsort(kurts)
+        K = center_kernel(K)
+        K = normalize_kernel(K)
+        max_kta = -1.0
+        max_kta_ind = -1
+        for i in range(Xtrg.shape[1]-2):
+            # 1. build binary label matrix
+            labels = np.ones(kurts.size, dtype=np.int)
+            labels[sinds[:i+1]] = -1
+            kta = kta_align_binary(K, labels)
+            if kta > max_kta:
+                max_kta = kta
+                max_kta_ind = i+1
+
+        labels = np.ones(kurts.size, dtype=np.int)
+        labels[sinds[:max_kta_ind]] = -1
+        return labels
+
     reject = list()
     reject.append(('kurtosis', stats.kurtosis(H, fisher=False, axis=0)))
-    reject.append(('Dist L2 H', np.sum( (np.abs(Xtrg - W.dot(H))**2. ), axis=0)))
-    reject.append(('Dist L2 H2', np.sum( (np.abs(Xtrg - W.dot(H2))**2. ), axis=0)))
-    reject.append(('Dist L1 H', np.sum( np.abs(Xtrg - W.dot(H)), axis=0)))
-    reject.append(('Dist L1 H2', np.sum( np.abs(Xtrg - W.dot(H2)), axis=0)))
-    # sinds = np.argsort(kurts)
-    # inds = np.where(trg_labels[sinds] == 1)[0]
-    # plt.plot(np.arange(sinds.size), kurts[sinds], '.r', markersize=4)
-    # plt.plot(inds, kurts[sinds[inds]], '.b', markersize=4)
-    #
-    # plt.subplot(1, 3, 2)
-    # dists = np.sum( (np.abs(Y - W.dot(H))**2. ), axis=0)
-    # sinds = np.argsort(dists)
-    # inds = np.where(trg_labels[sinds] == 1)[0]
-    #
-    # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
-    # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
-    #
-    # plt.subplot(1, 3, 3)
-    # dists = np.sum( (np.abs(Y - W.dot(H2))**2. ), axis=0)
-    # sinds = np.argsort(dists)
-    # inds = np.where(trg_labels[sinds] == 1)[0]
-    #
-    # plt.plot(np.arange(sinds.size), dists[sinds], '.r', markersize=4)
-    # plt.plot(inds, dists[sinds[inds]], '.b', markersize=4)
-    # plt.show()
+    reject.append(('KTA kurt1', classifier(K1, kurts)))
+    reject.append(('KTA kurt2', classifier(K2, kurts)))
+    reject.append(('KTA kurt3', classifier(K3, kurts)))
+    reject.append(('Dist L2 H', -np.sum( (np.abs(Xtrg - W.dot(H))**2. ), axis=0)))
+    reject.append(('Dist L2 H2', -np.sum( (np.abs(Xtrg - W.dot(H2))**2. ), axis=0)))
+    reject.append(('Dist L1 H', -np.sum( np.abs(Xtrg - W.dot(H)), axis=0)))
+    reject.append(('Dist L1 H2', -np.sum( np.abs(Xtrg - W.dot(H2)), axis=0)))
     return W, H, H2, Hsrc, reject
 
 
@@ -268,8 +290,18 @@ def mtl_toy_distance(data, gene_ids, src_data, src_labels=None, trg_labels=None,
     dist1 = distances(data, [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
     # normalize distance
-    print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
-    dist2 *= np.max(dist1) / np.max(dist2)
+
+    if np.max(dist2) < 1e-10:
+        if mixture == 1.0:
+            print 'Warning! Max distance is 0.0 and mixture=1.0: reducing mixture to 0.9.'
+            mixture = 0.9
+            # raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
+            #                 ' data do not go well together.')
+        else:
+            print 'Warning! Max distance is 0.0.'
+    else:
+        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+        dist2 *= np.max(dist1) / np.max(dist2)
 
     print 'Max dists after normalization: ', np.max(dist1), np.max(dist2)
     fdist = mixture*dist2 + (1.-mixture)*dist1

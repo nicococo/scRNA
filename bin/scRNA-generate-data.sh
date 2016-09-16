@@ -1,3 +1,3 @@
-#!/usr/bin/env python
+#!python
 
 from scRNA import cmd_generate_data
