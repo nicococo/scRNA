@@ -181,7 +181,7 @@ def NMF_clustering(data, num_clusters=4):
 
 if __name__ == "__main__":
     # Toy experiment parameters
-    reps = 5  # 50, number of repetitions
+    reps = 2  # 50, number of repetitions
 
     # Data generation parameters
     num_genes = 200  # 5000, number of genes
@@ -271,9 +271,9 @@ if __name__ == "__main__":
 
             # Run SC3 on target data
             SC3_labels = SC3_clustering(target_data, num_clusters, SC3_norm)
-            SC3_original_labels = SC3_original_clustering(target_data, num_clusters, SC3_norm)
+            # SC3_original_labels = SC3_original_clustering(target_data, num_clusters, SC3_norm)
             ARIs_SC3[repetition, target_size_index] = adjusted_rand_score(target_labels, SC3_labels)
-            ARIs_SC3_original[repetition, target_size_index] = adjusted_rand_score(target_labels, SC3_original_labels)
+            #ARIs_SC3_original[repetition, target_size_index] = adjusted_rand_score(target_labels, SC3_original_labels)
 
             # Run SC3 with MTL distances
             for mixture_index in range(len(SC3_MTL_mixtures)):
@@ -298,9 +298,9 @@ if __name__ == "__main__":
     SC3_ARI_means = np.mean(ARIs_SC3, axis=0)
     SC3_ARI_CIs = sms.DescrStatsW(ARIs_SC3).tconfint_mean()
     SC3_ARI_errorbars = (SC3_ARI_CIs[1] - SC3_ARI_CIs[0])/2
-    SC3_original_ARI_means = np.mean(ARIs_SC3_original, axis=0)
-    SC3_original_ARI_CIs = sms.DescrStatsW(ARIs_SC3_original).tconfint_mean()
-    SC3_original_ARI_errorbars = (SC3_original_ARI_CIs[1] - SC3_original_ARI_CIs[0]) / 2
+    #SC3_original_ARI_means = np.mean(ARIs_SC3_original, axis=0)
+    #SC3_original_ARI_CIs = sms.DescrStatsW(ARIs_SC3_original).tconfint_mean()
+    #SC3_original_ARI_errorbars = (SC3_original_ARI_CIs[1] - SC3_original_ARI_CIs[0]) / 2
     NMF_ARI_means = np.mean(ARIs_NMF, axis=0)
     NMF_ARI_CIs = sms.DescrStatsW(ARIs_NMF).tconfint_mean()
     NMF_ARI_errorbars = (NMF_ARI_CIs[1] - NMF_ARI_CIs[0])/2
@@ -323,8 +323,8 @@ if __name__ == "__main__":
     c = next(color)
     ax.errorbar(target_sizes, SC3_ARI_means, yerr=SC3_ARI_errorbars, color=c, label='SC3', **linestyle)
     c = next(color)
-    ax.errorbar(target_sizes, SC3_original_ARI_means, yerr=SC3_original_ARI_errorbars, color=c, label='SC3 original', **linestyle)
-    c = next(color)
+    #ax.errorbar(target_sizes, SC3_original_ARI_means, yerr=SC3_original_ARI_errorbars, color=c, label='SC3 original', **linestyle)
+    #c = next(color)
     ax.errorbar(target_sizes, NMF_ARI_means, yerr=NMF_ARI_errorbars, color=c, label='NMF', **linestyle)
 
     for mixture_index in range(len(SC3_MTL_mixtures)):
