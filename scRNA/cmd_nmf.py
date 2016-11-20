@@ -3,7 +3,7 @@ import argparse, sys
 import sklearn.decomposition as decomp
 from sklearn.metrics import adjusted_rand_score
 
-import sc3_pipeline_impl as sc
+import sc3_clustering_impl as sc
 from utils import *
 
 # 0. PARSE ARGUMENTS

@@ -54,7 +54,7 @@ def normalize_kernel(K):
         C = np.eye(N)
     else:
         b = 1. / a
-        C =  b.dot(b.T)
+        C = b.dot(b.T)
     return K * C
 
 

@@ -4,8 +4,8 @@ from functools import partial
 from sklearn.metrics import adjusted_rand_score
 
 import mtl
-import sc3_pipeline_impl as sc
-from sc3_pipeline import SC3Pipeline
+import sc3_clustering_impl as sc
+from sc3_clustering import SC3Clustering
 from utils import *
 
 

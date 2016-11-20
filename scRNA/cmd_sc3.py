@@ -3,8 +3,8 @@ import argparse, sys
 from functools import partial
 from sklearn.metrics import adjusted_rand_score
 
-import sc3_pipeline_impl as sc
-from sc3_pipeline import SC3Pipeline
+import sc3_clustering_impl as sc
+from sc3_clustering import SC3Clustering
 from utils import *
 
 
@@ -78,7 +78,7 @@ max_pca_comp = np.ceil(num_cells*0.07).astype(np.int)
 min_pca_comp = np.floor(num_cells*0.04).astype(np.int)
 print('(Max/Min) PCA components: ({0}/{1})'.format(max_pca_comp, min_pca_comp))
 
-cp = SC3Pipeline(data, np.arange(data.shape[0]), pc_range=[min_pca_comp, max_pca_comp], sub_sample=True, consensus_mode=0)
+cp = SC3Clustering(data, np.arange(data.shape[0]), pc_range=[min_pca_comp, max_pca_comp], sub_sample=True, consensus_mode=0)
 
 if arguments.use_cell_filter:
     cp.add_cell_filter(partial(sc.cell_filter, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold))

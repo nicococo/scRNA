@@ -3,7 +3,7 @@ import numpy as np
 from abstract_clustering_pipeline import AbstractClusteringPipeline
 
 
-class SC3Pipeline(AbstractClusteringPipeline):
+class SC3Clustering(AbstractClusteringPipeline):
     """ Meta-class for single-cell clustering based on the SC3 pipeline.
         Nico Goernitz, TU Berlin, 2016
     """
@@ -20,7 +20,7 @@ class SC3Pipeline(AbstractClusteringPipeline):
 
     def __init__(self, data, gene_ids=None,
                  pc_range=[4, 10], sub_sample=True, consensus_mode=0):
-        super(SC3Pipeline, self).__init__(data, gene_ids=gene_ids)
+        super(SC3Clustering, self).__init__(data, gene_ids=gene_ids)
         # init lists
         self.dists_list = list()
         self.dimred_list = list()

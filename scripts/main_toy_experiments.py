@@ -1,10 +1,9 @@
 import matplotlib.pyplot as plt
 from functools import partial
 
-import sc3_pipeline_impl as sc
-from sc3_pipeline import SC3Pipeline
-from toy_experiments import SC3_original_clustering
-from da_nmf_pipeline import DaNmfPipeline
+import sc3_clustering_impl as sc
+from sc3_clustering import SC3Clustering
+from nmf_clustering import DaNmfMixingClustering, NmfClustering
 from simulation import *
 from mtl import *
 
@@ -16,8 +15,8 @@ def method_sc3(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
     min_pca_comp = np.floor(num_cells * 0.04).astype(np.int)
     print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
 
-    cp = SC3Pipeline(trg, pc_range=[min_pca_comp, max_pca_comp],
-                     consensus_mode=consensus_mode, sub_sample=True)
+    cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],
+                       consensus_mode=consensus_mode, sub_sample=True)
     # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=1, num_expr_genes=2000))
     # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
     # cp.set_data_transformation(sc.data_transformation)
@@ -36,25 +35,27 @@ def method_sc3(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
     return desc, cp.cluster_labels, None
 
 
-def method_da_nmf(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster, use_strat=False):
-    ids = np.arange(src.shape[0])
-    cp = DaNmfPipeline(src, ids, trg, ids.copy())
-    # cp.add_cell_filter(partial(sc.cell_filter, non_zero_threshold=1, num_expr_genes=2000))
-    # cp.add_gene_filter(partial(sc.gene_filter, perc_consensus_genes=0.94, non_zero_threshold=1))
-    # cp.set_data_transformation(sc.data_transformation)
-    cp.apply(trg_k=n_trg_cluster, src_k=n_src_cluster)
+def method_da_nmf(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster, mix=0.0):
+    src = NmfClustering(src, np.arange(src.shape[0]), num_cluster=n_src_cluster)
+    cp = DaNmfMixingClustering(src, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
+    cp.apply(mix=mix)
     lbls = cp.cluster_labels
-    desc = 'DA-NMF'
-    if use_strat:
-        trg_lbls = cp.trg_standalone_cluster_labels
-        bin_lbls = cp.trg_reject_option[1][1]
-        inds = np.where(bin_lbls == -1)[0]
-        lbls[inds] = trg_lbls[inds]
-        desc = 'DA-NMF*'
-    return desc, lbls, cp.trg_reject_option
+    desc = 'DA-NMF-Mix {0}'.format(mix)
+    return desc, lbls, cp.reject
+
+
+def method_nmf(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster):
+    ids = np.arange(trg.shape[0])
+    cp = NmfClustering(trg, ids, num_cluster=n_trg_cluster)
+    cp.apply()
+    return 'NMF', cp.cluster_labels, None
 
 
 def plot_percs_accs(fname):
+    """
+    :param fname: str
+    :return: None
+    """
     foo = np.load(fname)
     aris = foo['aris']
     methods = foo['methods']
@@ -120,14 +121,12 @@ def plot_single(fig_num, title, aris, methods, percs, n_src, n_trg, desc):
     plt.ylabel('Area under curve', fontsize=14)
 
 
-def exp_percs_accs(methods, n_src=800, n_trg=800, mode=2, reps=10, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]]):
+def exp_percs_accs(methods, n_src=800, n_trg=800, mode=2, reps=10,
+                   cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], percs=[0.1, 0.4, 0.8]):
     flatten = lambda l: flatten(l[0]) + (flatten(l[1:]) if len(l) > 1 else []) if type(l) is list else [l]
     n_cluster = len(flatten(cluster_spec))
     print 'Number of cluster is ', n_cluster
     fname = 'res_mtl_m{0}_r{1}.npz'.format(mode, reps)
-
-    percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
-    # percs = [0.1, 0.4, 0.8]
 
     aris = np.zeros((reps, len(percs), len(methods)))
     aris_strat = np.zeros((reps, len(percs), len(methods)))
@@ -201,15 +200,24 @@ def exp_percs_accs(methods, n_src=800, n_trg=800, mode=2, reps=10, cluster_spec=
 
 
 if __name__ == "__main__":
+    percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
+    # percs = [0.1, 0.4, 0.8]
 
     methods = list()
     methods.append(partial(method_sc3, mix=0.0, metric='euclidean'))
+    methods.append(partial(method_sc3, mix=0.5, metric='euclidean'))
+    methods.append(partial(method_sc3, mix=1.0, metric='euclidean'))
+    methods.append(partial(method_nmf))
     # methods.append(partial(method_sc3, mix=0.2, metric='euclidean'))
     # methods.append(partial(method_sc3, mix=0.8, metric='euclidean'))
-    methods.append(partial(method_da_nmf, use_strat=True))
-    methods.append(partial(method_da_nmf, use_strat=False))
+    methods.append(partial(method_da_nmf, mix=0.0))
+    # methods.append(partial(method_da_nmf, mix=0.25))
+    methods.append(partial(method_da_nmf, mix=0.5))
+    # methods.append(partial(method_da_nmf, mix=0.75))
+    methods.append(partial(method_da_nmf, mix=1.0))
+    # methods.append(partial(method_da_nmf, use_strat=False))
 
-    exp_percs_accs(methods, mode=4, reps=5, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]])
+    exp_percs_accs(methods, mode=4, reps=3, cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], percs=percs)
 
-    fname = 'res_mtl_m4_r5.npz'
+    fname = 'res_mtl_m4_r3.npz'
     plot_percs_accs(fname)

@@ -3,7 +3,7 @@ from sklearn import decomposition as decomp
 import sklearn.metrics as metrics
 import scipy.stats as stats
 
-from sc3_pipeline_impl import cell_filter, gene_filter, data_transformation_log2, distances
+from sc3_clustering_impl import cell_filter, gene_filter, data_transformation_log2, distances
 from utils import load_dataset_tsv
 
 

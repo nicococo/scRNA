@@ -6,7 +6,7 @@ from abstract_clustering_pipeline import AbstractClusteringPipeline
 from utils import kta_align_binary, normalize_kernel, center_kernel
 
 
-class DaNmfPipeline(AbstractClusteringPipeline):
+class OldDaNmfPipeline(AbstractClusteringPipeline):
     src_gene_ids = None
     src_data = None
     src_pp_data = None
@@ -21,7 +21,7 @@ class DaNmfPipeline(AbstractClusteringPipeline):
     trg_reject_option = None
 
     def __init__(self, src_data, src_gene_ids, trg_data, trg_gene_ids):
-        super(DaNmfPipeline, self).__init__(trg_data, gene_ids=trg_gene_ids)
+        super(OldDaNmfPipeline, self).__init__(trg_data, gene_ids=trg_gene_ids)
         self.src_data = src_data
         self.src_gene_ids = src_gene_ids
 
@@ -152,6 +152,11 @@ class DaNmfPipeline(AbstractClusteringPipeline):
         self.trg_reject_option = reject
 
     def reject_classifier(self, K, kurts):
+        """
+        :param K: numpy.array
+        :param kurts: numpy.array
+        :return: numpy.array
+        """
         sinds = np.argsort(kurts)
         K = center_kernel(K)
         K = normalize_kernel(K)
