@@ -3,7 +3,7 @@ from functools import partial
 
 import sc3_clustering_impl as sc
 from sc3_clustering import SC3Clustering
-from nmf_clustering import DaNmfMixingClustering, NmfClustering
+from nmf_clustering import DaNmfClustering, NmfClustering
 from simulation import *
 from mtl import *
 
@@ -37,7 +37,7 @@ def method_sc3(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
 
 def method_da_nmf(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster, mix=0.0):
     src = NmfClustering(src, np.arange(src.shape[0]), num_cluster=n_src_cluster)
-    cp = DaNmfMixingClustering(src, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
+    cp = DaNmfClustering(src, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
     cp.apply(mix=mix)
     lbls = cp.cluster_labels
     desc = 'DA-NMF-Mix {0}'.format(mix)

@@ -44,6 +44,46 @@ def filter_and_sort_genes(gene_ids1, gene_ids2):
     return np.array(inds1, dtype=np.int), np.array(inds2, dtype=np.int)
 
 
+def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
+                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75,
+                 data_transf_fun=None, cell_filter_fun=None, gene_filter_fun=None):
+    """
+    Multitask SC3 distance function.
+    :param data: Target dataset (trg-genes x trg-cells)
+    :param gene_ids: Target gene ids
+    :param fmtl: Filename of the scRNA source dataset (src-genes x src-cells)
+    :param fmtl_geneids: Filename for corresponding source gene ids
+    :param metric: Which metric should be applied.
+    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
+    :param nmf_k: Number of latent components (cluster)
+    :param nmf_alpha: Regularization influence
+    :param nmf_l1: [0,1] strength of l1-regularizer within regularization
+    :param data_transf_fun: Source data transformation function (e.g. log2+1 transfor, or None)
+    :param cell_filter_fun: Source cell filter function
+    :param gene_filter_fun: Source gene filter function
+    :return: Distance matrix trg-cells x trg-cells
+    """
+    W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds = nmf_mtl_full(
+        data, gene_ids, fmtl=fmtl, fmtl_geneids=fmtl_geneids,
+        nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1,
+        data_transf_fun=data_transf_fun, cell_filter_fun=cell_filter_fun, gene_filter_fun=gene_filter_fun)
+
+    # convex combination of vanilla distance and nmf distance
+    dist1 = distances(data, [], metric=metric)
+    dist2 = distances(W.dot(H2), [], metric=metric)
+    # normalize distance
+    if np.max(dist2) < 1e-10:
+        if mixture == 1.0:
+            raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
+                            ' data do not go well together.')
+        else:
+            print 'Warning! Max distance is 0.0.'
+    else:
+        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+        dist2 *= np.max(dist1) / np.max(dist2)
+    return mixture*dist2 + (1.-mixture)*dist1
+
+
 def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
                  nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75,
                  data_transf_fun=None, cell_filter_fun=None, gene_filter_fun=None,
@@ -123,46 +163,6 @@ def nmf_mtl_full(data, gene_ids, fmtl=None, fmtl_geneids=None,
     src_gene_inds = inds2
     trg_gene_inds = inds1
     return W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds
-
-
-def mtl_distance(data, gene_ids, fmtl=None, fmtl_geneids=None, metric='euclidean',
-                 mixture=0.75, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75,
-                 data_transf_fun=None, cell_filter_fun=None, gene_filter_fun=None):
-    """
-    Multitask SC3 distance function.
-    :param data: Target dataset (trg-genes x trg-cells)
-    :param gene_ids: Target gene ids
-    :param fmtl: Filename of the scRNA source dataset (src-genes x src-cells)
-    :param fmtl_geneids: Filename for corresponding source gene ids
-    :param metric: Which metric should be applied.
-    :param mixture: [0,1] Convex combination of target only distance and mtl distance (0: no mtl influence)
-    :param nmf_k: Number of latent components (cluster)
-    :param nmf_alpha: Regularization influence
-    :param nmf_l1: [0,1] strength of l1-regularizer within regularization
-    :param data_transf_fun: Source data transformation function (e.g. log2+1 transfor, or None)
-    :param cell_filter_fun: Source cell filter function
-    :param gene_filter_fun: Source gene filter function
-    :return: Distance matrix trg-cells x trg-cells
-    """
-    W, H, H2, Hsrc, reject, src_gene_inds, trg_gene_inds = nmf_mtl_full(
-        data, gene_ids, fmtl=fmtl, fmtl_geneids=fmtl_geneids,
-        nmf_k=nmf_k, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1,
-        data_transf_fun=data_transf_fun, cell_filter_fun=cell_filter_fun, gene_filter_fun=gene_filter_fun)
-
-    # convex combination of vanilla distance and nmf distance
-    dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H2), [], metric=metric)
-    # normalize distance
-    if np.max(dist2) < 1e-10:
-        if mixture == 1.0:
-            raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
-                            ' data do not go well together.')
-        else:
-            print 'Warning! Max distance is 0.0.'
-    else:
-        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
-        dist2 *= np.max(dist1) / np.max(dist2)
-    return mixture*dist2 + (1.-mixture)*dist1
 
 
 def mtl_nmf(Xsrc, Xtrg, nmf_k=10, nmf_alpha=1.0, nmf_l1=0.75, max_iter=5000, rel_err=1e-6):

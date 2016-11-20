@@ -43,7 +43,7 @@ class NmfClustering(AbstractClusteringPipeline):
                                                                     / np.float(X.size)
 
 
-class DaNmfMixingClustering(NmfClustering):
+class DaNmfClustering(NmfClustering):
     reject = None
 
     src = None
@@ -53,7 +53,7 @@ class DaNmfMixingClustering(NmfClustering):
     trg_common_gene_inds = None
 
     def __init__(self, src, trg_data, trg_gene_ids, num_cluster):
-        super(DaNmfMixingClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster)
+        super(DaNmfClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster)
         self.src = src
         assert(isinstance(self.src, NmfClustering))
 
