@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 
-class AbstractClusteringPipeline(object):
+class AbstractClustering(object):
     __metaclass__ = ABCMeta
 
     cell_filter_list = None

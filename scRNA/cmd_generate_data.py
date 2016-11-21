@@ -48,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
     "--num_cells",
     help = "Number of cells (default 1000)",
-    default = 1000,
+    default = 2000,
     type = int
 )
 
@@ -155,7 +155,7 @@ parser.add_argument(
 parser.add_argument(
     "--splitting_mode",
     help = "Splitting mode:\n\t- 1 = split randomly\n\t- 2 = split randomly, but stratified\n\t- 3 = Split randomly but antistratified\n\t- 4 = Have some overlapping and some exclusive clusters\n\t- 5 = Have only exclusive clusters\n\t- 6 = Have some defined clusters as the source\n\t(default 2)",
-    default = 2,
+    default = 4,
     type = int
 )
 parser.add_argument(

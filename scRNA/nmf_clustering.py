@@ -2,10 +2,10 @@ import numpy as np
 import scipy.stats as stats
 from sklearn import decomposition as decomp
 
-from abstract_clustering_pipeline import AbstractClusteringPipeline
+from abstract_clustering import AbstractClustering
 from utils import center_kernel, normalize_kernel, kta_align_binary
 
-class NmfClustering(AbstractClusteringPipeline):
+class NmfClustering(AbstractClustering):
     num_cluster = -1
     dictionary = None
     data_matrix = None
@@ -52,6 +52,8 @@ class DaNmfClustering(NmfClustering):
     src_common_gene_inds = None
     trg_common_gene_inds = None
 
+    intermediate_model = None
+
     def __init__(self, src, trg_data, trg_gene_ids, num_cluster):
         super(DaNmfClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster)
         self.src = src
@@ -78,7 +80,10 @@ class DaNmfClustering(NmfClustering):
             print('Only first occurance will be used.\n')
 
         common_ids = np.intersect1d(trg_gene_ids, src_gene_ids)
-        print('Both datasets have (after processing) {0} gene ids in common.'.format(common_ids.shape[0]))
+        print('Both datasets have (after processing) {0} (src={1}%,trg={2}%) gene ids in common.'.format(
+            common_ids.shape[0],
+            np.int(np.float(common_ids.size)/np.float(src_gene_ids.size)*100.0),
+            np.int(np.float(common_ids.size)/np.float(trg_gene_ids.size)*100.0) ))
 
         # find indices of common_ids in pgene_ids and gene_ids
         inds1 = np.zeros(common_ids.shape[0], dtype=np.int)
@@ -95,6 +100,8 @@ class DaNmfClustering(NmfClustering):
         self.trg_common_gene_inds = inds1
 
         # src_data = src_data[inds2, :]
+        print('WARNING! Src data will be changed.')
+        self.src.data = src_data[inds2, :]
         self.src.pp_data = src_data[inds2, :]
         self.src.gene_ids = self.src.gene_ids[inds2]
         trg_data = trg_data[inds1, :]
@@ -131,6 +138,7 @@ class DaNmfClustering(NmfClustering):
         # H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = np.sum(H, axis=0)
         self.cluster_labels = np.argmax(H, axis=0)
         self.print_reconstruction_error(trg_data, W, H2)
+        self.intermediate_model = (W, H, H2)
         self.reject = self.calc_rejection(trg_data, W, H, H2)
 
         new_trg_data = W.dot(H2)
@@ -169,7 +177,7 @@ class DaNmfClustering(NmfClustering):
         reject.append(('Dist L2 H2', -np.sum((np.abs(trg_data - W.dot(H2))**2. ), axis=0)))
         reject.append(('Dist L1 H', -np.sum(np.abs(trg_data - W.dot(H)), axis=0)))
         reject.append(('Dist L1 H2', -np.sum(np.abs(trg_data - W.dot(H2)), axis=0)))
-        self.reject = reject
+        return reject
 
     def reject_classifier(self, K, kurts):
         """

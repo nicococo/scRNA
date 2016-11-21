@@ -4,6 +4,7 @@ import scipy.stats as stats
 import scipy.linalg as sl
 import sklearn.cluster as cluster
 
+from nmf_clustering import DaNmfClustering
 from utils import *
 
 # These are the SC3 labels for Ting with 7 clusters, PCA, Euclidean distances
@@ -65,6 +66,29 @@ def data_transformation_log2(data):
     """
     print('SC3 log2 data transformation.')
     return np.log2(data + 1.)
+
+
+def da_nmf_distances(data, gene_ids, src, metric='euclidean', mixture=0.5):
+    if mixture == 0.0:
+        return distances(data, [], metric=metric)
+
+    cp = DaNmfClustering(src, data, gene_ids, num_cluster=3)
+    cp.apply(mix=0.0)
+    W, H, H2 = cp.intermediate_model
+    # convex combination of vanilla distance and nmf distance
+    dist1 = distances(data, [], metric=metric)
+    dist2 = distances(W.dot(H2), [], metric=metric)
+    # normalize distance
+    if np.max(dist2) < 1e-10:
+        if mixture == 1.0:
+            raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
+                            ' data do not go well together.')
+        else:
+            print 'Warning! Max distance is 0.0.'
+    else:
+        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+        dist2 *= np.max(dist1) / np.max(dist2)
+    return mixture*dist2 + (1.-mixture)*dist1
 
 
 def distances(data, gene_ids, metric='euclidean'):

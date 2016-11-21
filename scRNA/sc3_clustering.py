@@ -1,9 +1,9 @@
 import numpy as np
 
-from abstract_clustering_pipeline import AbstractClusteringPipeline
+from abstract_clustering import AbstractClustering
 
 
-class SC3Clustering(AbstractClusteringPipeline):
+class SC3Clustering(AbstractClustering):
     """ Meta-class for single-cell clustering based on the SC3 pipeline.
         Nico Goernitz, TU Berlin, 2016
     """
