@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import argparse, sys
 
 from functools import partial
@@ -121,7 +122,9 @@ if arguments.transform:
 # --------------------------------------------------
 mixtures = map(np.float, arguments.mixtures.split(","))
 num_cluster = map(np.int, arguments.trg_ks.split(","))
-accs = np.zeros((2, len(mixtures), len(num_cluster)))
+
+accs_names = ['Calinski-Harabaz', 'Silhouette', 'AUC']
+accs = np.zeros((3, len(mixtures), len(num_cluster)))
 
 for i in range(len(num_cluster)):
     for j in range(len(mixtures)):
@@ -195,14 +198,17 @@ for i in range(len(num_cluster)):
         # 4. EVALUATE CLUSTER ASSIGNMENT
         # --------------------------------------------------
         print('\nUnsupervised evaluation:')
-        accs[0, j, i] = metrics.silhouette_score(
+        accs[0, j, i] = metrics.calinski_harabaz_score(
+            trg_clustering.pp_data.T, trg_clustering.cluster_labels)
+        accs[1, j, i] = metrics.silhouette_score(
             trg_clustering.pp_data.T, trg_clustering.cluster_labels, metric='euclidean')
-        print '  -Silhouette: ', accs[0, j, i]
+        print '  -Calinski-Harabaz: ', accs[0, j, i]
+        print '  -Silhouette      : ', accs[1, j, i]
         if trg_labels is not None:
             print('\nSupervised evaluation:')
-            accs[1, j, i] = metrics.adjusted_rand_score(
+            accs[2, j, i] = metrics.adjusted_rand_score(
                 trg_labels[trg_clustering.remain_cell_inds], trg_clustering.cluster_labels)
-            print '  -ARI: ', accs[1, j, i]
+            print '  -ARI: ', accs[2, j, i]
 
         # --------------------------------------------------
         # 5. SAVE RESULTS
@@ -226,16 +232,23 @@ for i in range(len(num_cluster)):
 # --------------------------------------------------
 # 6. SUMMARIZE RESULTS
 # --------------------------------------------------
-print accs[0, :, :]
-print accs[1, :, :]
 print 'Mixtures:', mixtures
 print 'Cluster:', num_cluster
 
-print('\nSilhouette (mixtures x cluster):')
-print accs[0, :, :].reshape(len(mixtures), len(num_cluster))
+for i in range(accs.shape[0]):
+    print('\n{0} (mixtures x cluster):'.format(accs_names[i]))
+    print accs[i, :, :].reshape(len(mixtures), len(num_cluster))
 
-print('\nAUC (mixtures x cluster):')
-print accs[1, :, :].reshape(len(mixtures), len(num_cluster))
+    plt.figure(i)
+    plt.title(accs_names[i])
+    plt.pcolor(accs[i, :, :])
+    plt.xlabel('Cluster')
+    plt.ylabel('Mixture')
+    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster)
+    plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures)
+    plt.colorbar()
+    plt.savefig('{0}.{1}.png'.format(arguments.fout, accs_names[i]), format='png', bbox_inches=None, pad_inches=0.1)
 
+plt.show()
 
 print('\nDone.')
