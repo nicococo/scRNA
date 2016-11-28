@@ -139,14 +139,22 @@ class DaNmfClustering(NmfClustering):
         self.cluster_labels = np.argmax(H, axis=0)
         self.print_reconstruction_error(trg_data, W, H2)
         self.intermediate_model = (W, H, H2)
-        self.reject = self.calc_rejection(trg_data, W, H, H2)
+        # self.reject = self.calc_rejection(trg_data, W, H, H2)
 
-        new_trg_data = W.dot(H2)
-        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=1000,
+        # new_trg_data = W.dot(H2)
+        new_trg_data = W.dot(H)
+        if np.any(trg_data < 0.0):
+            print('Error! Negative values in target data!')
+        if np.any(mix*new_trg_data + (1.-mix)*trg_data < 0.0):
+            print('Error! Negative values in reconstructed data!')
+        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=2000,
                          n_components=k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
 
         W = nmf.fit_transform(mix*new_trg_data + (1.-mix)*trg_data)
+        # W = nmf.fit_transform(mix*new_trg_data + trg_data)
         H = nmf.components_
+        self.dictionary = W
+        self.data_matrix = H
         self.cluster_labels = np.argmax(nmf.components_, axis=0)
         print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
 

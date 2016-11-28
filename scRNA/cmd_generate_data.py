@@ -42,7 +42,7 @@ parser.add_argument(
 parser.add_argument(
     "--num_genes",
     help = "Number of genes/transcripts per cell (default 10000)",
-    default = 10000,
+    default = 1000,
     type = int
 )
 parser.add_argument(
@@ -117,7 +117,7 @@ parser.add_argument(
 parser.add_argument(
     "--source_ncells",
     help = "How much of data will be source data (default 800)",
-    default = 800,
+    default = 200,
     type = int
 )
 parser.add_argument(

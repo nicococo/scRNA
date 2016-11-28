@@ -30,10 +30,10 @@ parser.add_argument("--src_non_zero_threshold", help="(Source cell/gene filter) 
 parser.add_argument("--src_perc_consensus_genes", help="(Source gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type = float)
 
 parser.add_argument("--src_k", help="(Source) Number of latent components (default 10)", default=7, type = int)
-parser.add_argument("--trg_ks", help="(Target)Comma separated list of latent components (default 10)", default="4,7,8", type = str)
+parser.add_argument("--trg_ks", help="(Target)Comma separated list of latent components (default 10)", default="2,4,7,8", type = str)
 
-parser.add_argument("--mixtures", help="Comma separated list of convex combination src-trg mixture coefficient (0.=no transfer, default 0.1)", default="0.0,0.5", type = str)
-parser.add_argument("--method", help="Clustering method ('SC3' or 'NMF')", default="NMF", type = str)
+parser.add_argument("--mixtures", help="Comma separated list of convex combination src-trg mixture coefficient (0.=no transfer, default 0.1)", default="0.0,0.25,0.5,0.75,1.0", type = str)
+parser.add_argument("--method", help="Clustering method ('SC3' or 'NMF')", default="SC3", type = str)
 
 parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=1.0, type = float)
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
@@ -123,8 +123,8 @@ if arguments.transform:
 mixtures = map(np.float, arguments.mixtures.split(","))
 num_cluster = map(np.int, arguments.trg_ks.split(","))
 
-accs_names = ['Calinski-Harabaz', 'Silhouette', 'AUC']
-accs = np.zeros((3, len(mixtures), len(num_cluster)))
+accs_names = ['Calinski-Harabaz', 'Silhouette (euc)', 'Silhouette (corr)', 'Silhouette (jacc)', 'ARI']
+accs = np.zeros((5, len(mixtures), len(num_cluster)))
 
 for i in range(len(num_cluster)):
     for j in range(len(mixtures)):
@@ -202,13 +202,19 @@ for i in range(len(num_cluster)):
             trg_clustering.pp_data.T, trg_clustering.cluster_labels)
         accs[1, j, i] = metrics.silhouette_score(
             trg_clustering.pp_data.T, trg_clustering.cluster_labels, metric='euclidean')
-        print '  -Calinski-Harabaz: ', accs[0, j, i]
-        print '  -Silhouette      : ', accs[1, j, i]
+        accs[2, j, i] = metrics.silhouette_score(
+            trg_clustering.pp_data.T, trg_clustering.cluster_labels, metric='correlation')
+        accs[3, j, i] = metrics.silhouette_score(
+            trg_clustering.pp_data.T, trg_clustering.cluster_labels, metric='jaccard')
+        print '  -Calinski-Harabaz : ', accs[0, j, i]
+        print '  -Silhouette (euc) : ', accs[1, j, i]
+        print '  -Silhouette (corr): ', accs[2, j, i]
+        print '  -Silhouette (jacc): ', accs[3, j, i]
         if trg_labels is not None:
             print('\nSupervised evaluation:')
-            accs[2, j, i] = metrics.adjusted_rand_score(
+            accs[4, j, i] = metrics.adjusted_rand_score(
                 trg_labels[trg_clustering.remain_cell_inds], trg_clustering.cluster_labels)
-            print '  -ARI: ', accs[2, j, i]
+            print '  -ARI: ', accs[4, j, i]
 
         # --------------------------------------------------
         # 5. SAVE RESULTS
@@ -235,20 +241,26 @@ for i in range(len(num_cluster)):
 print 'Mixtures:', mixtures
 print 'Cluster:', num_cluster
 
+plt.figure(0)
 for i in range(accs.shape[0]):
+    plt.subplot(2, 3, i+1)
     print('\n{0} (mixtures x cluster):'.format(accs_names[i]))
     print accs[i, :, :].reshape(len(mixtures), len(num_cluster))
 
-    plt.figure(i)
     plt.title(accs_names[i])
-    plt.pcolor(accs[i, :, :])
+    plt.pcolor(accs[i, :, :], cmap=plt.get_cmap('Reds'))
     plt.xlabel('Cluster')
     plt.ylabel('Mixture')
     plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster)
     plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures)
     plt.colorbar()
-    plt.savefig('{0}.{1}.png'.format(arguments.fout, accs_names[i]), format='png', bbox_inches=None, pad_inches=0.1)
+    if i>0:
+        plt.clim(0.,+1.)
+    if i==accs.shape[0]-1:
+        plt.clim(0.,+1.)
 
+plt.savefig('{0}.{1}.png'.format(arguments.fout, 'accs'), format='png',
+            bbox_inches=None, pad_inches=0.1)
 plt.show()
 
 print('\nDone.')
