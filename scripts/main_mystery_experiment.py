@@ -17,26 +17,9 @@ def plot_results(fname):
     n_src = foo['n_src']
     print accs
 
-    reject_accs = list()
-    reject_names = list()
     for i in range(accs.shape[0]):
         title, _ = accs_desc[i]
-        if 'Reject' not in title:
-            plot_single(i, title, accs[i, :, :, :], percs, n_src, n_trg, methods_desc)
-        else:
-            reject_names.append(title)
-            reject_accs.append(accs[i, :, :, 0])
-
-    if len(reject_names) > 0:
-        print accs.shape
-        racc = np.array(reject_accs)
-        print racc.shape
-        racc = np.swapaxes(racc, 0, 1)
-        print racc.shape
-        racc = np.swapaxes(racc, 2, 1)
-        print racc.shape
-        plot_single(i+1, 'Reject Options', racc, percs, n_src, n_trg, reject_names)
-
+        plot_single(i, title, accs[i, :, :, :], percs, n_src, n_trg, methods_desc)
     plt.show()
 
 
@@ -71,6 +54,7 @@ def plot_single(fig_num, title, aris, percs, n_src, n_trg, desc):
     plt.ylim([0., 1.])
 
     plt.legend(desc, loc=4)
+    # plt.legend({'100% Transfer SC3 w/ Adaptive Range','100% Transfer SC3 w/o Adaptive Range'}, loc=4)
     plt.semilogx()
 
     plt.subplot(1, 2, 2)
@@ -82,7 +66,7 @@ def plot_single(fig_num, title, aris, percs, n_src, n_trg, desc):
 
 if __name__ == "__main__":
     percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
-    percs = [0.05, 0.075, 0.1, 0.3, 0.5, 1.0]
+    # percs = [0.05, 0.075, 0.1, 0.3, 0.5, 1.0]
 
     acc_funcs = list()
     acc_funcs.append(partial(acc_ari, use_strat=False))
@@ -105,16 +89,19 @@ if __name__ == "__main__":
     # methods.append(partial(method_sc3, mix=0.0, metric='euclidean'))
     # methods.append(partial(method_sc3, mix=0.5, metric='euclidean'))
     methods.append(partial(method_sc3, mix=1.0, metric='euclidean'))
-    methods.append(partial(method_sc3, mix=1.0, metric='euclidean', limit_pc_range=230))
+    methods.append(partial(method_sc3, mix=0.9999999999999999, metric='euclidean'))
+    methods.append(partial(method_sc3, mix=0.99999999999999, metric='euclidean'))
+    methods.append(partial(method_sc3, mix=0.999999999999, metric='euclidean'))
+    methods.append(partial(method_sc3, mix=0.9, metric='euclidean'))
     # methods.append(partial(method_nmf))
     # methods.append(partial(method_da_nmf, mix=0.0))
     # methods.append(partial(method_da_nmf, mix=0.1))
     # methods.append(partial(method_da_nmf, mix=0.25))
     # methods.append(partial(method_da_nmf, mix=0.5))
     # methods.append(partial(method_da_nmf, mix=0.75))
-    methods.append(partial(method_da_nmf, mix=1.0))
+    # methods.append(partial(method_da_nmf, mix=1.0))
 
-    fname = 'res_mystery_r1.npz'
-    experiment_loop(fname, methods, acc_funcs, mode=4, reps=1,
-                    cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], percs=percs)
+    fname = 'res_mystery_r10.npz'
+    # experiment_loop(fname, methods, acc_funcs, mode=4, reps=10,
+    #                 cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], percs=percs)
     plot_results(fname)

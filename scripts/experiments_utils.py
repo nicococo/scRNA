@@ -95,29 +95,36 @@ def acc_ari(X, lbls_true, lbls_pred, reject, strat_lbl_inds, use_strat=False):
 
 def acc_silhouette(X, lbls_true, lbls_pred, reject, strat_lbl_inds, use_strat=False, metric='euclidean'):
     if use_strat:
-        sil = metrics.silhouette_score(X[:, strat_lbl_inds].T, lbls_pred[strat_lbl_inds], metric=metric)
+        dists = sc.distances(X[:, strat_lbl_inds], gene_ids=np.arange(strat_lbl_inds.size), metric=metric )
+        sil = metrics.silhouette_score(dists, lbls_pred[strat_lbl_inds], metric='precomputed')
         perc = np.int(np.float(len(strat_lbl_inds))/np.float(lbls_true.size) * 100.0)
         desc = ('Silhouette (strat={0},{1})'.format(perc, metric), 'Silhouette ({0})'.format(metric))
     else:
-        sil = metrics.silhouette_score(X.T, lbls_pred, metric=metric)
+        dists = sc.distances(X, gene_ids=np.arange(X.shape[1]), metric=metric )
+        sil = metrics.silhouette_score(dists, lbls_pred, metric='precomputed')
         desc = ('Silhouette ({0})'.format(metric), 'Silhouette ({0})'.format(metric))
     return sil, desc
 
 
-def acc_kta(X, lbls_true, lbls_pred, reject, strat_lbl_inds, metric='euclidean'):
-    Kx = X.T.dot(X)
-    Kx = center_kernel(Kx)
-    Kx = normalize_kernel(Kx)
-
+def acc_kta(X, lbls_true, lbls_pred, reject, strat_lbl_inds, kernel='linear', param=1.0):
     Ky = np.zeros((lbls_pred.size, np.max(lbls_pred)+1))
     for i in range(len(lbls_pred)):
         Ky[i, lbls_pred[i]] = 1.
-    Ky = Ky.dot(Ky.T)
+
+    if kernel == 'rbf':
+        Kx = get_kernel(X, X, type='rbf', param=param)
+        Ky = get_kernel(Ky.T, Ky.T, type='rbf', param=param)
+    else:
+        Kx = X.T.dot(X)
+        Ky = Ky.dot(Ky.T)
+
+    Kx = center_kernel(Kx)
     Ky = center_kernel(Ky)
+    Kx = normalize_kernel(Kx)
     Ky = normalize_kernel(Ky)
 
     sil = kta_align_general(Kx, Ky)
-    desc = ('KTA ({0})'.format(metric), 'KTA ({0})'.format(metric))
+    desc = ('KTA ({0})'.format(kernel), 'KTA ({0})'.format(kernel))
     return sil, desc
 
 

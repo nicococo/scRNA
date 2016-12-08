@@ -38,6 +38,7 @@ def plot_results(fname):
 
 
 def plot_single(fig_num, title, aris, percs, n_src, n_trg, desc):
+    import scipy.stats as stats
     plt.figure(fig_num)
     np.random.seed(8)
     cols = np.random.rand(3, len(desc))
@@ -45,16 +46,26 @@ def plot_single(fig_num, title, aris, percs, n_src, n_trg, desc):
     for i in range(len(desc) - 1):
         cols[:, i + 1] = cols[:, i + 1] / np.max(cols[:, i + 1]) * np.max([(0.2 + np.float(i) * 0.1), 1.0])
 
+    fmt = ['-','--','.-']
+
     legend = []
+    corr = []
+    comp = np.mean(aris[:, :, 0], axis=0)
+    comp = (comp - np.mean(comp)) / (np.std(comp) * float(comp.size))
     for m in range(len(desc)):
         res = np.mean(aris[:, :, m], axis=0)
         res_stds = np.std(aris[:, :, m], axis=0)
+        myFmt = fmt[0]
         if m > 0:
-            plt.plot(percs, res, '-', color=cols[:, m], linewidth=4)
-            # plt.errorbar(percs, res, res_stds, fmt='-', color=cols[:, m], linewidth=4, elinewidth=1)
-        else:
-            plt.plot(percs, res, '--', color=cols[:, m], linewidth=4)
-            # plt.errorbar(percs, res, res_stds, fmt='--', color=cols[:, m], linewidth=4, elinewidth=1)
+            myFmt = fmt[2]
+        if 'KTA' in desc[m]:
+            myFmt = fmt[1]
+
+        comp2 = res
+        comp2 = (comp2 - np.mean(comp2)) / (np.std(comp2))
+        corr.append(np.correlate(comp, comp2)[0])
+        desc[m] += ' (corr={0:1.2f})'.format(corr[-1])
+        plt.plot(percs, res, myFmt, color=cols[:, m], linewidth=4)
 
     plt.title('{2}\n#Trg={2}, #Src={0}, #Reps={1}'.format(n_src, aris.shape[0], title, n_trg))
     plt.xlabel('#cluster'.format(n_trg), fontsize=14)
@@ -62,11 +73,11 @@ def plot_single(fig_num, title, aris, percs, n_src, n_trg, desc):
     #plt.xlim([4e-2, 1.3])
     plt.ylim([-1., 1.])
     plt.legend(desc, loc=4)
+    print corr
 
 
 if __name__ == "__main__":
-    percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
-    percs = [2, 4, 6, 7, 8, 9, 10, 12]
+    percs = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
     acc_funcs = list()
     acc_funcs.append(partial(acc_ari, use_strat=False))
@@ -74,7 +85,11 @@ if __name__ == "__main__":
     acc_funcs.append(partial(acc_silhouette, use_strat=False))
     acc_funcs.append(partial(acc_silhouette, use_strat=False, metric='correlation'))
     acc_funcs.append(partial(acc_silhouette, use_strat=False, metric='jaccard'))
-    acc_funcs.append(partial(acc_kta))
+    acc_funcs.append(partial(acc_silhouette, use_strat=False, metric='pearson'))
+    acc_funcs.append(partial(acc_silhouette, use_strat=False, metric='spearman'))
+    acc_funcs.append(partial(acc_kta, kernel='linear'))
+    acc_funcs.append(partial(acc_kta, kernel='rbf', param=10.0))
+    # acc_funcs.append(partial(acc_kta, kernel='rbf', param=0.1))
     # acc_funcs.append(partial(acc_silhouette, use_strat=True))
     # acc_funcs.append(partial(acc_reject, reject_name='KTA kurt1'))
     # acc_funcs.append(partial(acc_reject, reject_name='KTA kurt2'))
@@ -95,7 +110,8 @@ if __name__ == "__main__":
     # methods.append(partial(method_da_nmf, mix=0.1))
     methods.append(partial(method_da_nmf, mix=0.25))
 
-    fname = 'res_acc_r10.npz'
-    experiment_loop(fname, methods, acc_funcs, mode=2, reps=1, cluster_mode=True, n_trg=200,
+    fname = 'res_acc_nmf_r10.npz'
+    experiment_loop(fname, methods, acc_funcs, mode=2, reps=10, cluster_mode=True,
+                    n_trg=100, n_src=600, n_genes=1000,
                     cluster_spec=[1, 2, 3, [4, 5], [6, [7, 8]]], percs=percs)
     plot_results(fname)

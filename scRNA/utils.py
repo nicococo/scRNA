@@ -85,5 +85,22 @@ def kta_align_binary(K, y):
     return K.dot(YY).trace() / (m * np.sqrt(K.dot(K.T).trace()))
 
 
+def get_kernel(X, Y, type='linear', param=1.0):
+    """Calculates a kernel given the data X and Y (dims x exms)"""
+    (Xdims, Xn) = X.shape
+    (Ydims, Yn) = Y.shape
 
+    kernel = 1.0
+    if type=='linear':
+        print('Calculating linear kernel with size {0}x{1}.'.format(Xn, Yn))
+        kernel = X.T.dot(Y)
+
+    if type=='rbf':
+        print('Calculating Gaussian kernel with size {0}x{1} and sigma2={2}.'.format(Xn, Yn, param))
+        Dx = (np.ones((Yn, 1)) * np.diag(X.T.dot(X)).reshape(1, Xn)).T
+        Dy = (np.ones((Xn, 1)) * np.diag(Y.T.dot(Y)).reshape(1, Yn))
+        kernel = Dx - 2.* np.array(X.T.dot(Y)) + Dy
+        kernel = np.exp(-kernel / param)
+        print kernel.shape
+    return kernel
 
