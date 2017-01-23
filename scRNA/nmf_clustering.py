@@ -59,9 +59,7 @@ class DaNmfClustering(NmfClustering):
         self.src = src
         assert(isinstance(self.src, NmfClustering))
 
-    def apply(self, k=-1, mix=0.0, alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
-        if k == -1:
-            k = self.num_cluster
+    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
         trg_data = self.pre_processing()
         src_data = self.src.pre_processing()
 
@@ -139,19 +137,44 @@ class DaNmfClustering(NmfClustering):
         self.cluster_labels = np.argmax(H, axis=0)
         self.print_reconstruction_error(trg_data, W, H2)
         self.intermediate_model = (W, H, H2)
-        # self.reject = self.calc_rejection(trg_data, W, H, H2)
+        self.reject = self.calc_rejection(trg_data, W, H, H2)
 
-        # new_trg_data = W.dot(H2)
-        new_trg_data = W.dot(H)
+        new_trg_data = W.dot(H2)
+        # new_trg_data = W.dot(H)
+
+        # reject option enabled?
+        assert(reject_ratio < 1.)  # rejection of 100% (or more) does not make any sense
+
+        if reject_ratio > 0.:
+            name, neg_entropy = self.reject[2]
+            inds = np.arange(0, trg_data.shape[1], dtype=np.int)
+            inds = np.argsort(-neg_entropy)  # ascending order
+            keep = np.float(inds.size) * reject_ratio
+            inds = inds[:keep]
+            new_trg_data[:, inds] = trg_data[:, inds]
+
+        mixed_data = mix*new_trg_data + (1.-mix)*trg_data
         if np.any(trg_data < 0.0):
             print('Error! Negative values in target data!')
-        if np.any(mix*new_trg_data + (1.-mix)*trg_data < 0.0):
+        if np.any(mixed_data < 0.0):
             print('Error! Negative values in reconstructed data!')
-        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=2000,
-                         n_components=k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+        return mixed_data, new_trg_data, trg_data
 
-        W = nmf.fit_transform(mix*new_trg_data + (1.-mix)*trg_data)
-        # W = nmf.fit_transform(mix*new_trg_data + trg_data)
+    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+        if k == -1:
+            k = self.num_cluster
+        mixed_data, new_trg_data, trg_data = self.get_mixed_data(k=k,
+                                                                 mix=mix,
+                                                                 reject_ratio=reject_ratio,
+                                                                 alpha=alpha,
+                                                                 l1=l1,
+                                                                 max_iter=max_iter,
+                                                                 rel_err=rel_err)
+
+        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=2000,
+                         n_components=k, random_state=0, shuffle=True, solver='cd',
+                         tol=0.00001, verbose=0)
+        W = nmf.fit_transform(mixed_data)
         H = nmf.components_
         self.dictionary = W
         self.data_matrix = H
@@ -169,17 +192,37 @@ class DaNmfClustering(NmfClustering):
                 foo = np.max(foo, axis=0) - np.min(foo, axis=0)
                 diffs[inds] = foo
 
-        kurts = stats.kurtosis(H, fisher=False, axis=0)
-        K1 = trg_data.T.dot(trg_data)
-        K2 = W.dot(H).T.dot(W.dot(H))
-        K3 = W.dot(H2).T.dot(W.dot(H2))
+        sum_expr = np.sum(trg_data, axis=0)
+        sum_expr -= np.min(sum_expr)
+        sum_expr /= np.max(sum_expr)
+        sum_expr = sum_expr + 1.0
+        sum_expr /= np.max(sum_expr)
+        weight = 1. - sum_expr
+
+        reconstr_err = np.sum(np.abs(trg_data - W.dot(H2)), axis=0)
+        reconstr_err -= np.min(reconstr_err)
+        reconstr_err /= np.max(reconstr_err)
+
+        final_values = weight * reconstr_err #* neg_entropy
+        # final_values = reconstr_err #* neg_entropy
 
         reject = list()
+        reject.append(('Reconstr. Error', -final_values))
+
+        # kurts = stats.kurtosis(H, fisher=False, axis=0)
+        # K1 = trg_data.T.dot(trg_data)
+        # K2 = W.dot(H).T.dot(W.dot(H))
+        # K3 = W.dot(H2).T.dot(W.dot(H2))
+
+        neg_entropy = stats.entropy(H)
+        neg_entropy -= np.min(neg_entropy)
+        neg_entropy /= np.max(neg_entropy)
+
         reject.append(('Kurtosis', stats.kurtosis(H, fisher=False, axis=0)))
-        reject.append(('Entropy', -stats.entropy(H)))
-        reject.append(('KTA kurt1', self.reject_classifier(K1, diffs)))
-        reject.append(('KTA kurt2', self.reject_classifier(K2, kurts)))
-        reject.append(('KTA kurt3', self.reject_classifier(K3, kurts)))
+        reject.append(('Entropy', -neg_entropy))
+        # reject.append(('KTA kurt1', self.reject_classifier(K1, diffs)))
+        # reject.append(('KTA kurt2', self.reject_classifier(K2, kurts)))
+        # reject.append(('KTA kurt3', self.reject_classifier(K3, kurts)))
         reject.append(('Diffs', diffs))
         reject.append(('Dist L2 H', -np.sum((np.abs(trg_data - W.dot(H))**2. ), axis=0)))
         reject.append(('Dist L2 H2', -np.sum((np.abs(trg_data - W.dot(H2))**2. ), axis=0)))

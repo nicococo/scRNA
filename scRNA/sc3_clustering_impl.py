@@ -68,16 +68,16 @@ def data_transformation_log2(data):
     return np.log2(data + 1.)
 
 
-def da_nmf_distances(data, gene_ids, src, metric='euclidean', mixture=0.5):
+def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidean', mixture=0.5):
     if mixture == 0.0:
         return distances(data, [], metric=metric)
 
-    cp = DaNmfClustering(src, data, gene_ids, num_cluster=3)
-    cp.apply(mix=0.0)
-    W, H, H2 = cp.intermediate_model
+    W, H, H2 = da_model
+
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
     dist2 = distances(W.dot(H2), [], metric=metric)
+
     # normalize distance
     if np.max(dist2) < 1e-10:
         if mixture == 1.0:
