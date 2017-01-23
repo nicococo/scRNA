@@ -9,7 +9,7 @@ config = {
     'author': 'Nico Goernitz & Bettina Mieth',
     'author_email': 'nico.goernitz@tu-berlin.de',
     'version': '2016.11',
-    'install_requires': ['nose', 'cvxopt','scikit-learn','numpy', 'scipy'],
+    'install_requires': ['nose','scikit-learn','numpy', 'scipy'],
     'packages': ['scRNA'],
     'package_dir' : {'scRNA': 'scRNA'},
     # 'package_data': {'scRNA': ['gene_names.txt']},
