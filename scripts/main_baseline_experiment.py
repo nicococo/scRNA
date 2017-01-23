@@ -5,7 +5,7 @@ from clustermap import process_jobs, Job
 from experiments_utils import (method_sc3, method_sc3_combined, method_hub,
                                acc_ari, acc_reject_ari, acc_reject_auc,
                                acc_kta, acc_silhouette, experiment_loop)
-from sc3_clustering import *
+from scRNA.sc3_clustering import *
 
 
 def plot_results(fname):

@@ -2,11 +2,11 @@ from functools import partial
 
 from sklearn import metrics as metrics
 
-import sc3_clustering_impl as sc
-from nmf_clustering import NmfClustering, DaNmfClustering
-from sc3_clustering import SC3Clustering
-from simulation import generate_toy_data, split_source_target
-from utils import *
+import scRNA.sc3_clustering_impl as sc
+from scRNA.nmf_clustering import NmfClustering, DaNmfClustering
+from scRNA.sc3_clustering import SC3Clustering
+from scRNA.simulation import generate_toy_data, split_source_target
+from scRNA.utils import *
 
 
 def method_hub(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
