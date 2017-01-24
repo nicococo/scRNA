@@ -23,6 +23,13 @@ def method_hub(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
     return desc, src_lbls[ind, :], trg_lbls[ind, :], None
 
 
+def method_random(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster):
+    desc = {}
+    desc['method'] = 'random'
+    return desc, np.random.randint(0, n_src_cluster, size=src_labels.size), \
+           np.random.randint(0, n_trg_cluster, size=src_labels.size), None
+
+
 def method_sc3_combined(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
                         consensus_mode=0, metric='euclidean'):
     lbls = np.hstack([trg_labels, src_labels])
@@ -41,7 +48,10 @@ def method_sc3_combined(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_c
     cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_cluster))
     cp.apply()
 
-    desc = 'SC3-comb'
+    # add some description
+    desc = {}
+    desc['method'] = 'SC3-comb'
+    desc['metric'] = metric
     return desc, cp.cluster_labels[trg_labels.size:], cp.cluster_labels[:trg_labels.size], None
 
 
@@ -110,6 +120,16 @@ def acc_reject_auc(X_src, src_labels, X_trg, trg_labels, src_lbls_pred, lbls_pre
             fpr, tpr, thresholds = metrics.roc_curve(bin_lbls, value, pos_label=1)
             auc = metrics.auc(fpr, tpr)
     return auc, desc
+
+
+def acc_transferability(X_src, src_labels, X_trg, trg_labels, src_lbls_pred, lbls_pred, reject):
+    desc = ('Transferability', 'Transferability')
+    if reject is None:
+        return 0.0, desc
+    name, value = reject[-1]
+    if 'Transferability' not in name:
+        value = 0.0
+    return value, desc
 
 
 def acc_reject_ari(X_src, src_labels, X_trg, trg_labels, src_lbls_pred, lbls_pred, reject, reject_name='KTA kurt1', threshold=0.1):

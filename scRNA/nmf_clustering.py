@@ -45,6 +45,7 @@ class NmfClustering(AbstractClustering):
 
 class DaNmfClustering(NmfClustering):
     reject = None
+    transferability_score = 0.0
 
     src = None
     common_ids = None
@@ -104,6 +105,7 @@ class DaNmfClustering(NmfClustering):
         self.src.gene_ids = self.src.gene_ids[inds2]
         trg_data = trg_data[inds1, :]
         self.src.apply()
+
         W = self.src.dictionary
         H = np.random.randn(self.src.num_cluster, trg_data.shape[1])
 
@@ -139,6 +141,8 @@ class DaNmfClustering(NmfClustering):
         self.intermediate_model = (W, H, H2)
         self.reject = self.calc_rejection(trg_data, W, H, H2)
 
+        self.transferability_score = self.calc_transferability_score(W, H, trg_data)
+        self.reject.append(('Transferability', self.transferability_score))
         new_trg_data = W.dot(H2)
         # new_trg_data = W.dot(H)
 
@@ -180,6 +184,53 @@ class DaNmfClustering(NmfClustering):
         self.data_matrix = H
         self.cluster_labels = np.argmax(nmf.components_, axis=0)
         print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
+
+    def calc_transferability_score(self, W, H, trg_data, reps=10, alpha=0.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+        # estimate maximum error without any transfer
+        errs = np.zeros((reps,))
+        for i in range(errs.size):
+            rand_gene_inds = np.random.permutation(W.shape[0])
+            _, _, _, errs[i] = self.get_transferred_data_matrix(W[rand_gene_inds, :], trg_data,
+                                                                max_iter=max_iter, rel_err=rel_err)
+
+        # minimum transfer error
+        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
+                         n_components=W.shape[1], random_state=0, shuffle=True, solver='cd',
+                         tol=0.00001, verbose=0)
+        W_best = nmf.fit_transform(trg_data)
+        H_best = nmf.components_
+
+        err_best = np.sum(np.abs(trg_data - W_best.dot(H_best))) / np.float(trg_data.size)  # absolute
+        err_curr = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
+        err_worst = np.max(errs)
+
+        score = 1.0 - np.max([err_curr - err_best, 0]) / (err_worst - err_best)
+        return score
+
+    def get_transferred_data_matrix(self, W, trg_data, max_iter=4000, rel_err=1e-3):
+        # initialize H: data matrix
+        H = np.random.randn(W.shape[1], trg_data.shape[1])
+        a1, a2 = np.where(H < 0.)
+        H[a1, a2] *= -1.
+        a1, a2 = np.where(H < 1e-10)
+        H[a1, a2] = 1e-10
+
+        n_iter = 0
+        err = 1e10
+        while n_iter < max_iter:
+            n_iter += 1
+            if np.any(W.T.dot(W.dot(H))==0.):
+                raise Exception('DA target nmf: division by zero.')
+            H *= W.T.dot(trg_data) / W.T.dot(W.dot(H))
+            new_err = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
+            # new_err = np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)  # frobenius
+            if np.abs((err - new_err) / err) <= rel_err and err > new_err:
+                break
+            err = new_err
+        print '  Number of iterations for reconstruction + reconstruction error    : ', n_iter, new_err
+        H2 = np.zeros((self.src.num_cluster, trg_data.shape[1]))
+        H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = 1
+        return W, H, H2, new_err
 
     def calc_rejection(self, trg_data, W, H, H2):
         diffs = np.zeros(H2.shape[1])

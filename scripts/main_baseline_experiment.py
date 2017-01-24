@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from clustermap import process_jobs, Job
 from experiments_utils import (method_sc3, method_sc3_combined, method_hub,
                                acc_ari, acc_reject_ari, acc_reject_auc,
-                               acc_kta, acc_silhouette, experiment_loop)
+                               acc_kta, acc_silhouette, acc_transferability, experiment_loop)
 from scRNA.sc3_clustering import *
 
 
@@ -73,6 +73,8 @@ if __name__ == "__main__":
     acc_funcs.append(partial(acc_reject_auc, reject_name='Reconstr. Error'))
     acc_funcs.append(partial(acc_reject_auc, reject_name='Entropy'))
     acc_funcs.append(partial(acc_reject_auc, reject_name='Kurtosis'))
+    acc_funcs.append(acc_transferability)
+
 
     mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
     rratios = [0.1, 0.2, 0.3, 0.5, 0.7]
@@ -125,10 +127,10 @@ if __name__ == "__main__":
     for s in range(len(n_src)):
         for g in range(len(genes)):
             for c in range(len(common)):
-                job = Job(experiment, [fname, methods, acc_funcs, 7,
+                job = Job(experiment, ['{0}_{1}_{2}_{3}'.format(fname, s, g, c), methods, acc_funcs, 7,
                                 reps, genes[g], common[c], cluster_spec,
                                 percs, n_src[s], n_trg], \
-                    mem_max='16G', mem_free='8G', name='Da-{0}-{1}'.format(g, c))
+                    mem_max='16G', mem_free='8G', name='Da-{0}-{1}-{2}'.format(s, g, c))
                 params.append((s, g, c))
                 jobs.append(job)
 
@@ -143,8 +145,7 @@ if __name__ == "__main__":
         s, g, c = params[i]
         res[s, g, c, :, :, :, :] = accs
 
-    np.savez('main_results', methods=methods, acc_funcs=acc_funcs, res=res,
+    np.savez('main_results_2', methods=methods, acc_funcs=acc_funcs, res=res,
              accs_desc=accs_desc, method_desc=m_desc,
-             percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg,
-             common=common)
+             percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, common=common)
     print('Done.')
