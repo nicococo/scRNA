@@ -1,3 +1,4 @@
+import os.path
 from functools import partial
 
 import matplotlib.pyplot as plt
@@ -127,12 +128,14 @@ if __name__ == "__main__":
     for s in range(len(n_src)):
         for g in range(len(genes)):
             for c in range(len(common)):
-                job = Job(experiment, ['{0}_{1}_{2}_{3}'.format(fname, s, g, c), methods, acc_funcs, 7,
-                                reps, genes[g], common[c], cluster_spec,
-                                percs, n_src[s], n_trg], \
-                    mem_max='16G', mem_free='8G', name='Da-{0}-{1}-{2}'.format(s, g, c))
-                params.append((s, g, c))
-                jobs.append(job)
+                out_fname = '{0}_{1}_{2}_{3}'.format(fname, s, g, c)
+                if not os.path.isfile(out_fname): 
+                    job = Job(experiment, ['{0}_{1}_{2}_{3}'.format(fname, s, g, c), methods, acc_funcs, 7,
+                                    reps, genes[g], common[c], cluster_spec,
+                                    percs, n_src[s], n_trg], \
+                        mem_max='16G', mem_free='8G', name='Da-{0}-{1}-{2}'.format(s, g, c))
+                    params.append((s, g, c))
+                    jobs.append(job)
 
     processedJobs = process_jobs(jobs, temp_dir='/home/nico/tmp/',
                                  local=False,
