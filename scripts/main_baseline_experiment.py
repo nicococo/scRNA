@@ -128,8 +128,9 @@ if __name__ == "__main__":
     for s in range(len(n_src)):
         for g in range(len(genes)):
             for c in range(len(common)):
-                out_fname = '{0}_{1}_{2}_{3}'.format(fname, s, g, c)
+                out_fname = '{0}_{1}_{2}_{3}.npz'.format(fname, s, g, c)
                 if not os.path.isfile(out_fname): 
+                    print 'Added job for experiment: ', out_fname
                     job = Job(experiment, ['{0}_{1}_{2}_{3}'.format(fname, s, g, c), methods, acc_funcs, 7,
                                     reps, genes[g], common[c], cluster_spec,
                                     percs, n_src[s], n_trg], \
