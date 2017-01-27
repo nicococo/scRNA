@@ -59,6 +59,40 @@ def experiment(fname, methods, acc_funcs, mode, reps, n_genes, n_common_cluster,
                     reps=reps, n_genes=n_genes, n_common_cluster=n_common_cluster,
                     cluster_spec=cluster_spec, percs=percs, n_src=n_src, n_trg=n_trg)
 
+
+def check_intermediate_results(fname, n_src, genes, common):
+    params = list()
+    all_files = list()
+    missing_files = list()
+    for s in range(len(n_src)):
+        for g in range(len(genes)):
+            for c in range(len(common)):
+                out_fname = '{0}_{1}_{2}_{3}.npz'.format(fname, s, g, c)
+                all_files.append(out_fname)
+                params.append((s, g, c))
+                if not os.path.isfile(out_fname):
+                    missing_files.append(out_fname)
+                    print out_fname
+    return missing_files, all_files, params
+
+
+def combine_intermediate_results(fname, n_src, genes, common):
+    missing_files, all_files, params = check_intermediate_results(fname, n_src, genes, common)
+    res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
+    cnt = 0
+    cnt_all = 0
+    for i in range(len(all_files)):
+        cnt_all += 1
+        if all_files[i] not in missing_files:
+            foo = np.load(all_files[i])
+            s, g, c = params[i]
+            res[s, g, c, :, :, :] = foo['accs']
+            cnt += 1
+    print res.shape, res.size, cnt
+    print cnt, '/', cnt_all
+    return res
+
+
 if __name__ == "__main__":
     acc_funcs = list()
     acc_funcs.append(partial(acc_ari, use_strat=True, test_src_lbls=False))
@@ -110,7 +144,7 @@ if __name__ == "__main__":
     methods.append(partial(method_hub, method_list=reject_list, func=np.argmax))
     methods.append(partial(method_hub, method_list=reject_list, func=np.argmin))
 
-    fname = 'intermediate.npz'
+    fname = 'main_v2.npz'
 
     percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
     cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
@@ -129,7 +163,7 @@ if __name__ == "__main__":
         for g in range(len(genes)):
             for c in range(len(common)):
                 out_fname = '{0}_{1}_{2}_{3}.npz'.format(fname, s, g, c)
-                if not os.path.isfile(out_fname): 
+                if not os.path.isfile(out_fname):
                     print 'Added job for experiment: ', out_fname
                     job = Job(experiment, ['{0}_{1}_{2}_{3}'.format(fname, s, g, c), methods, acc_funcs, 7,
                                     reps, genes[g], common[c], cluster_spec,
@@ -149,7 +183,9 @@ if __name__ == "__main__":
         s, g, c = params[i]
         res[s, g, c, :, :, :, :] = accs
 
-    np.savez('main_results_2', methods=methods, acc_funcs=acc_funcs, res=res,
+    # res = combine_intermediate_results(fname, n_src, genes, common)
+
+    np.savez(fname, methods=methods, acc_funcs=acc_funcs, res=res,
              accs_desc=accs_desc, method_desc=m_desc,
              percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, common=common)
     print('Done.')

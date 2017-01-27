@@ -17,7 +17,9 @@ def method_hub(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
     for i in range(len(method_list)):
         desc, src_lbls[i, :], trg_lbls[i, :], _ = method_list[i](src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster)
         aris[i] = metrics.adjusted_rand_score(trg_labels, trg_lbls[i, :])
-    ind = np.argmax(aris)
+    ind = func(aris)
+    # print aris
+    # print ind, np.argmax(aris), np.argmin(aris)
     desc['hub'] = func
     desc['stats'] = (np.max(aris), np.min(aris), np.mean(aris))
     return desc, src_lbls[ind, :], trg_lbls[ind, :], None
