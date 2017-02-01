@@ -127,9 +127,6 @@ if __name__ == "__main__":
     for m in mixes:
         mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', reject_ratio=0., use_da_dists=False))
 
-    comb_list = list()
-    comb_list.append(partial(method_sc3_combined, metric='euclidean'))
-
 
     methods = list()
     # original
@@ -144,7 +141,7 @@ if __name__ == "__main__":
     methods.append(partial(method_hub, method_list=reject_list, func=np.argmax))
     methods.append(partial(method_hub, method_list=reject_list, func=np.argmin))
     # combined baseline
-    methods.append(comb_list)
+    methods.append(partial(method_sc3_combined, metric='euclidean'))
 
     fname = 'main_short_v4.npz'
 
@@ -168,19 +165,16 @@ if __name__ == "__main__":
 
     # DEBUG
     # percs = np.logspace(-1.3, -0, 12)[[1, 2, 3, 4, 5, 6, 9, 11]]
-    # # percs = [0.3, 0.5, 0.7]
+    # percs = [0.3, 0.5, 0.7]
     # cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
     # n_trg = 500
     # n_src = [200]
     # reps = 2
     # genes = [400]
-    # common = [0, 1, 2, 3, 4]
+    # common = [1]
     # methods = list()
     # # original
-    # methods.append(partial(method_sc3, mix=0.0, reject_ratio=0., metric='euclidean'))
-    # # transfer via distances
-    # methods.append(partial(method_hub, method_list=dist_list, func=np.argmax))
-    # methods.append(partial(method_hub, method_list=dist_list, func=np.argmin))
+    # methods.append(partial(method_sc3_combined, metric='euclidean'))
 
     res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
 
@@ -201,8 +195,7 @@ if __name__ == "__main__":
                     jobs.append(job)
 
     processedJobs = process_jobs(jobs, temp_dir='/home/nico/tmp/',
-                                 local=False,
-                                 max_processes=10)
+                                 local=False, max_processes=10)
     results = []
     print "ret fields AFTER execution on local machine"
     for (i, result) in enumerate(processedJobs):

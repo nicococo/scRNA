@@ -219,10 +219,41 @@ def plot_rejection_aucs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_
     plt.show()
 
 
+def plot_src_accs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    ind_genes = 0
+    ind_src = 2
+    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
+    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
+    print '#Common ', common
+
+    color = ['green', 'red', 'blue']
+    plt.figure(fig_num)
+    inds = [0, 1, 2, 3, 4]
+    fcnt = 1
+    for c in inds:
+        cnt = 1
+        ind_common = c
+        aris = np.mean(res[:, :, ind_common, 2, :, 0, 0], axis=2)
+
+        plt.subplot(1, len(inds), fcnt)
+        plt.pcolor(aris, cmap=plt.get_cmap('Reds'))
+        plt.title('{0}'.format(common[c]), fontsize=16)
+        plt.xticks(np.arange(len(genes))+0.5, genes)
+        plt.yticks(np.arange(len(n_src))+0.5, n_src)
+        if c == 0:
+            plt.xlabel('#Genes', fontsize=16)
+            plt.ylabel('#Source datapts', fontsize=16)
+            plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
+        fcnt += 1
+    plt.colorbar(ticks=[0.0, 0.25, 0.5, 0.75, 1.0])
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # foo = np.load('intermediate.npz')
-    # foo = np.load('main_v2.npz')
-    foo = np.load('test_v4.npz')
+    foo = np.load('main_v2.npz')
+    # foo = np.load('test_v4.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
@@ -238,7 +269,6 @@ if __name__ == "__main__":
     print 'n_src x genes x common x acc_funcs x reps x percs x methods'
     print 'Result dimensionality: ', res.shape
 
-    # Plot experiment results
     # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
@@ -246,6 +276,6 @@ if __name__ == "__main__":
     # plot_rejection_percentage(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_rejection_aucs(5, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-
+    plot_src_accs(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     print('Done')
