@@ -196,7 +196,7 @@ if __name__ == "__main__":
                     job = Job(experiment, ['{0}_{1}_{2}_{3}'.format(fname, s, g, c), methods, acc_funcs, 7,
                                     reps, genes[g], common[c], cluster_spec,
                                     percs, n_src[s], n_trg], \
-                        mem_max='16G', mem_free='16G', name='Da-{0}-{1}-{2}'.format(s, g, c))
+                        mem_max='16G', mem_free='16G', name='Da2-{0}-{1}-{2}'.format(s, g, c))
                     params.append((s, g, c))
                     jobs.append(job)
 

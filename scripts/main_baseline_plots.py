@@ -199,37 +199,17 @@ def plot_rejection_aucs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_
         cnt = 1
         for i in range(3):
             ind_common = c
-            # ari overall
-            ari_max = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt], axis=0)
-            ari_min = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt+1], axis=0)
-            print c, ari_max, ari_min
-
             auc_max = np.mean(res[ind_src, ind_genes, ind_common, 7+i, :, :, cnt], axis=0)
-            auc_min = np.mean(res[ind_src, ind_genes, ind_common, 7+i, :, :, cnt+1], axis=0)
-            print c, auc_max, auc_min
 
-            plt.subplot(2, len(inds), fcnt)
-            plt.fill_between(percs, ari_max, ari_min, alpha=0.2, facecolor=color[i], interpolate=True)
-            if c == 0:
-                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
-                plt.legend(['Reject 10%', 'Reject 20%', 'Reject 30%'], fontsize=12, loc=3)
-            else:
-                plt.title('{0}'.format(common[c]), fontsize=16)
-            plt.xlabel('Target datapts', fontsize=16)
-            plt.ylabel('ARI', fontsize=16)
-            plt.xlim([0, np.max(percs)])
-            plt.semilogx()
-            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
-                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
-            plt.ylim([0., 1.])
-
-            plt.subplot(2, len(inds), fcnt+len(inds))
-            plt.fill_between(percs, auc_max, auc_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            plt.subplot(1, len(inds), fcnt)
+            plt.plot(percs, auc_max, alpha=0.8, color=color[i], linewidth=2.)
             plt.xlabel('Target datapts', fontsize=16)
             plt.ylabel('AUC', fontsize=16)
             plt.xlim([0, np.max(percs)])
             plt.semilogx()
+            plt.title('{0}'.format(common[c]), fontsize=16)
             if c == 0:
+                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
                 plt.legend(['Reconstr. Error', 'Entropy', 'Kurtosis'], fontsize=12, loc=3)
             plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
                        np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
@@ -259,12 +239,13 @@ if __name__ == "__main__":
     print 'Result dimensionality: ', res.shape
 
     # Plot experiment results
-    # plot_overlapping_cluster(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    # plot_reject_mix(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    plot_rejection_percentage(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    # plot_rejection_aucs(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    # plot_percs(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_reject_mix(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_rejection_percentage(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_rejection_aucs(5, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+
 
 
     print('Done')
