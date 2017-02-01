@@ -143,9 +143,12 @@ if __name__ == "__main__":
     # transfer via mixing + rejection
     methods.append(partial(method_hub, method_list=reject_list, func=np.argmax))
     methods.append(partial(method_hub, method_list=reject_list, func=np.argmin))
+    # combined baseline
+    methods.append(comb_list)
 
-    fname = 'main_v2.npz'
+    fname = 'main_short_v4.npz'
 
+    # FULL 1
     percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
     cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
     n_trg = 800
@@ -153,6 +156,31 @@ if __name__ == "__main__":
     reps = 20
     genes = [500, 1000, 2000]
     common = [0, 1, 2, 3, 4]
+
+    # FULL 2
+    percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
+    cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
+    n_trg = 800
+    n_src = [1000]
+    reps = 10
+    genes = [500, 1000, 2000]
+    common = [0, 1, 2, 3, 4]
+
+    # DEBUG
+    # percs = np.logspace(-1.3, -0, 12)[[1, 2, 3, 4, 5, 6, 9, 11]]
+    # # percs = [0.3, 0.5, 0.7]
+    # cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
+    # n_trg = 500
+    # n_src = [200]
+    # reps = 2
+    # genes = [400]
+    # common = [0, 1, 2, 3, 4]
+    # methods = list()
+    # # original
+    # methods.append(partial(method_sc3, mix=0.0, reject_ratio=0., metric='euclidean'))
+    # # transfer via distances
+    # methods.append(partial(method_hub, method_list=dist_list, func=np.argmax))
+    # methods.append(partial(method_hub, method_list=dist_list, func=np.argmin))
 
     res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
 
@@ -168,7 +196,7 @@ if __name__ == "__main__":
                     job = Job(experiment, ['{0}_{1}_{2}_{3}'.format(fname, s, g, c), methods, acc_funcs, 7,
                                     reps, genes[g], common[c], cluster_spec,
                                     percs, n_src[s], n_trg], \
-                        mem_max='16G', mem_free='8G', name='Da-{0}-{1}-{2}'.format(s, g, c))
+                        mem_max='16G', mem_free='16G', name='Da-{0}-{1}-{2}'.format(s, g, c))
                     params.append((s, g, c))
                     jobs.append(job)
 
@@ -184,6 +212,8 @@ if __name__ == "__main__":
         res[s, g, c, :, :, :, :] = accs
 
     # res = combine_intermediate_results(fname, n_src, genes, common)
+    # accs_desc = acc_funcs
+    # m_desc = methods
 
     np.savez(fname, methods=methods, acc_funcs=acc_funcs, res=res,
              accs_desc=accs_desc, method_desc=m_desc,

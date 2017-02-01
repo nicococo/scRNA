@@ -1,25 +1,249 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
     ind_genes = 0
     ind_src = 0
-    ind_percs = 4
-    print n_src, ind_src
+    ind_common = 2
+    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
+    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
+    print '#Common ', common, ' ind/# = ', ind_common, '/', common[ind_common]
 
-    ari_1 = np.mean(res[ind_src, ind_genes, :, 1, :, ind_percs, 0], axis=1)
-    print ari_1
-    ari_1 = np.mean(res[ind_src, ind_genes, :, 1, :, ind_percs, 1], axis=1)
-    print ari_1
-    ari_1 = np.mean(res[ind_src, ind_genes, :, 1, :, ind_percs, 2], axis=1)
-    print ari_1
+    color = ['blue', 'green', 'red']
+    plt.figure(fig_num)
+    inds = [0, 1, 2, 3, 4]
+    fcnt = 1
+    for c in inds:
+        cnt = 1
+        for i in range(2):
+            ind_common = c
+            # ari overall
+            ari_1_baseline = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, 0], axis=0)
+            ari_1_max = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt], axis=0)
+            ari_1_min = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt+1], axis=0)
+            cnt += 2
 
-    print ''
+            plt.subplot(1, len(inds), fcnt)
+            if i==0:
+                plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
+            plt.fill_between(percs, ari_1_max, ari_1_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            if c==0:
+                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
+            else:
+                plt.title('{0}'.format(common[c]), fontsize=16)
+            plt.xlabel('Target datapts', fontsize=16)
+            plt.ylabel('ARI', fontsize=16)
+            plt.xlim([0, np.max(percs)])
+            plt.semilogx()
+            plt.xticks([np.min(percs), np.mean(percs), np.max(percs)],
+                       np.array([np.min(percs), np.mean(percs), np.max(percs)]*n_trg, dtype=np.int))
+            plt.ylim([0., 1.])
+        fcnt += 1
+    plt.legend(['SC3',
+                'SC3-Dist   (upper and lower bound)',
+                'SC3-Mix    (upper and lower bound)'], fontsize=12, loc=3)
+    plt.show()
 
+
+def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    ind_genes = 1
+    ind_src = 0
+    ind_percs = 7
+    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
+    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
+    print '#Percs ', percs, ' ind/# = ', ind_percs, '/', percs[ind_percs]
+
+    color = ['blue', 'green', 'red']
+    plt.figure(fig_num)
+    ind_percs = [0, 3, 5, 7]
+    ind_methods = [1, 3]
+    for p in range(len(ind_percs)):
+        for i in range(len(ind_methods)):
+            # ari stratified
+            ari_0_baseline = np.mean(res[ind_src, ind_genes, 1:, 0, :, ind_percs[p], 0], axis=1)
+            ari_0_max      = np.mean(res[ind_src, ind_genes, 1:, 0, :, ind_percs[p], ind_methods[i]], axis=1)
+            ari_0_min      = np.mean(res[ind_src, ind_genes, 1:, 0, :, ind_percs[p], ind_methods[i]+1], axis=1)
+            # ari overall
+            ari_1_baseline = np.mean(res[ind_src, ind_genes,  :, 1, :, ind_percs[p], 0], axis=1)
+            ari_1_max      = np.mean(res[ind_src, ind_genes,  :, 1, :, ind_percs[p], ind_methods[i]], axis=1)
+            ari_1_min      = np.mean(res[ind_src, ind_genes,  :, 1, :, ind_percs[p], ind_methods[i]+1], axis=1)
+
+            plt.subplot(2, len(ind_percs), p+1)
+            if i == 0:
+                plt.plot(common[1:], ari_0_baseline, '--k', linewidth=2.0)
+            plt.fill_between(common[1:], ari_0_max, ari_0_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            # plt.errorbar(common[1:], ari_0_max, ari_0_max_std)
+            plt.vlines(1, 0., 1., colors='gray')
+            plt.title('Accuracy (common cluster only)', fontsize=16)
+            plt.xlabel('Common cluster', fontsize=16)
+            plt.ylabel('ARI', fontsize=16)
+            plt.xlim([0, np.max(common)])
+            plt.xticks(common)
+            plt.ylim([0., 1.])
+
+            plt.subplot(2, len(ind_percs), p+len(ind_percs)+1)
+            if i==0:
+                plt.plot(common, ari_1_baseline, '--k', linewidth=2.0)
+            plt.fill_between(common, ari_1_max, ari_1_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            plt.title('Accuracy (all cluster)', fontsize=16)
+            plt.xlabel('Common cluster', fontsize=16)
+            plt.ylabel('ARI', fontsize=16)
+            plt.xlim([0, np.max(common)])
+            plt.xticks(common)
+            plt.ylim([0., 1.])
+
+    plt.legend(['SC3',
+                'SC3-Dist   (upper and lower bound)',
+                'SC3-Mix    (upper and lower bound)',
+                'SC3-Reject (upper and lower bound)'], fontsize=12, loc=3)
+    plt.show()
+
+
+def plot_reject_mix(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    ind_genes = 0
+    ind_src = 1
+    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
+    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
+    print '#Common ', common
+
+    color = ['green', 'red']
+    plt.figure(fig_num)
+    inds = [0, 1, 2, 3, 4]
+    fcnt = 1
+    for c in inds:
+        cnt = 3
+        for i in range(2):
+            ind_common = c
+            # ari overall
+            ari_1_baseline = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, 0], axis=0)
+            ari_1_max = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt], axis=0)
+            ari_1_min = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt+1], axis=0)
+            cnt += 2
+
+            plt.subplot(1, len(inds), fcnt)
+            if i==0:
+                plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
+            plt.fill_between(percs, ari_1_max, ari_1_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            if c==0:
+                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
+            else:
+                plt.title('{0}'.format(common[c]), fontsize=16)
+            plt.xlabel('Target datapts', fontsize=16)
+            plt.ylabel('ARI', fontsize=16)
+            plt.xlim([0, np.max(percs)])
+            plt.semilogx()
+            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
+                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
+            plt.ylim([0., 1.])
+        fcnt += 1
+    plt.legend(['SC3',
+                'SC3-Mix    (upper and lower bound)',
+                'SC3-Reject (upper and lower bound)'], fontsize=12, loc=3)
+    plt.show()
+
+
+def plot_rejection_percentage(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    ind_genes = 0
+    ind_src = 0
+    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
+    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
+    print '#Common ', common
+
+    color = ['green', 'red', 'blue']
+    plt.figure(fig_num)
+    inds = [1, 2, 3]
+    fcnt = 1
+    for c in inds:
+        cnt = 1
+        for i in range(3):
+            ind_common = c
+            # ari overall
+            ari_baseline = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, 0], axis=0)
+            ari_max = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt], axis=0)
+            ari_min = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt+1], axis=0)
+
+            plt.subplot(1, len(inds), fcnt)
+            if i == 0:
+                plt.plot(percs, ari_baseline, '--k', linewidth=2.0)
+
+            plt.fill_between(percs, ari_max, ari_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            if c == 1:
+                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
+                plt.legend(['SC3', 'Reject 10%', 'Reject 20%', 'Reject 30%'], fontsize=12, loc=3)
+            else:
+                plt.title('{0}'.format(common[c]), fontsize=16)
+            plt.xlabel('Target datapts', fontsize=16)
+            plt.ylabel('ARI', fontsize=16)
+            plt.xlim([0, np.max(percs)])
+            plt.semilogx()
+            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
+                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
+            plt.ylim([0., 1.])
+        fcnt += 1
+    plt.show()
+
+
+def plot_rejection_aucs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    ind_genes = 0
+    ind_src = 0
+    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
+    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
+    print '#Common ', common
+
+    color = ['green', 'red', 'blue']
+    plt.figure(fig_num)
+    inds = [0, 1, 2, 3, 4]
+    fcnt = 1
+    for c in inds:
+        cnt = 1
+        for i in range(3):
+            ind_common = c
+            # ari overall
+            ari_max = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt], axis=0)
+            ari_min = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt+1], axis=0)
+            print c, ari_max, ari_min
+
+            auc_max = np.mean(res[ind_src, ind_genes, ind_common, 7+i, :, :, cnt], axis=0)
+            auc_min = np.mean(res[ind_src, ind_genes, ind_common, 7+i, :, :, cnt+1], axis=0)
+            print c, auc_max, auc_min
+
+            plt.subplot(2, len(inds), fcnt)
+            plt.fill_between(percs, ari_max, ari_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            if c == 0:
+                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
+                plt.legend(['Reject 10%', 'Reject 20%', 'Reject 30%'], fontsize=12, loc=3)
+            else:
+                plt.title('{0}'.format(common[c]), fontsize=16)
+            plt.xlabel('Target datapts', fontsize=16)
+            plt.ylabel('ARI', fontsize=16)
+            plt.xlim([0, np.max(percs)])
+            plt.semilogx()
+            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
+                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
+            plt.ylim([0., 1.])
+
+            plt.subplot(2, len(inds), fcnt+len(inds))
+            plt.fill_between(percs, auc_max, auc_min, alpha=0.2, facecolor=color[i], interpolate=True)
+            plt.xlabel('Target datapts', fontsize=16)
+            plt.ylabel('AUC', fontsize=16)
+            plt.xlim([0, np.max(percs)])
+            plt.semilogx()
+            if c == 0:
+                plt.legend(['Reconstr. Error', 'Entropy', 'Kurtosis'], fontsize=12, loc=3)
+            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
+                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
+            plt.ylim([0., 1.])
+        fcnt += 1
+
+    plt.show()
 
 
 if __name__ == "__main__":
-    foo = np.load('intermediate.npz')
+    # foo = np.load('intermediate.npz')
+    # foo = np.load('main_v2.npz')
+    foo = np.load('test_v4.npz')
+
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
     res = foo['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
@@ -35,7 +259,12 @@ if __name__ == "__main__":
     print 'Result dimensionality: ', res.shape
 
     # Plot experiment results
-    plot_overlapping_cluster(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_overlapping_cluster(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_reject_mix(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_rejection_percentage(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_rejection_aucs(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+
+    # plot_percs(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
 
     print('Done')

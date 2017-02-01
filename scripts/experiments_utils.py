@@ -12,17 +12,19 @@ from scRNA.utils import *
 def method_hub(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
                method_list=None, func=None):
     aris = np.zeros(len(method_list))
+    reject = list()
     src_lbls = np.zeros((len(method_list), src_labels.size))
     trg_lbls = np.zeros((len(method_list), trg_labels.size))
     for i in range(len(method_list)):
-        desc, src_lbls[i, :], trg_lbls[i, :], _ = method_list[i](src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster)
+        desc, src_lbls[i, :], trg_lbls[i, :], r = method_list[i](src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster)
+        reject.append(r)
         aris[i] = metrics.adjusted_rand_score(trg_labels, trg_lbls[i, :])
     ind = func(aris)
     # print aris
     # print ind, np.argmax(aris), np.argmin(aris)
     desc['hub'] = func
     desc['stats'] = (np.max(aris), np.min(aris), np.mean(aris))
-    return desc, src_lbls[ind, :], trg_lbls[ind, :], None
+    return desc, src_lbls[ind, :], trg_lbls[ind, :], reject[ind]
 
 
 def method_random(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster):
