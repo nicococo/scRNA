@@ -220,23 +220,16 @@ def plot_rejection_aucs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_
 
 
 def plot_src_accs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    ind_genes = 0
-    ind_src = 2
-    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
-    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
-    print '#Common ', common
-
-    color = ['green', 'red', 'blue']
     plt.figure(fig_num)
     inds = [0, 1, 2, 3, 4]
     fcnt = 1
     for c in inds:
-        cnt = 1
         ind_common = c
         aris = np.mean(res[:, :, ind_common, 2, :, 0, 0], axis=2)
+        print np.mean(res[:, :, ind_common, 2, :, 0, 0], axis=2)
 
         plt.subplot(1, len(inds), fcnt)
-        plt.pcolor(aris, cmap=plt.get_cmap('Reds'))
+        plt.pcolor(aris, cmap=plt.get_cmap('Reds'), vmin=0., vmax=1.)
         plt.title('{0}'.format(common[c]), fontsize=16)
         plt.xticks(np.arange(len(genes))+0.5, genes)
         plt.yticks(np.arange(len(n_src))+0.5, n_src)
@@ -246,7 +239,41 @@ def plot_src_accs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, c
             plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
         fcnt += 1
     plt.colorbar(ticks=[0.0, 0.25, 0.5, 0.75, 1.0])
+    plt.show()
 
+
+def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    plt.figure(fig_num)
+    aris = np.mean(res[-1, :, :, -1, :, 0, 0], axis=2).T
+    print aris
+
+    plt.pcolor(aris, cmap=plt.get_cmap('Blues'), vmin=0., vmax=1.)
+    plt.title('Transferability', fontsize=16)
+    plt.xticks(np.arange(len(genes))+0.5, genes)
+    plt.yticks(np.arange(len(common))+0.5, common)
+    plt.xlabel('#Genes', fontsize=16)
+    plt.ylabel('#Common cluster', fontsize=16)
+    plt.colorbar(ticks=[0.0, 0.25, 0.5, 0.75, 1.0])
+    plt.show()
+
+
+def plot_acc_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    plt.figure(fig_num)
+    inds = [0, 1, 2, 3]
+    fcnt = 1
+    for c in inds:
+        aris = np.mean(res[1, 0, :, 3+c, :, 8, :], axis=1)
+        print np.mean(res[1, 0, :, 3+c, :, 8, :], axis=1)
+
+        plt.subplot(1, len(inds), fcnt)
+        plt.pcolor(aris, cmap=plt.get_cmap('Greens'), vmin=0., vmax=1.)
+        plt.title('{0}'.format(c), fontsize=16)
+        plt.xticks(np.arange(len(method_desc))+0.5, ['SC3', 'max', 'min', 'max', 'min'], rotation=60)
+        plt.yticks(np.arange(len(common))+0.5, common)
+        if c == 0:
+            plt.ylabel('#Common cluster', fontsize=16)
+        fcnt += 1
+        plt.colorbar(ticks=[0.0, 0.25, 0.5, 0.75, 1.0])
     plt.show()
 
 
@@ -276,6 +303,10 @@ if __name__ == "__main__":
     # plot_rejection_percentage(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_rejection_aucs(5, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    plot_src_accs(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_src_accs(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+
+    # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+
+    plot_acc_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     print('Done')

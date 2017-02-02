@@ -169,7 +169,10 @@ def acc_ari(X_src, src_labels, X_trg, trg_labels, src_lbls_pred, lbls_pred, reje
 
 def acc_silhouette(X_src, src_labels, X_trg, trg_labels, src_lbls_pred, lbls_pred, reject, metric='euclidean'):
     dists = sc.distances(X_trg, gene_ids=np.arange(X_trg.shape[1]), metric=metric )
-    sil = metrics.silhouette_score(dists, lbls_pred, metric='precomputed')
+    num_lbls = np.unique(lbls_pred).size
+    sil = 1.0
+    if num_lbls > 1:
+        sil = metrics.silhouette_score(dists, lbls_pred, metric='precomputed')
     desc = ('Silhouette ({0})'.format(metric), 'Silhouette ({0})'.format(metric))
     return sil, desc
 
