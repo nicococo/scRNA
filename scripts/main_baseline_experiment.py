@@ -56,7 +56,7 @@ def plot_results(fname):
 def experiment(fname, methods, acc_funcs, mode, reps, n_genes, n_common_cluster,
                cluster_spec, percs, n_src, n_trg):
     return experiment_loop(fname, methods, acc_funcs, mode=mode,
-                    reps=reps, n_genes=n_genes, n_common_cluster=n_common_cluster,
+                    reps=reps, n_genes=n_genes, n_common_cluster=n_common_cluster, cluster_mode=True,
                     cluster_spec=cluster_spec, percs=percs, n_src=n_src, n_trg=n_trg)
 
 
@@ -117,15 +117,18 @@ if __name__ == "__main__":
     reject_list = list()
     for m in mixes:
         for r in rratios:
-            reject_list.append(partial(method_sc3, mix=m, reject_ratio=r, metric='euclidean', use_da_dists=False))
+            reject_list.append(partial(method_sc3, mix=m, reject_ratio=r, calc_transferability=False,
+                                       metric='euclidean', use_da_dists=False))
 
     dist_list = list()
     for m in mixes:
-        dist_list.append(partial(method_sc3, mix=m, metric='euclidean', reject_ratio=0., use_da_dists=True))
+        dist_list.append(partial(method_sc3, mix=m, metric='euclidean',
+                                 calc_transferability=False, reject_ratio=0., use_da_dists=True))
 
     mixed_list = list()
     for m in mixes:
-        mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', reject_ratio=0., use_da_dists=False))
+        mixed_list.append(partial(method_sc3, mix=m, metric='euclidean',
+                                  calc_transferability=False, reject_ratio=0., use_da_dists=False))
 
 
     methods = list()
@@ -144,6 +147,8 @@ if __name__ == "__main__":
     methods.append(partial(method_sc3_combined, metric='euclidean'))
 
     fname = 'main_short_v4.npz'
+    fname = 'test_transfer_v2.npz'
+    fname = 'main_cluster_v1.npz'
 
     # FULL 1
     percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
@@ -162,6 +167,29 @@ if __name__ == "__main__":
     reps = 10
     genes = [500, 1000, 2000]
     common = [0, 1, 2, 3, 4]
+
+    methods = []
+    methods.append(partial(method_hub, method_list=[partial(method_sc3, mix=0.3, metric='euclidean', reject_ratio=0.)], func=np.argmax))
+
+
+    # CLUSTER 1
+    percs = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
+    cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
+    n_trg = 800
+    n_src = [1000]
+    reps = 10
+    genes = [500]
+    common = [0, 1, 2, 3, 4]
+
+    methods = []
+    # original
+    methods.append(partial(method_sc3, mix=0.0, reject_ratio=0., metric='euclidean'))
+    # transfer via distances
+    methods.append(partial(method_hub, method_list=dist_list, func=np.argmax))
+    methods.append(partial(method_hub, method_list=dist_list, func=np.argmin))
+    # transfer via mixing
+    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
+    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmin))
 
     # DEBUG
     # percs = np.logspace(-1.3, -0, 12)[[1, 2, 3, 4, 5, 6, 9, 11]]
@@ -204,9 +232,9 @@ if __name__ == "__main__":
         s, g, c = params[i]
         res[s, g, c, :, :, :, :] = accs
 
-    # res = combine_intermediate_results(fname, n_src, genes, common)
-    # accs_desc = acc_funcs
-    # m_desc = methods
+    res = combine_intermediate_results(fname, n_src, genes, common)
+    accs_desc = acc_funcs
+    m_desc = methods
 
     np.savez(fname, methods=methods, acc_funcs=acc_funcs, res=res,
              accs_desc=accs_desc, method_desc=m_desc,

@@ -4,7 +4,6 @@ import scipy.stats as stats
 import scipy.linalg as sl
 import sklearn.cluster as cluster
 
-from nmf_clustering import DaNmfClustering
 from utils import *
 
 # These are the SC3 labels for Ting with 7 clusters, PCA, Euclidean distances
@@ -125,7 +124,7 @@ def transformations(dm, components=5, method='pca'):
     :param dm: cells x cells distance matrix
     :param components: number of eigenvector/eigenvalues to use
     :param method: either 'pca' or 'spectral'
-    :return: cells x cells distance matrix, cells x components Eigenvectors
+    :return: cells x cells (centered!) distance matrix, cells x components Eigenvectors
     """
     print('SC3 {1} transformation (components={0}).'.format(components, method.upper()))
     if method == 'spectral':
@@ -145,7 +144,6 @@ def transformations(dm, components=5, method='pca'):
         num_cells = dm.shape[0]
         # J = np.eye(num_cells) - 1./np.float(num_cells)*np.ones((num_cells, num_cells))
         # dm = 0.5*J.dot(dm.dot(J))
-
         dm = dm - np.repeat(np.mean(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
         dm = dm / np.repeat(np.std(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
 

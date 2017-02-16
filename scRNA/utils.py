@@ -1,6 +1,7 @@
 import os
 import numpy as np
-
+import sklearn.metrics as metrics
+import sc3_clustering_impl as sc
 
 def load_dataset_tsv(fname, fgenes=None, flabels=None):
     # check data filename
@@ -103,4 +104,32 @@ def get_kernel(X, Y, type='linear', param=1.0):
         kernel = np.exp(-kernel / param)
         print kernel.shape
     return kernel
+
+
+def unsupervised_acc_silhouette(X, labels, metric='euclidean'):
+    dists = sc.distances(X, gene_ids=np.arange(X.shape[1]), metric=metric)
+    num_lbls = np.unique(labels).size
+    if num_lbls > 1:
+        return metrics.silhouette_score(dists, labels, metric='precomputed')
+    return 0.0
+
+
+def unsupervised_acc_kta(X, labels, kernel='linear', param=1.0):
+    Ky = np.zeros((labels.size, np.max(labels) + 1))
+    for i in range(len(labels)):
+        Ky[i, labels[i]] = 1.
+
+    if kernel == 'rbf':
+        Kx = get_kernel(X, X, type='rbf', param=param)
+        Ky = get_kernel(Ky.T, Ky.T, type='rbf', param=param)
+    else:
+        Kx = X.T.dot(X)
+        Ky = Ky.dot(Ky.T)
+
+    Kx = center_kernel(Kx)
+    Ky = center_kernel(Ky)
+    Kx = normalize_kernel(Kx)
+    Ky = normalize_kernel(Ky)
+    return kta_align_general(Kx, Ky)
+
 

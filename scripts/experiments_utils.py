@@ -61,7 +61,7 @@ def method_sc3_combined(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_c
 
 def method_sc3(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
                limit_pc_range=-1, metric='euclidean', consensus_mode=0,
-               mix=0.5, use_da_dists=True, reject_ratio=0.0):
+               mix=0.5, use_da_dists=True, reject_ratio=0.0, calc_transferability=True):
 
     num_cells = trg.shape[1]
     if num_cells > limit_pc_range > 0:
@@ -73,7 +73,7 @@ def method_sc3(src, src_labels, trg, trg_labels, n_src_cluster, n_trg_cluster,
 
     nmf_src = NmfClustering(src, np.arange(src.shape[0]), num_cluster=n_src_cluster)
     nmf_trg = DaNmfClustering(nmf_src, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
-    mixed_data, _, _ = nmf_trg.get_mixed_data(mix=mix, reject_ratio=reject_ratio)
+    mixed_data, _, _ = nmf_trg.get_mixed_data(mix=mix, reject_ratio=reject_ratio, calc_transferability=calc_transferability)
 
     # use mixed data are mixed distances
     cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],

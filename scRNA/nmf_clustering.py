@@ -60,7 +60,7 @@ class DaNmfClustering(NmfClustering):
         self.src = src
         assert(isinstance(self.src, NmfClustering))
 
-    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., calc_transferability=True, alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
         trg_data = self.pre_processing()
         src_data = self.src.pre_processing()
 
@@ -141,8 +141,10 @@ class DaNmfClustering(NmfClustering):
         self.intermediate_model = (W, H, H2)
         self.reject = self.calc_rejection(trg_data, W, H, H2)
 
-        self.transferability_score = self.calc_transferability_score(W, H, trg_data)
-        self.reject.append(('Transferability', self.transferability_score))
+        if calc_transferability:
+            print('Calculating transferability score...')
+            self.transferability_score = self.calc_transferability_score(W, H, trg_data)
+            self.reject.append(('Transferability', self.transferability_score))
         new_trg_data = W.dot(H2)
         # new_trg_data = W.dot(H)
 
