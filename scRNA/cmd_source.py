@@ -12,7 +12,7 @@ from utils import *
 # --------------------------------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument("--fname", help="Source data (TSV file)", required=True, type=str, default=None)
-parser.add_argument("--fgene-ids", help="Source data gene ids (TSV file)", required=True, type=str, default=None)
+parser.add_argument("--fgene-ids", help="Source data gene ids (TSV file)", dest='fgene_ids', required=True, type=str, default=None)
 parser.add_argument("--fout", help="Result files will use this prefix.", default='src', type=str)
 parser.add_argument("--flabels", help="[optional] Cluster labels (TSV file)", required=False, type=str, default=None)
 

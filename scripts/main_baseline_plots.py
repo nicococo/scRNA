@@ -91,8 +91,8 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
 
             plt.subplot(1, len(inds), fcnt)
             if i == 0:
-                plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
                 plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
+                plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
             plt.fill_between(percs, ari_1_max, ari_1_min, alpha=0.2, facecolor=color[i], interpolate=True)
             if c == 0:
                 plt.title('Overlap: {0}'.format(common[c]), fontsize=16)
@@ -369,10 +369,11 @@ def plot_acc_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_tr
 if __name__ == "__main__":
     # foo = np.load('intermediate.npz')
     # foo = np.load('main_v2.npz')
-    # foo = np.load('main_short_v4.npz')
+    foo = np.load('main_short_v4.npz')
     # foo = np.load('test_v4.npz')
     # foo = np.load('test_transfer_v2.npz')
-    foo = np.load('main_cluster_v1.npz')
+    # foo = np.load('main_cluster_v1.npz')
+    # foo = np.load('main_results_2.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
@@ -388,7 +389,7 @@ if __name__ == "__main__":
     print 'n_src x genes x common x acc_funcs x reps x percs x methods'
     print 'Result dimensionality: ', res.shape
 
-    # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_reject_mix(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
@@ -402,7 +403,7 @@ if __name__ == "__main__":
     # plot_acc_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_cluster(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    plot_cluster_acc_measures(10, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_cluster_acc_measures(10, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
 
     print('Done')

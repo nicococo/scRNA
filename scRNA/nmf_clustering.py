@@ -62,19 +62,21 @@ class DaNmfClustering(NmfClustering):
 
     def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., calc_transferability=True, alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
         trg_data = self.pre_processing()
-        src_data = self.src.pre_processing()
+        assert(self.src.pp_data is not None)
+        # src_data = self.src.pre_processing()
+        src_data = self.src.pp_data
 
         trg_gene_ids = self.gene_ids[self.remain_gene_inds]
         src_gene_ids = self.src.gene_ids[self.src.remain_gene_inds]
 
         if not np.unique(src_gene_ids).size == src_gene_ids.size:
             # raise Exception('(MTL) Gene ids are supposed to be unique.')
-            print('\nError! (MTL gene ids) Gene ids are supposed to be unique. '
+            print('\nWarning! (MTL gene ids) Gene ids are supposed to be unique. '
                   'Only {0} of {1}  entries are unique.'.format(np.unique(src_gene_ids).shape[0], src_gene_ids.shape[0]))
             print('Only first occurance will be used.\n')
         if not np.unique(trg_gene_ids).size == trg_gene_ids.size:
             # raise Exception('(Target) Gene ids are supposed to be unique.')
-            print('\nError! (Target gene ids) Gene ids are supposed to be unique. '
+            print('\nWarning! (Target gene ids) Gene ids are supposed to be unique. '
                   'Only {0} of {1}  entries are unique.'.format(np.unique(trg_gene_ids).shape[0], trg_gene_ids.shape[0]))
             print('Only first occurance will be used.\n')
 
@@ -143,7 +145,7 @@ class DaNmfClustering(NmfClustering):
 
         if calc_transferability:
             print('Calculating transferability score...')
-            self.transferability_score = self.calc_transferability_score(W, H, trg_data)
+            self.transferability_score = self.calc_transferability_score(W, H, trg_data, max_iter=max_iter)
             self.reject.append(('Transferability', self.transferability_score))
         new_trg_data = W.dot(H2)
         # new_trg_data = W.dot(H)
