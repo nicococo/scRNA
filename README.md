@@ -1,5 +1,5 @@
 scRNA
-*********
+***************
 
 Python framework for single-cell RNA-seq clustering with special 
 focus on transfer learning (multitask/domain adaptation). 
