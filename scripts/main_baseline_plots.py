@@ -355,7 +355,8 @@ def plot_acc_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_tr
         print np.mean(res[0, 0, :, 3+c, :, 8, :-3], axis=1)
 
         plt.subplot(1, len(inds), fcnt)
-        plt.pcolor(aris, cmap=plt.get_cmap('Greens'), vmin=0., vmax=1.)
+        plt.pcolor(aris, cmap=plt.get_cmap('Greens'))
+        # plt.pcolor(aris, cmap=plt.get_cmap('Greens'), vmin=0., vmax=1.)
         plt.title('{0}'.format(c), fontsize=16)
         plt.xticks(np.arange(aris.shape[1])+0.5, ['SC3', 'Dist max', 'Dist min', 'Mix max', 'Mix min'], rotation=60)
         plt.yticks(np.arange(len(common))+0.5, common)
@@ -389,7 +390,7 @@ if __name__ == "__main__":
     print 'n_src x genes x common x acc_funcs x reps x percs x methods'
     print 'Result dimensionality: ', res.shape
 
-    plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_reject_mix(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
@@ -400,7 +401,7 @@ if __name__ == "__main__":
 
     # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    # plot_acc_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_acc_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_cluster(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_cluster_acc_measures(10, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
