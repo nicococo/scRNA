@@ -11,7 +11,7 @@ This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex 
 command. Enjoy :)
 - Command line script available
 
-[create an anchor](#anchors-in-markdown)
+[create an anchor](#source-data)
 
 Getting started
 ---------------
@@ -40,7 +40,7 @@ _scRNA-generate-data.sh_
 
 ###Transfer Learning for scRNA-seq Data
 
-####1. Setup the Source Dataset
+####1. Setup the Source Dataset(#source-data)
 -----------------
 _scRNA-source.sh_ 
 
