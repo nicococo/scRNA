@@ -62,6 +62,7 @@ Data pre-processing Gene/cell filtering arguments (SC3 inspired):
 _scRNA-source.sh_ 
 
 Input and output files: 
+
 |Command line arguments|Description                            |
 |----------------------|:--------------------------------------|
 |--src-fname  | Source *.npz result filename from Step 2       | 
@@ -72,6 +73,7 @@ Input and output files:
 
 
 Data pre-processing Gene/cell filtering arguments (SC3 inspired):
+
 |Command line arguments|Description                            |
 |----------------------|:--------------------------------------|
 |--min_expr_genes      | (Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type=int) |
@@ -80,6 +82,7 @@ Data pre-processing Gene/cell filtering arguments (SC3 inspired):
 
 
 SC3-specific distances and transformations:
+
 |Command line arguments|Description                            |
 |----------------------|:--------------------------------------|
 |--sc3-dists  |(SC3) Comma-separated MTL distances (default euclidean) |
