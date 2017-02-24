@@ -26,7 +26,7 @@ _scRNA-generate-data.sh_
 
 ###Transfer Learning for scRNA-seq Data
 
-
+----
 ####1. Setup the Source Dataset
 _scRNA-source.sh_ 
 
@@ -73,6 +73,7 @@ Additional commands:
 |--no-tsne  | Do not plot t-SNE plots as they can be quite time consuming |
 
 
+----
 ####2. Target Dataset Clustering 
 _scRNA-source.sh_ 
 
