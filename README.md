@@ -11,12 +11,12 @@ This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex 
 command. Enjoy :)
 - Command line script available
 
-[create an anchor](#setting-up-the-source-dataset)
+
 
 Getting started
 ---------------
 
-###Installation
+### Installation
 We assume that Python >2.7 is installed and the _pip_ command is
 callable from the command line. If starting from scratch, we recommend installing 
 the [Anaconda](https://www.continuum.io/downloads) open data science 
@@ -31,14 +31,25 @@ available for **MacOS and Linux only**:
 * _scRNA-source.sh_ 
 * _scRNA-target.sh_ 
 
+### Example 1 
 Step 1: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
 ![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](doc/screen_install_pip.png)
+
+Step 2: Check the scripts
+![Check for the scripts](doc/screen_install_scripts.png)
+
+Step 3: Generate some artifical data
+![Check for the scripts](doc/screen_install_scripts.png)
+
 
 ###  Simulating scRNA-seq Data 
 _scRNA-generate-data.sh_
 
 
 ### Transfer Learning for scRNA-seq Data
+
+[Step 1: Setting up the source dataset](#setting-up-the-source-dataset)
+[Step 2: Target dataset clustering](#target-dataset-clustering)
 
 #### Setting up the Source Dataset
 -----------------
@@ -87,7 +98,7 @@ Additional commands:
 |--no-tsne  | Do not plot t-SNE plots as they can be quite time consuming |
 
 
-#### 2. Target Dataset Clustering 
+#### Target Dataset Clustering 
 -----------------
 _scRNA-target.sh_ 
 
