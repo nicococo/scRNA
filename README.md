@@ -46,6 +46,10 @@ This will result in a number of files:
 * Source- and target data
 * Source- and target ground truth labels
 
+Step 4:
+If a 
+''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
+occurs and Anaconda open data science platform is used, then 
 
 ###  Simulating scRNA-seq Data 
 _scRNA-generate-data.sh_

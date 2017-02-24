@@ -1,3 +1,6 @@
+import matplotlib as mpl
+mpl.use('TkAgg')
+
 import matplotlib.pyplot as plt
 import argparse, sys
 
@@ -186,6 +189,6 @@ for i in range(accs.shape[0]):
     plt.grid('on')
 
 plt.savefig('{0}_accs.png'.format(arguments.fout), format='png', bbox_inches=None, pad_inches=0.1)
-plt.show()
+# plt.show()
 
 print('\nDone.')
