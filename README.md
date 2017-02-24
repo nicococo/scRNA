@@ -60,7 +60,11 @@ Step 4: Cluster the source data.
 Potential problems:
 * If a ''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
 occurs and Anaconda open data science platform is used, then use _conda install mkl_.
+
+
 ![Cluster the source data](doc/screen_install_source.png)
+
+
 This will result in a number of files:
 * t-SNE plots (.png) for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
 * Output cluster labels (and corresponding cell id) in .tsv format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
