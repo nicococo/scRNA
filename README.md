@@ -1,4 +1,5 @@
-**scRNA**
+scRNA
+=====
 ***************
 
 Python framework for single-cell RNA-seq clustering with special 
@@ -41,6 +42,7 @@ Input and output files:
 |--fout       | Result files will use this prefix              |
 |--flabels    | (optional) Target cluster labels (TSV file)    |
 
+
 Data pre-processing Gene/cell filtering arguments (SC3 inspired):
 |Command line arguments|Description                            |
 |----------------------|:--------------------------------------|
@@ -48,11 +50,13 @@ Data pre-processing Gene/cell filtering arguments (SC3 inspired):
 |--non_zero_threshold  | (Cell/gene filter) Threshold for zero expression per gene (default 1.0)|
 |--perc_consensus_genes| (Gene filter) Filter genes that coincide across a percentage of cells (default 0.98) |
 
+
 SC3-specific distances and transformations:
 |Command line arguments|Description                            |
 |----------------------|:--------------------------------------|
 |--sc3-dists  |(SC3) Comma-separated MTL distances (default euclidean) |
 |--sc3-transf |(SC3) Comma-separated transformations (default pca) |
+
 
 Test settings: The software will cluster any combination of the cluster-range
 and mixtures and store results separately.
