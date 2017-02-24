@@ -31,7 +31,7 @@ available for **MacOS and Linux only**:
 * _scRNA-target.sh_ 
 
 Step 1: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
-![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](https://github.com/nicococo/scRNA/raw/master/doc/screen_install_pip.png)
+![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](https://github.com/nicococo/scRNA/doc/screen_install_pip.png)
 
 ###Simulating scRNA-seq Data 
 _scRNA-generate-data.sh_
