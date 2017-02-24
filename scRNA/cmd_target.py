@@ -23,8 +23,8 @@ parser.add_argument("--min_expr_genes", help="(Cell filter) Minimum number of ex
 parser.add_argument("--non_zero_threshold", help="(Cell/gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type=float)
 parser.add_argument("--perc_consensus_genes", help="(Gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type=float)
 
-parser.add_argument("--cluster-range", help="Comma separated list of clusters (default 6,7,8)", dest='cluster_range', default='5,6,7,8,9', type=str)
-parser.add_argument("--mixtures", help="Comma separated list of convex combination src-trg mixture coefficient (0.=no transfer, default 0.1)", default="0.0,0.1,0.4,0.8", type = str)
+parser.add_argument("--cluster-range", help="Comma separated list of clusters (default 6,7,8)", dest='cluster_range', default='6,7,8', type=str)
+parser.add_argument("--mixtures", help="Comma separated list of convex combination src-trg mixture coefficient (0.=no transfer, default 0.0,0.1,0.2)", default="0.0,0.1,0.2", type = str)
 
 parser.add_argument("--sc3-dists", dest='sc3_dists', help="(SC3) Comma-separated MTL distances (default euclidean)", default='euclidean', type = str)
 parser.add_argument("--sc3-transf", dest='sc3_transf', help="(SC3) Comma-separated transformations (default pca)", default='pca', type = str)

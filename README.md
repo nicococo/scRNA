@@ -32,7 +32,7 @@ _scRNA-source.sh_
 ### 3. Target Dataset Clustering 
 _scRNA-source.sh_ 
 
-
+Input and output files: 
 |Command line arguments|Description                            |
 |----------------------|:--------------------------------------|
 |--src-fname  | Source *.npz result filename from Step 2       | 
@@ -41,15 +41,26 @@ _scRNA-source.sh_
 |--fout       | Result files will use this prefix              |
 |--flabels    | (optional) Target cluster labels (TSV file)    |
 
-Data pre-processing Gene/cell filtering 
---min_expr_genes", help="(Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type=int)
---non_zero_threshold", help="(Cell/gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type=float)
---perc_consensus_genes", help="(Gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type=float)
+Data pre-processing Gene/cell filtering arguments (SC3 inspired):
+|Command line arguments|Description                            |
+|----------------------|:--------------------------------------|
+|--min_expr_genes      | (Cell filter) Minimum number of expressed genes (default 2000)", default=2000, type=int) |
+|--non_zero_threshold  | (Cell/gene filter) Threshold for zero expression per gene (default 1.0)|
+|--perc_consensus_genes| (Gene filter) Filter genes that coincide across a percentage of cells (default 0.98) |
 
---cluster-range", help="Comma separated list of clusters (default 6,7,8)", dest='cluster_range', default='5,6,7,8,9', type=str)
---mixtures", help="Comma separated list of convex combination src-trg mixture coefficient (0.=no transfer, default 0.1)", default="0.0,0.1,0.4,0.8", type = str)
+SC3-specific distances and transformations:
+|Command line arguments|Description                            |
+|----------------------|:--------------------------------------|
+|--sc3-dists  |(SC3) Comma-separated MTL distances (default euclidean) |
+|--sc3-transf |(SC3) Comma-separated transformations (default pca) |
 
---sc3-dists", dest='sc3_dists', help="(SC3) Comma-separated MTL distances (default euclidean)", default='euclidean', type = str)
---sc3-transf", dest='sc3_transf', help="(SC3) Comma-separated transformations (default pca)", default='pca', type = str)
+Test settings: The software will cluster any combination of the cluster-range
+and mixtures and store results separately.
+
+|Command line arguments|Description                            |
+|----------------------|:--------------------------------------|
+|--cluster-range | Comma separated list of clusters (default 6,7,8) |
+|--mixtures | Comma separated list of convex combination src-trg mixture coefficient (0.=no transfer, default 0.0,0.1,0.2)| 
+
 
 
