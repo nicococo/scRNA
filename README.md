@@ -56,7 +56,8 @@ This will result in a number of files:
 
 
 
-Step 4: Cluster the source data. 
+Step 4: Cluster the source data using the provided gene ids and source data. Ie. we want
+ to turn off the cell- and gene-filter as well as the log transformation.
 Potential problems:
 * If a ''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
 occurs and Anaconda open data science platform is used, then use _conda install mkl_ first.
