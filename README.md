@@ -19,6 +19,10 @@ Getting started
 After installing the software package using the _pip install git+https://github.com/nicococo/scRNA.git_
 command, three command line arguments will be available for **MacOS and Linux only**: 
 
+* _scRNA-generate-data.sh_
+* _scRNA-source.sh_ 
+* _scRNA-target.sh_ 
+
 
 ###Simulating scRNA-seq Data 
 _scRNA-generate-data.sh_
@@ -26,8 +30,8 @@ _scRNA-generate-data.sh_
 
 ###Transfer Learning for scRNA-seq Data
 
-----
 ####1. Setup the Source Dataset
+-----------------
 _scRNA-source.sh_ 
 
 Input and output files:
@@ -73,9 +77,9 @@ Additional commands:
 |--no-tsne  | Do not plot t-SNE plots as they can be quite time consuming |
 
 
-----
 ####2. Target Dataset Clustering 
-_scRNA-source.sh_ 
+-----------------
+_scRNA-target.sh_ 
 
 Input and output files: 
 
