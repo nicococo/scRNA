@@ -1,3 +1,6 @@
+import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 import argparse, sys
 
@@ -303,7 +306,7 @@ plt.savefig('{0}.{1}.png'.format(arguments.fout, 'accs'), format='png',
             bbox_inches=None, pad_inches=0.1)
 
 print 'Transferability', accs_trans
-plt.show()
+# plt.show()
 
 
 print('\nDone.')
