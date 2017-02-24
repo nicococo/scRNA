@@ -59,7 +59,7 @@ This will result in a number of files:
 Step 4: Cluster the source data. 
 Potential problems:
 * If a ''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
-occurs and Anaconda open data science platform is used, then use _conda install mkl_.
+occurs and Anaconda open data science platform is used, then use _conda install mkl_ first.
 
 
 ![Cluster the source data](doc/screen_install_source.png)
