@@ -40,16 +40,22 @@ Step 2: Check the scripts
 
 Step 3: Create directory /foo. Go to directory /foo. Generate some artifical data
 by simply calling the _scRNA-generate-data.sh_ (using only default parameters).
-![Check for the scripts](doc/screen_install_generate.png)
+![Generate artifical data](doc/screen_install_generate.png)
 This will result in a number of files:
 * Gene ids
 * Source- and target data
 * Source- and target ground truth labels
 
-Step 4:
-If a 
-''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
-occurs and Anaconda open data science platform is used, then 
+Step 4: Cluster the source data.
+If a ''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
+occurs and Anaconda open data science platform is used, then use _conda install mkl_. 
+![Cluster the source data](doc/screen_install_source.png)
+This will result in a number of files:
+* t-SNE plots (.png) for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
+* Output cluster labels (and corresponding cell id) in .tsv format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
+* Output source model in .npz format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
+* A summarizing .png figure
+
 
 ###  Simulating scRNA-seq Data 
 _scRNA-generate-data.sh_
