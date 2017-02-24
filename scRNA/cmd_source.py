@@ -20,12 +20,12 @@ parser.add_argument("--min_expr_genes", help="(Cell filter) Minimum number of ex
 parser.add_argument("--non_zero_threshold", help="(Cell/gene filter) Threshold for zero expression per gene (default 1.0)", default=1.0, type=float)
 parser.add_argument("--perc_consensus_genes", help="(Gene filter) Filter genes that coincide across a percentage of cells (default 0.98)", default=0.98, type=float)
 
-parser.add_argument("--cluster-range", help="Comma separated list of clusters (default 6,7,8,9)", dest='cluster_range', default='6,7,8,9', type=str)
+parser.add_argument("--cluster-range", help="Comma separated list of clusters (default 6,7,8)", dest='cluster_range', default='6,7,8', type=str)
 
 parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 1.0)", default=1.0, type = float)
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
 parser.add_argument("--nmf_max_iter", help="(NMF) Maximum number of iterations (default 4000).", default=4000, type = int)
-parser.add_argument("--nmf_rel_err", help="(NMF) Relative error threshold must be reached before convergence (default 1e-4)", default=1e-3, type=float)
+parser.add_argument("--nmf_rel_err", help="(NMF) Relative error threshold must be reached before convergence (default 1e-3)", default=1e-3, type=float)
 
 parser.add_argument(
     "--cell-filter",
