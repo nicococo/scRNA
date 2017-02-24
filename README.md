@@ -11,6 +11,7 @@ This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex 
 command. Enjoy :)
 - Command line script available
 
+[create an anchor](#anchors-in-markdown)
 
 Getting started
 ---------------
