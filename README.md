@@ -11,7 +11,7 @@ This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex 
 command. Enjoy :)
 - Command line script available
 
-[create an anchor](#source-data)
+[create an anchor](#setting-up-the-source-dataset)
 
 Getting started
 ---------------
@@ -34,13 +34,13 @@ available for **MacOS and Linux only**:
 Step 1: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
 ![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](docs/screen_install_pip.png)
 
-###Simulating scRNA-seq Data 
+###  Simulating scRNA-seq Data 
 _scRNA-generate-data.sh_
 
 
-###Transfer Learning for scRNA-seq Data
+### Transfer Learning for scRNA-seq Data
 
-####1. Setup the Source Dataset(#source-data)
+#### Setting up the Source Dataset
 -----------------
 _scRNA-source.sh_ 
 
@@ -87,7 +87,7 @@ Additional commands:
 |--no-tsne  | Do not plot t-SNE plots as they can be quite time consuming |
 
 
-####2. Target Dataset Clustering 
+#### 2. Target Dataset Clustering 
 -----------------
 _scRNA-target.sh_ 
 
