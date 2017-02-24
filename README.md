@@ -31,21 +31,30 @@ available for **MacOS and Linux only**:
 * _scRNA-source.sh_ 
 * _scRNA-target.sh_ 
 
-### Example 1 
+### Example 
 Step 1: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
 ![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](doc/screen_install_pip.png)
+
+
 
 Step 2: Check the scripts
 ![Check for the scripts](doc/screen_install_scripts.png)
 
+
+
 Step 3: Create directory /foo. Go to directory /foo. Generate some artifical data
 by simply calling the _scRNA-generate-data.sh_ (using only default parameters).
 
+
 ![Generate artifical data](doc/screen_install_generate.png)
+
+
 This will result in a number of files:
 * Gene ids
 * Source- and target data
 * Source- and target ground truth labels
+
+
 
 Step 4: Cluster the source data. 
 Potential problems:
@@ -65,8 +74,11 @@ _scRNA-generate-data.sh_
 
 ### Transfer Learning for scRNA-seq Data
 
+
 [Step 1: Setting up the source dataset](#setting-up-the-source-dataset)
+
 [Step 2: Target dataset clustering](#target-dataset-clustering)
+
 
 #### Setting up the Source Dataset
 -----------------
