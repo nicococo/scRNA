@@ -17,7 +17,7 @@ Getting started
 
 ###Installation
 We assume that Python >2.7 is installed and the _pip_ command is
-callable from the command line. If starting from scratch, We recommend installing 
+callable from the command line. If starting from scratch, we recommend installing 
 the [Anaconda](https://www.continuum.io/downloads) open data science 
 platform (w/ Python 2.7) which comes with a bunch of most useful packages
 for scientific computing.
@@ -31,7 +31,7 @@ available for **MacOS and Linux only**:
 * _scRNA-target.sh_ 
 
 Step 1: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
-![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](https://github.com/nicococo/scRNA/master/doc/screen_install_pip.png)
+![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](https://github.com/nicococo/scRNA/raw/master/doc/screen_install_pip.png)
 
 ###Simulating scRNA-seq Data 
 _scRNA-generate-data.sh_
