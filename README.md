@@ -38,8 +38,13 @@ Step 1: Installation with _pip install git+https://github.com/nicococo/scRNA.git
 Step 2: Check the scripts
 ![Check for the scripts](doc/screen_install_scripts.png)
 
-Step 3: Generate some artifical data
-![Check for the scripts](doc/screen_install_scripts.png)
+Step 3: Create directory /foo. Go to directory /foo. Generate some artifical data
+by simply calling the _scRNA-generate-data.sh_ (using only default parameters).
+![Check for the scripts](doc/screen_install_generate.png)
+This will result in a number of files:
+* Gene ids
+* Source- and target data
+* Source- and target ground truth labels
 
 
 ###  Simulating scRNA-seq Data 
