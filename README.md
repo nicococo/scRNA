@@ -40,6 +40,7 @@ Step 2: Check the scripts
 
 Step 3: Create directory /foo. Go to directory /foo. Generate some artifical data
 by simply calling the _scRNA-generate-data.sh_ (using only default parameters).
+
 ![Generate artifical data](doc/screen_install_generate.png)
 This will result in a number of files:
 * Gene ids
