@@ -97,6 +97,8 @@ data, gene_ids, labels = load_dataset_tsv(arguments.fname, arguments.fgene_ids, 
 print('Target data  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 print np.unique(labels)
 
+assert(data.shape[0] == gene_ids.shape[0])
+
 # --------------------------------------------------
 # 2. CELL and GENE FILTER
 # --------------------------------------------------
@@ -142,6 +144,8 @@ for i in range(len(num_cluster)):
         src_nmf.add_cell_filter(lambda x: np.arange(x.shape[1]).tolist())
         src_nmf.add_gene_filter(lambda x: np.arange(x.shape[0]).tolist())
         src_nmf.set_data_transformation(lambda x: x)
+        # print src_nmf.pp_data.shape, src_nmf.data.shape
+        # print src_nmf.remain_gene_inds.shape, src_nmf.gene_ids.shape
 
         da_nmf = DaNmfClustering(src_nmf, data, gene_ids, k)
         da_nmf.add_cell_filter(cell_filter_fun)

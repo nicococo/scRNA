@@ -67,6 +67,8 @@ class DaNmfClustering(NmfClustering):
         src_data = self.src.pp_data
 
         trg_gene_ids = self.gene_ids[self.remain_gene_inds]
+        print self.src.gene_ids.shape
+        print self.src.remain_gene_inds.shape
         src_gene_ids = self.src.gene_ids[self.src.remain_gene_inds]
 
         if not np.unique(src_gene_ids).size == src_gene_ids.size:
@@ -85,6 +87,9 @@ class DaNmfClustering(NmfClustering):
             common_ids.shape[0],
             np.int(np.float(common_ids.size)/np.float(src_gene_ids.size)*100.0),
             np.int(np.float(common_ids.size)/np.float(trg_gene_ids.size)*100.0) ))
+
+        print('Number of common genes must not be 0!')
+        assert(common_ids.shape[0] > 0)
 
         # find indices of common_ids in pgene_ids and gene_ids
         inds1 = np.zeros(common_ids.shape[0], dtype=np.int)

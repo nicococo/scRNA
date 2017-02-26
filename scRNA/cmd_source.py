@@ -89,6 +89,8 @@ data, gene_ids, labels = load_dataset_tsv(arguments.fname, arguments.fgene_ids, 
 print('Data  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 print np.unique(labels)
 
+assert(data.shape[0] == gene_ids.shape[0])
+
 # --------------------------------------------------
 # 2. CELL and GENE FILTER
 # --------------------------------------------------
