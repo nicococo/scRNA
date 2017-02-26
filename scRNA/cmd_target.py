@@ -97,6 +97,7 @@ data, gene_ids, labels = load_dataset_tsv(arguments.fname, arguments.fgene_ids, 
 print('Target data  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 print np.unique(labels)
 
+print('Number of genes/transcripts in data and gene-ids must coincide.')
 assert(data.shape[0] == gene_ids.shape[0])
 
 # --------------------------------------------------
