@@ -100,5 +100,5 @@ Which results in a number of files (for each mixture and cluster range).
 Command line output shows a number of results: unsupervised and supervised (if no ground truth labels 
 are given this will remain 0.) accuracy measures and i.e. transferability score.
 
-![Cluster the target data](doc/screen_install_results.png)
+![Cluster the target data](doc/screen_install_result.png)
 
