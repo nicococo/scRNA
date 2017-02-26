@@ -38,17 +38,17 @@ available for **MacOS and Linux only**:
 
 
 ### Example 
-*Step 1*: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
+**Step 1**: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
 ![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](doc/screen_install_pip.png)
 
 
 
-*Step 2*: Check the scripts
+**Step 2**: Check the scripts
 ![Check for the scripts](doc/screen_install_scripts.png)
 
 
 
-*Step 3*: Create directory /foo. Go to directory /foo. Generate some artifical data
+**Step 3**: Create directory /foo. Go to directory /foo. Generate some artifical data
 by simply calling the _scRNA-generate-data.sh_ (using only default parameters).
 
 
@@ -62,12 +62,14 @@ This will result in a number of files:
 
 
 
-*Step 4*: Cluster the source data using the provided gene ids and source data. Ie. we want
+**Step 4**: Cluster the source data using the provided gene ids and source data. Ie. we want
  to turn off the cell- and gene-filter as well as the log transformation.
 Potential problems:
 * If a ''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
 occurs and Anaconda open data science platform is used, then use _conda install mkl_ first.
-
+* Depending on the data and cluster range, this step can take time. However, you can
+ speed up the process by tuning off the t-SNE plots using the _--no-tsne_ command 
+ (see [Wiki](https://github.com/nicococo/scRNA/wiki) for further information)
 
 ![Cluster the source data](doc/screen_install_source.png)
 
@@ -81,4 +83,10 @@ This will result in a number of files:
 
 
 
-*Step 5*:
+**Step 5**: Now, it is time to cluster the target data. Therefore, we need to
+choose a source data model which was generated in **Step 4**. In this example, we will 
+pick the model with 8 cluster (*src_c8.npz*).
+
+* Depending on the data, the cluster range and the mixture range, this step can take a long
+time. However, you can  speed up the process by tuning off the t-SNE plots using the _--no-tsne_ command 
+(see [Wiki](https://github.com/nicococo/scRNA/wiki) for further information)

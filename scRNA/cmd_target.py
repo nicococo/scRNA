@@ -305,7 +305,7 @@ for i in range(accs_mix.shape[0]):
 plt.savefig('{0}.{1}.png'.format(arguments.fout, 'accs'), format='png',
             bbox_inches=None, pad_inches=0.1)
 
-print 'Transferability', accs_trans
+print 'Transferability', accs_trans[0]
 # plt.show()
 
 
