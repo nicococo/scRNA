@@ -90,3 +90,15 @@ pick the model with 8 cluster (*src_c8.npz*).
 * Depending on the data, the cluster range and the mixture range, this step can take a long
 time. However, you can  speed up the process by tuning off the t-SNE plots using the _--no-tsne_ command 
 (see [Wiki](https://github.com/nicococo/scRNA/wiki) for further information)
+
+![Cluster the target data](doc/screen_install_target.png)
+
+Which results in a number of files (for each mixture and cluster range).
+
+![Cluster the target data](doc/screen_install_target.png)
+
+Command line output shows a number of results: unsupervised and supervised (if no ground truth labels 
+are given this will remain 0.) accuracy measures and i.e. transferability score.
+
+![Cluster the target data](doc/screen_install_results.png)
+
