@@ -8,11 +8,12 @@ This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex 
 
 
 #### News
+* Simple example [available](#example)
 * [Website](http://nicococo.github.io/scRNA/) is up and running
 * [Wiki](https://github.com/nicococo/scRNA/wiki) with detailed information (e.g. command line arguments)
-* Please report [Bugs](https://github.com/nicococo/scRNA/issues) 
-* First version that can be conveniently installed using the _pip install git+https://github.com/nicococo/scRNA.git_ 
-command. Enjoy :)
+* Please report [Bugs](https://github.com/nicococo/scRNA/issues) or other inconveniences
+* scRNA can now be conveniently installed using the _pip install git+https://github.com/nicococo/scRNA.git_ 
+command (see [Installation](#installation) for further information)
 * Command line script available
 
 
@@ -37,17 +38,17 @@ available for **MacOS and Linux only**:
 
 
 ### Example 
-Step 1: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
+*Step 1*: Installation with _pip install git+https://github.com/nicococo/scRNA.git_
 ![Installation with _pip install git+https://github.com/nicococo/scRNA.git_](doc/screen_install_pip.png)
 
 
 
-Step 2: Check the scripts
+*Step 2*: Check the scripts
 ![Check for the scripts](doc/screen_install_scripts.png)
 
 
 
-Step 3: Create directory /foo. Go to directory /foo. Generate some artifical data
+*Step 3*: Create directory /foo. Go to directory /foo. Generate some artifical data
 by simply calling the _scRNA-generate-data.sh_ (using only default parameters).
 
 
@@ -61,7 +62,7 @@ This will result in a number of files:
 
 
 
-Step 4: Cluster the source data using the provided gene ids and source data. Ie. we want
+*Step 4*: Cluster the source data using the provided gene ids and source data. Ie. we want
  to turn off the cell- and gene-filter as well as the log transformation.
 Potential problems:
 * If a ''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
@@ -78,3 +79,6 @@ This will result in a number of files:
 * A summarizing .png figure
 
 
+
+
+*Step 5*:
