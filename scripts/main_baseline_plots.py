@@ -318,7 +318,7 @@ def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n
     print res.shape
     aris = np.mean(res[0, :, :, 13, :, -1, 0], axis=2).T
     print aris, aris.shape
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 3, 1)
     plt.pcolor(aris, cmap=plt.get_cmap('Blues'), vmin=0., vmax=1.)
     plt.title('Transferability', fontsize=16)
     plt.xticks(np.arange(len(genes))+0.5, genes)
@@ -327,7 +327,7 @@ def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n
     plt.ylabel('Overlap', fontsize=16)
     plt.colorbar(ticks=[0.0, 0.25, 0.5, 0.75, 1.0])
 
-    plt.subplot(1, 2, 2)
+    plt.subplot(1, 3, 2)
     names = []
     for i in range(res.shape[2]):
         aris = np.mean(res[0, 0, i, -1, :, :, 0], axis=0)
@@ -342,6 +342,22 @@ def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n
     plt.ylabel('Transferability', fontsize=16)
     plt.ylim([0.,1.])
     plt.legend(names, loc=4, fontsize=14)
+
+    plt.subplot(1, 3, 3)
+    # n_src x genes x common x acc_funcs x reps x percs x methods
+    cols = ['b', 'g', 'r', 'c', 'm']
+    for i in range(res.shape[2]):
+        aris   = np.mean(res[0, 0, i,  1, :, :, 0], axis=0)
+        transf = np.mean(res[0, 0, i, -1, :, :, 0], axis=0)
+        plt.scatter(aris, transf, 20, cols[i], alpha=0.7)
+
+    plt.legend(names, loc=4)
+    plt.plot([0, 1],[0, 1],'--k')
+    plt.grid('on')
+    plt.xlabel('ARI', fontsize=16)
+    plt.ylabel('Transferability', fontsize=16)
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
 
     plt.show()
 
@@ -370,9 +386,9 @@ def plot_acc_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_tr
 if __name__ == "__main__":
     # foo = np.load('intermediate.npz')
     # foo = np.load('main_v2.npz')
-    foo = np.load('main_short_v4.npz')
+    # foo = np.load('main_short_v4.npz')
     # foo = np.load('test_v4.npz')
-    # foo = np.load('test_transfer_v2.npz')
+    foo = np.load('test_transfer_v2.npz')
     # foo = np.load('main_cluster_v1.npz')
     # foo = np.load('main_results_2.npz')
 
@@ -399,9 +415,9 @@ if __name__ == "__main__":
 
     # plot_src_accs(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    plot_acc_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_acc_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_cluster(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_cluster_acc_measures(10, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)

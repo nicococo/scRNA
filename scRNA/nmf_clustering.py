@@ -46,6 +46,8 @@ class NmfClustering(AbstractClustering):
 class DaNmfClustering(NmfClustering):
     reject = None
     transferability_score = 0.0
+    transferability_percs = None
+    transferability_rand_scores = None
 
     src = None
     common_ids = None
@@ -62,9 +64,9 @@ class DaNmfClustering(NmfClustering):
 
     def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., calc_transferability=True, alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
         trg_data = self.pre_processing()
-        assert(self.src.pp_data is not None)
+        assert(self.src.pp_data is not None)  # source data should always be pre-processed
         # src_data = self.src.pre_processing()
-        src_data = self.src.pp_data
+        src_data = self.src.pp_data  # use the pre-processed source data
 
         trg_gene_ids = self.gene_ids[self.remain_gene_inds]
         print self.src.gene_ids.shape
@@ -125,7 +127,7 @@ class DaNmfClustering(NmfClustering):
         err = 1e10
         while n_iter < max_iter:
             n_iter += 1
-            if np.any(W.T.dot(W.dot(H))==0.):
+            if np.any(W.T.dot(W.dot(H)) == 0.):
                 raise Exception('DA target nmf: division by zero.')
             H *= W.T.dot(trg_data) / W.T.dot(W.dot(H))
             new_err = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
@@ -150,7 +152,10 @@ class DaNmfClustering(NmfClustering):
 
         if calc_transferability:
             print('Calculating transferability score...')
-            self.transferability_score = self.calc_transferability_score(W, H, trg_data, max_iter=max_iter)
+            self.transferability_score, self.transferability_rand_scores = \
+                self.calc_transferability_score(W, H, trg_data, max_iter=max_iter)
+            self.transferability_percs = np.percentile(self.transferability_rand_scores, [25, 50, 75, 100])
+            self.reject.append(('Transfer_Percentiles', self.transferability_percs))
             self.reject.append(('Transferability', self.transferability_score))
         new_trg_data = W.dot(H2)
         # new_trg_data = W.dot(H)
@@ -213,8 +218,10 @@ class DaNmfClustering(NmfClustering):
         err_curr = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
         err_worst = np.max(errs)
 
+        errs[errs < err_best] = err_best
+        percs = 1.0 - (errs - err_best) / (err_worst - err_best)
         score = 1.0 - np.max([err_curr - err_best, 0]) / (err_worst - err_best)
-        return score
+        return score, percs
 
     def get_transferred_data_matrix(self, W, trg_data, max_iter=4000, rel_err=1e-3):
         # initialize H: data matrix

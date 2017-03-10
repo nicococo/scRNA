@@ -125,7 +125,9 @@ accs_names = ['KTA (linear)', 'Silhouette (euc)', 'Silhouette (pearson)', 'Silho
 
 accs_dist = np.zeros((len(accs_names), len(mixtures), len(num_cluster)))
 accs_mix = np.zeros((len(accs_names), len(mixtures), len(num_cluster)))
-accs_trans = np.zeros((len(mixtures), len(num_cluster)))
+
+transferability = 0.0
+transferability_percs = None
 
 for i in range(len(num_cluster)):
     for j in range(len(mixtures)):
@@ -136,19 +138,21 @@ for i in range(len(num_cluster)):
         # --------------------------------------------------
         # 3.1. MIX TARGET & SOURCE DATE
         # --------------------------------------------------
-        src_data = np.load(arguments.src_fname)  # src data gets while applying da_nmf...
+        src_data = np.load(arguments.src_fname)  # src data gets while applying da_nmf ...
         src_nmf = src_data['src'][()]
         print type(src_nmf)
         src_nmf.cell_filter_list = list()
         src_nmf.gene_filter_list = list()
-
+        # source data is already filtered and transformed ...
         src_nmf.add_cell_filter(lambda x: np.arange(x.shape[1]).tolist())
         src_nmf.add_gene_filter(lambda x: np.arange(x.shape[0]).tolist())
         src_nmf.set_data_transformation(lambda x: x)
-        # print src_nmf.pp_data.shape, src_nmf.data.shape
-        # print src_nmf.remain_gene_inds.shape, src_nmf.gene_ids.shape
 
-        da_nmf = DaNmfClustering(src_nmf, data, gene_ids, k)
+        print '\n\n+++++++++++++++++++++++++++++++++++'
+        print np.max(data)
+        print '+++++++++++++++++++++++++++++++++++\n\n'
+
+        da_nmf = DaNmfClustering(src_nmf, data.copy(), gene_ids.copy(), k)
         da_nmf.add_cell_filter(cell_filter_fun)
         da_nmf.add_gene_filter(gene_filter_fun)
         da_nmf.set_data_transformation(data_transf_fun)
@@ -159,7 +163,12 @@ for i in range(len(num_cluster)):
                                                calc_transferability=calc_transf, max_iter=2000)
         mix_gene_ids = da_nmf.common_ids
         if calc_transf:
-            _, accs_trans[j, i] = da_nmf.reject[-1]
+            transferability = da_nmf.transferability_score
+            transferability_percs = da_nmf.transferability_percs
+
+        print '\n\n+++++++++++++++++++++++++++++++++++------'
+        print np.max(data)
+        print '+++++++++++++++++++++++++++++++++++------\n\n'
 
         # --------------------------------------------------
         # 3.2. TARGET DATA CLUSTERING
@@ -178,9 +187,11 @@ for i in range(len(num_cluster)):
         sc3_dist.add_gene_filter(gene_filter_fun)
         sc3_dist.set_data_transformation(data_transf_fun)
 
-        sc3_mix.add_cell_filter(cell_filter_fun)
-        sc3_mix.add_gene_filter(gene_filter_fun)
-        sc3_mix.set_data_transformation(data_transf_fun)
+        # INFO: mix_data is already filtered and transformed.
+        # The lines below are for documentation. Do not uncomment these.
+        # sc3_mix.add_cell_filter(cell_filter_fun)
+        # sc3_mix.add_gene_filter(gene_filter_fun)
+        # sc3_mix.set_data_transformation(data_transf_fun)
 
         dist_list = arguments.sc3_dists.split(",")
         print('\nThere are {0} distances given.'.format(len(dist_list)))
@@ -271,46 +282,67 @@ for i in range(len(num_cluster)):
 # --------------------------------------------------
 # 6. SUMMARIZE RESULTS
 # --------------------------------------------------
-print 'Mixtures:', mixtures
-print 'Cluster:', num_cluster
+np.set_printoptions(precision=3)
+np.set_printoptions(suppress=True)
 
-print 'ACCS MIX:', accs_mix
-print 'ACCS DIST:', accs_dist
+print '\n\n\n'
+print '================================================================================'
+print '\n\n\n'
+print 'SUMMARY'
+print '\n\n\n'
+print 'Parameters'
+print '-------------'
+print ' - Output prefix: ', arguments.fout
+print ' - Source file name: ', arguments.src_fname
+print ' - Mixtures:', mixtures
+print ' - Cluster:', num_cluster
+print ''
+
+print 'Results'
+print '-------------'
+print ' - Estimated transferability t (0 <= t <= 1):', transferability
+print ' - Estimated non-transferability percentiles:', transferability_percs
+print ' - Accuracies: ', accs_names
+for i in range(accs_mix.shape[0]):
+    print('\n{0} (mixtures({1}) x cluster({2})) [sc3-dist(left), sc3-mix(right)]:'.format(
+        accs_names[i], len(mixtures), len(num_cluster)))
+    for m in range(accs_mix.shape[1]):
+        print accs_dist[i, m, :], '   ', accs_mix[i, m, :]
+
 
 plt.figure(0)
+fig, axes = plt.subplots(nrows=2, ncols=accs_mix.shape[0])
+fig.tight_layout(h_pad=2.08, pad=2.2) # Or equivalently,  "plt.tight_layout()"
 for i in range(accs_mix.shape[0]):
-    print('\n{0} (mixtures x cluster) [sc3-dist, sc3-mix]:'.format(accs_names[i]))
-    print accs_dist[i, :, :].reshape(len(mixtures), len(num_cluster))
-    print accs_mix[i, :, :].reshape(len(mixtures), len(num_cluster))
-
     plt.subplot(2, accs_mix.shape[0], i+1)
-    plt.title(accs_names[i])
+    plt.title(accs_names[i], fontsize=10)
     plt.pcolor(accs_dist[i, :, :], cmap=plt.get_cmap('Reds'))
-    plt.xlabel('Cluster')
-    plt.ylabel('Mixture')
-    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster)
-    plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures)
-    plt.colorbar()
+    plt.xlabel('Cluster', fontsize=12)
+    if i == 0:
+        plt.ylabel('SC3-dist results\nMixture', fontsize=12)
+    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
+    plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures, fontsize=8)
+    cbar = plt.colorbar()
+    cbar.ax.tick_params(labelsize=5)
     # plt.clim(0.,+1.)
     # if i == accs_mix.shape[0]-1:
     # plt.clim(0.,+1.)
 
     plt.subplot(2, accs_mix.shape[0], i+1+accs_mix.shape[0])
-    plt.title(accs_names[i])
-    plt.pcolor(accs_dist[i, :, :], cmap=plt.get_cmap('Reds'))
-    plt.xlabel('Cluster')
-    plt.ylabel('Mixture')
-    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster)
-    plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures)
-    plt.colorbar()
+    plt.title(accs_names[i], fontsize=10)
+    plt.pcolor(accs_dist[i, :, :], cmap=plt.get_cmap('Blues'))
+    plt.xlabel('Cluster', fontsize=12)
+    if i == 0:
+        plt.ylabel('SC3-mix results\nMixture', fontsize=12)
+    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
+    plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures, fontsize=8)
+    cbar = plt.colorbar()
+    cbar.ax.tick_params(labelsize=5)
     # plt.clim(0.,+1.)
     # if i == accs_mix.shape[0]-1:
     # plt.clim(0.,+1.)
 
-plt.savefig('{0}.{1}.png'.format(arguments.fout, 'accs'), format='png',
-            bbox_inches=None, pad_inches=0.1)
-
-print 'Transferability', accs_trans[0]
+plt.savefig('{0}.{1}.png'.format(arguments.fout, 'accs'), format='png', bbox_inches=None, pad_inches=0.1)
 # plt.show()
 
 
