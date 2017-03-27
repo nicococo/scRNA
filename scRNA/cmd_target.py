@@ -259,6 +259,7 @@ for i in range(len(num_cluster)):
         # 3.5. T-SNE PLOT
         # --------------------------------------------------
         if arguments.tsne:
+            plt.clf()
             plt.subplot(1, 2, 1)
             plt.title('SC3-Dist {0}/{1} cluster/mix (Euclidean)'.format(k, mix))
             model = TSNE(n_components=2, random_state=0, init='pca', method='exact', metric='euclidean', perplexity=30)
