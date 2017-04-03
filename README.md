@@ -9,6 +9,8 @@ This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex 
 ![Travis-CI](https://travis-ci.org/nicococo/scRNA.svg?branch=master)
 
 #### News
+* (3.4.17) Added Travis-CI
+* (3.4.17) Added string label support
 * Simple example [available](#example)
 * [Website](http://nicococo.github.io/scRNA/) is up and running
 * [Wiki](https://github.com/nicococo/scRNA/wiki) with detailed information (e.g. command line arguments)
