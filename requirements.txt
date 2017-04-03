@@ -1,0 +1,6 @@
+scipy
+numpy
+numba
+matplotlib
+cvxopt
+scikit-learn

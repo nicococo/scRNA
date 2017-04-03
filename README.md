@@ -6,6 +6,7 @@ generating artifical data, clustering, and blending datasets (domain adaptation)
 
 This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex Gutteridge. 
 
+![Travis-CI](https://travis-ci.org/nicococo/scRNA.svg?branch=master)
 
 #### News
 * Simple example [available](#example)
