@@ -23,4 +23,4 @@ install:
   - source activate test-environment
   - python setup.py install
 script:
-  - python scRNA/generate_data.py
+  - ./scripts/scRNA-generate-data.sh
