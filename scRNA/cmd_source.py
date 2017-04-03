@@ -85,7 +85,7 @@ print('Command line arguments:')
 # 1. LOAD DATA
 # --------------------------------------------------
 print("\nLoading  dataset (data={0} and gene_ids={1}).".format(arguments.fname, arguments.fgene_ids))
-data, gene_ids, labels = load_dataset_tsv(arguments.fname, arguments.fgene_ids, flabels=arguments.flabels)
+data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname, arguments.fgene_ids, flabels=arguments.flabels)
 print('Data  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 print np.unique(labels)
 
@@ -180,6 +180,31 @@ print 'Cluster:', num_cluster
 print 'Accuracy measures: ', accs_names
 print 'Accuracies:'
 print accs
+
+np.set_printoptions(precision=3)
+np.set_printoptions(suppress=True)
+
+print '\n\n\n'
+print '================================================================================'
+print '\n\n\n'
+print 'SUMMARY'
+print '\n\n\n'
+print 'Parameters'
+print '-------------'
+print ' - Output prefix: ', arguments.fout
+print ' - Source file name: ', arguments.fname
+print ' - Cluster:', num_cluster
+if labels is not None:
+    print ' - Class 2 label conversion (class {0:1d}-{1:1d}): '.format(
+        np.int(np.min(labels)), np.int(np.max(labels))), labels_2_ids
+print ''
+
+print 'Results'
+print '-------------'
+print ' - Accuracies: ', accs_names
+for i in range(accs.shape[0]):
+    print('\n{0} (cluster({1})):'.format(accs_names[i], len(num_cluster)))
+    print accs[i, :]
 
 plt.figure(0)
 for i in range(accs.shape[0]):

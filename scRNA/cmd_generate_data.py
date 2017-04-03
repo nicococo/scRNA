@@ -1,7 +1,6 @@
 import argparse
 import sys
 import ast
-import os
 
 from simulation import generate_toy_data, split_source_target
 from utils import *
@@ -277,7 +276,7 @@ for sidx, source_ncells in enumerate(source_ncells_range):
             "_S" + str(sidx+1) + "_" + str(source_ncells) +
              os.path.splitext(args.fout_target_labels)[1],
             true_labels_target,
-            fmt = '%u',
+            fmt = 'lbl_%u',
             delimiter = '\t'
         )
         np.savetxt(
@@ -303,7 +302,7 @@ for sidx, source_ncells in enumerate(source_ncells_range):
             "_S" + str(sidx+1) + "_" + str(source_ncells) +
              os.path.splitext(args.fout_source_labels)[1],
             true_labels_source,
-            fmt = '%u',
+            fmt = 'lbl_%u',
             delimiter = '\t'
         )
 

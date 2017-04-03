@@ -25,12 +25,24 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
                   'Only {0} of {1}  entries are unique.'.format(np.unique(gene_ids).shape[0], gene_ids.shape[0]))
 
     labels = None
+    labels_2_ids = None
     if flabels is not None:
         print('Loading labels from \'{0}\'.'.format(flabels))
-        labels = np.loadtxt(flabels, delimiter='\t')
-        assert labels.size == data.shape[1]
+        # labels are handled as string values even though they are numerical
+        label_ids = np.loadtxt(flabels, delimiter='\t', dtype=np.str_)
+        assert label_ids.size == data.shape[1]
 
-    return data, gene_ids, labels
+        labels_2_ids = np.unique(label_ids)
+        unique_ind = np.arange(start=0, stop=labels_2_ids.shape[0])
+        labels = np.zeros((data.shape[1]))
+        print('Found {0} unique labels:'.format(labels_2_ids.size))
+        print labels_2_ids
+        for i in range(unique_ind.size):
+            inds = np.where(label_ids == labels_2_ids[i])[0]
+            labels[inds] = unique_ind[i]
+            print('Label {0} occured {1} times. Assigned class is {2}.'.format(labels_2_ids[i], inds.size, unique_ind[i]))
+
+    return data, gene_ids, labels, labels_2_ids
 
 
 def load_dataset(fname):

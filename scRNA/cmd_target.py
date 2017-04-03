@@ -87,7 +87,7 @@ print('Command line arguments:')
 # 1. LOAD DATA
 # --------------------------------------------------
 print("\nLoading target dataset (data={0} and gene_ids={1}).".format(arguments.fname, arguments.fgene_ids))
-data, gene_ids, labels = load_dataset_tsv(arguments.fname, arguments.fgene_ids, flabels=arguments.flabels)
+data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname, arguments.fgene_ids, flabels=arguments.flabels)
 
 # inds = np.random.permutation(data.shape[1])[:80]
 # data = data[:, inds]
@@ -297,6 +297,9 @@ print ' - Output prefix: ', arguments.fout
 print ' - Source file name: ', arguments.src_fname
 print ' - Mixtures:', mixtures
 print ' - Cluster:', num_cluster
+if labels is not None:
+    print ' - Class 2 label conversion (class {0:1d}-{1:1d}): '.format(
+        np.int(np.min(labels)), np.int(np.max(labels))), labels_2_ids
 print ''
 
 print 'Results'
