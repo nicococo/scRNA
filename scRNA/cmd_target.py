@@ -334,7 +334,7 @@ for i in range(accs_mix.shape[0]):
 
     plt.subplot(2, accs_mix.shape[0], i+1+accs_mix.shape[0])
     plt.title(accs_names[i], fontsize=10)
-    plt.pcolor(accs_dist[i, :, :], cmap=plt.get_cmap('Blues'))
+    plt.pcolor(accs_mix[i, :, :], cmap=plt.get_cmap('Blues'))
     plt.xlabel('Cluster', fontsize=12)
     if i == 0:
         plt.ylabel('SC3-mix results\nMixture', fontsize=12)

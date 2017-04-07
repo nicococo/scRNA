@@ -5,6 +5,7 @@ from sklearn import decomposition as decomp
 from abstract_clustering import AbstractClustering
 from utils import center_kernel, normalize_kernel, kta_align_binary
 
+
 class NmfClustering(AbstractClustering):
     num_cluster = -1
     dictionary = None
@@ -20,7 +21,8 @@ class NmfClustering(AbstractClustering):
         X = self.pre_processing()
 
         nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=1000,
-                         n_components=k, random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+                         n_components=k, random_state=0, shuffle=True, solver='cd',
+                         tol=0.00001, verbose=0)
 
         W = nmf.fit_transform(X)
         H = nmf.components_
@@ -62,7 +64,8 @@ class DaNmfClustering(NmfClustering):
         self.src = src
         assert(isinstance(self.src, NmfClustering))
 
-    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., calc_transferability=True, alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., calc_transferability=True,
+                       alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
         trg_data = self.pre_processing()
         assert(self.src.pp_data is not None)  # source data should always be pre-processed
         # src_data = self.src.pre_processing()
@@ -165,7 +168,7 @@ class DaNmfClustering(NmfClustering):
 
         if reject_ratio > 0.:
             name, neg_entropy = self.reject[2]
-            inds = np.arange(0, trg_data.shape[1], dtype=np.int)
+            # inds = np.arange(0, trg_data.shape[1], dtype=np.int)
             inds = np.argsort(-neg_entropy)  # ascending order
             keep = np.float(inds.size) * reject_ratio
             inds = inds[:keep]
@@ -178,7 +181,8 @@ class DaNmfClustering(NmfClustering):
             print('Error! Negative values in reconstructed data!')
         return mixed_data, new_trg_data, trg_data
 
-    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0,
+              l1=0.75, max_iter=4000, rel_err=1e-3):
         if k == -1:
             k = self.num_cluster
         mixed_data, new_trg_data, trg_data = self.get_mixed_data(k=k,
