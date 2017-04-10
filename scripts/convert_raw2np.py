@@ -66,18 +66,33 @@ def load_Usoskin(path):
 if __name__ == "__main__":
     PATH = '/Users/nicococo/Documents/scRNA-data/'
 
-    datasets = ['Ting', 'Zeisel', 'Usoskin']
-    props = []
-    for i in range(len(datasets)):
-        name, encoding, transcripts, cells, data = eval('load_{0}'.format(datasets[i]))(PATH)
-        props.append([name, encoding, data.shape[0], data.shape[1]])
-        np.savez('{0}{1}.npz'.format(PATH, name), name=name, encoding=encoding, transcripts=transcripts, cells=cells, data=data)
-        # Save as tab-separated-values
-        np.savetxt('{0}{1}-data.tsv'.format(PATH, name), data, delimiter='\t', fmt='%.4f')
-        np.savetxt('{0}{1}-cellids.tsv'.format(PATH, name), cells, delimiter='\t', fmt='%s')
-        np.savetxt('{0}{1}-geneids.tsv'.format(PATH, name), transcripts, delimiter='\t', fmt='%s')
+    # PATH = '/Users/nicococo/Downloads/data_download/'
+    # data = np.loadtxt(PATH + 'genes_counts.csv', delimiter=",", skiprows=1, dtype=np.str)
+    # print data.shape
+    # print data[:5, 0]
+    # ids = data[:, 0].reshape(data.shape[0])
+    # print ids.size, np.unique(ids).size
 
-    print props
+    PATH = '/Users/nicococo/Downloads/mouse_vis_cortex/'
+    data = np.loadtxt(PATH + 'gene_names', dtype=np.str)
+    print data.shape
+    print data[:5]
+    ids = data[:].reshape(data.shape[0])
+    print ids.size, np.unique(ids).size
+
+    # datasets = ['Ting', 'Zeisel', 'Usoskin']
+    # props = []
+    # for i in range(len(datasets)):
+    #     name, encoding, transcripts, cells, data = eval('load_{0}'.format(datasets[i]))(PATH)
+    #     props.append([name, encoding, data.shape[0], data.shape[1]])
+    #     np.savez('{0}{1}.npz'.format(PATH, name), name=name, encoding=encoding, transcripts=transcripts, cells=cells, data=data)
+    #     # Save as tab-separated-values
+    #     np.savetxt('{0}{1}-data.tsv'.format(PATH, name), data, delimiter='\t', fmt='%.4f')
+    #     np.savetxt('{0}{1}-cellids.tsv'.format(PATH, name), cells, delimiter='\t', fmt='%s')
+    #     np.savetxt('{0}{1}-geneids.tsv'.format(PATH, name), transcripts, delimiter='\t', fmt='%s')
+    #
+    # print props
+
     # name, encoding, transcripts, cells, data = load_Ting(PATH)
     # name, encoding, transcripts, cells, data = load_Zeisel(PATH)
     # name, encoding, transcripts, cells, data = load_Usoskin(PATH)

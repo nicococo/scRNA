@@ -62,9 +62,9 @@ class DaNmfClustering(NmfClustering):
     def __init__(self, src, trg_data, trg_gene_ids, num_cluster):
         super(DaNmfClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster)
         self.src = src
-        assert(isinstance(self.src, NmfClustering))
+        # assert(isinstance(self.src, NmfClustering))
 
-    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., calc_transferability=True,
+    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=True,
                        alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
         trg_data = self.pre_processing()
         assert(self.src.pp_data is not None)  # source data should always be pre-processed
@@ -87,7 +87,14 @@ class DaNmfClustering(NmfClustering):
                   'Only {0} of {1}  entries are unique.'.format(np.unique(trg_gene_ids).shape[0], trg_gene_ids.shape[0]))
             print('Only first occurance will be used.\n')
 
-        common_ids = np.intersect1d(trg_gene_ids, src_gene_ids)
+        # common_ids = np.intersect1d(trg_gene_ids, src_gene_ids)
+        # sort the common ids according to target gene ids
+        common_ids = []
+        for i in range(trg_gene_ids.size):
+            if np.any(trg_gene_ids[i] == src_gene_ids):
+                common_ids.append(trg_gene_ids[i])
+        common_ids = np.array(common_ids, dtype=np.str)
+
         print('Both datasets have (after processing) {0} (src={1}%,trg={2}%) gene ids in common.'.format(
             common_ids.shape[0],
             np.int(np.float(common_ids.size)/np.float(src_gene_ids.size)*100.0),
@@ -112,11 +119,29 @@ class DaNmfClustering(NmfClustering):
 
         # src_data = src_data[inds2, :]
         print('WARNING! Src data will be changed.')
+        # for i in range(10):
+        #     print self.src.gene_ids[i], self.src.remain_gene_inds[i]
+
+        # self.src.pp_data = src_data[inds2, :]  # this is going to be generated again
         self.src.data = src_data[inds2, :]
-        self.src.pp_data = src_data[inds2, :]
-        self.src.gene_ids = self.src.gene_ids[inds2]
-        trg_data = trg_data[inds1, :]
+        self.src.gene_ids = src_gene_ids[inds2]
+        # self.src.gene_ids = self.src.gene_ids[inds2]
+
+        # self.src.data = src_data[self.src.remain_gene_inds[inds2], :]
+        # self.src.gene_ids = self.src.gene_ids[self.src.remain_gene_inds[inds2]]
         self.src.apply()
+
+        # self.gene_ids = self.gene_ids[self.remain_gene_inds[inds1]]
+        # trg_data = trg_data[self.remain_gene_inds[inds1], :]
+        # self.gene_ids = self.gene_ids[inds1]
+        self.gene_ids = trg_gene_ids[inds1]
+        trg_data = trg_data[inds1, :]
+
+        print('Sorted, filtered gene ids for src/trg. They should coincide!')
+        for i in range(inds1.size):
+            if i < 10 or self.src.gene_ids[i] != self.gene_ids[i]:
+                print i, self.src.gene_ids[i], self.gene_ids[i]
+            assert(self.src.gene_ids[i] == self.gene_ids[i])
 
         W = self.src.dictionary
         H = np.random.randn(self.src.num_cluster, trg_data.shape[1])
@@ -160,8 +185,11 @@ class DaNmfClustering(NmfClustering):
             self.transferability_percs = np.percentile(self.transferability_rand_scores, [25, 50, 75, 100])
             self.reject.append(('Transfer_Percentiles', self.transferability_percs))
             self.reject.append(('Transferability', self.transferability_score))
-        new_trg_data = W.dot(H2)
-        # new_trg_data = W.dot(H)
+
+        if use_H2:
+            new_trg_data = W.dot(H2)
+        else:
+            new_trg_data = W.dot(H)
 
         # reject option enabled?
         assert(reject_ratio < 1.)  # rejection of 100% (or more) does not make any sense

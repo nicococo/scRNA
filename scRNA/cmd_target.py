@@ -80,6 +80,18 @@ parser.add_argument(
     action = 'store_false')
 parser.set_defaults(tsne=True)
 
+parser.add_argument(
+    "--transferability",
+    help = "Enable transferability score calculation.",
+    dest = "calc_transf",
+    action = 'store_true')
+parser.add_argument(
+    "--no-transferability",
+    help = "Disable transferability score calculation.",
+    dest = "calc_transf",
+    action = 'store_false')
+parser.set_defaults(calc_transf=True)
+
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
 
@@ -159,9 +171,12 @@ for i in range(len(num_cluster)):
         calc_transf = False
         if i == 0 and j == 0:
             calc_transf = True
+        if not arguments.calc_transf:
+            calc_transf = False
         mix_data, _, _ = da_nmf.get_mixed_data(k=k, mix=mix, reject_ratio=0.,
                                                calc_transferability=calc_transf, max_iter=2000)
-        mix_gene_ids = da_nmf.common_ids
+        # mix_gene_ids = da_nmf.common_ids
+        mix_gene_ids = da_nmf.gene_ids
         if calc_transf:
             transferability = da_nmf.transferability_score
             transferability_percs = da_nmf.transferability_percs
@@ -239,7 +254,7 @@ for i in range(len(num_cluster)):
         accs_mix[2, j, i] = unsupervised_acc_silhouette(sc3_mix.pp_data, sc3_mix.cluster_labels, metric='pearson')
         accs_mix[3, j, i] = unsupervised_acc_silhouette(sc3_mix.pp_data, sc3_mix.cluster_labels, metric='spearman')
         if labels is not None:
-            accs_mix[4, j, i] = metrics.adjusted_rand_score(labels[sc3_mix.remain_cell_inds], sc3_mix.cluster_labels)
+            accs_mix[4, j, i] = metrics.adjusted_rand_score(labels[da_nmf.remain_cell_inds], sc3_mix.cluster_labels)
         print accs_mix[:, j, i]
 
         # --------------------------------------------------
@@ -259,22 +274,31 @@ for i in range(len(num_cluster)):
         # 3.5. T-SNE PLOT
         # --------------------------------------------------
         if arguments.tsne:
+
+            print 'Data:'
+            print sc3_dist.data[sc3_dist.remain_gene_inds[0], :10]
+            print sc3_mix.data[sc3_mix.remain_gene_inds[0], :10]
+
+            match = metrics.adjusted_rand_score(sc3_dist.cluster_labels, sc3_mix.cluster_labels)
+
             plt.clf()
             plt.subplot(1, 2, 1)
-            plt.title('SC3-Dist {0}/{1} cluster/mix (Euclidean)'.format(k, mix))
+            plt.title('SC3-Dist(l), SC3-mix(r) cluster={0}, mix={1}, (match={2:0.2f})'.format(k, mix, match), fontsize=10)
             model = TSNE(n_components=2, random_state=0, init='pca', method='exact', metric='euclidean', perplexity=30)
             ret = model.fit_transform(sc3_dist.pp_data.T)
             plt.scatter(ret[:, 0], ret[:, 1], 20, sc3_dist.cluster_labels)
             plt.xticks([])
             plt.yticks([])
 
+
             plt.subplot(1, 2, 2)
-            plt.title('SC3-Mix {0}/{1} cluster/mix (Euclidean)'.format(k, mix))
+            # plt.title('SC3-Mix match={0}'.format(match), fontsize=10)
             model = TSNE(n_components=2, random_state=0, init='pca', method='exact', metric='euclidean', perplexity=30)
             ret = model.fit_transform(sc3_mix.pp_data.T)
             plt.scatter(ret[:, 0], ret[:, 1], 20, sc3_mix.cluster_labels)
             plt.xticks([])
             plt.yticks([])
+
 
             plt.savefig('{0}_m{1}_c{2}.tsne.png'.format(arguments.fout, mix, k), format='png', bbox_inches=None, pad_inches=0.1)
             # plt.show()

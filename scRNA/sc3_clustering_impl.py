@@ -67,7 +67,7 @@ def data_transformation_log2(data):
     return np.log2(data + 1.)
 
 
-def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidean', mixture=0.5):
+def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidean', mixture=0.5, use_H2=True):
     if mixture == 0.0:
         return distances(data, [], metric=metric)
 
@@ -75,7 +75,11 @@ def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidea
 
     # convex combination of vanilla distance and nmf distance
     dist1 = distances(data, [], metric=metric)
-    dist2 = distances(W.dot(H2), [], metric=metric)
+    if use_H2:
+        dist2 = distances(W.dot(H2), [], metric=metric)
+    else:
+        print('Using H instead of H2 for reconstruction.')
+        dist2 = distances(W.dot(H), [], metric=metric)
 
     # normalize distance
     if np.max(dist2) < 1e-10:
