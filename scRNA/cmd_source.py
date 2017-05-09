@@ -206,17 +206,32 @@ for i in range(accs.shape[0]):
     print('\n{0} (cluster({1})):'.format(accs_names[i], len(num_cluster)))
     print accs[i, :]
 
-plt.figure(0)
+plt.figure(0, figsize=(20,5), dpi=100)
+fig, axes = plt.subplots(nrows=1, ncols=accs.shape[0])
+fig.tight_layout(h_pad=1.08, pad=2.2) # Or equivalently,  "plt.tight_layout()"
 for i in range(accs.shape[0]):
     plt.subplot(1, accs.shape[0], i+1)
-    plt.title(accs_names[i])
-    plt.bar(range(len(num_cluster)), accs[i, :])
-    plt.xlabel('Cluster')
-    plt.ylabel('Accuracy')
-    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster)
+
+    if i % 2 == 0:
+        plt.title(accs_names[i] + '\n', fontsize=12, fontweight='bold')
+    else:
+        plt.title('\n' + accs_names[i], fontsize=12, fontweight='bold')
+
+    if i == accs.shape[0]-1:
+        plt.bar(range(len(num_cluster)), accs[i, :], color='red')
+    else:
+        plt.bar(range(len(num_cluster)), accs[i, :])
+
+    if i == 0:
+        plt.xlabel('Cluster', fontsize=12)
+        plt.ylabel('Accuracy', fontsize=12)
+
+    plt.yticks(fontsize=8)
+    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
     plt.grid('on')
 
-plt.savefig('{0}_accs.png'.format(arguments.fout), format='png', bbox_inches=None, pad_inches=0.1)
+plt.savefig('{0}_accs.png'.format(arguments.fout), format='png',
+            bbox_inches=None, pad_inches=0.1, dpi=100)
 # plt.show()
 
 print('\nDone.')
