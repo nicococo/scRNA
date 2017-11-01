@@ -46,8 +46,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "--num_cells",
-    help = "Number of cells (default 1000)",
-    default = 1000,
+    help = "Number of cells (default 2000)",
+    default = 2000,
     type = int
 )
 
@@ -110,13 +110,13 @@ parser.add_argument(
 parser.add_argument(
     "--target_ncells",
     help = "How much of data will be target data (default 200)",
-    default = 100,
+    default = 200,
     type = int
 )
 parser.add_argument(
     "--source_ncells",
     help = "How much of data will be source data (default 800)",
-    default = 200,
+    default = 800,
     type = int
 )
 parser.add_argument(

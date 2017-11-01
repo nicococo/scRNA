@@ -126,22 +126,24 @@ def unsupervised_acc_silhouette(X, labels, metric='euclidean'):
     return 0.0
 
 
-def unsupervised_acc_kta(X, labels, kernel='linear', param=1.0):
+def unsupervised_acc_kta(X, labels, kernel='linear', param=1.0, center=True, normalize=True):
     Ky = np.zeros((labels.size, np.max(labels) + 1))
     for i in range(len(labels)):
         Ky[i, labels[i]] = 1.
 
     if kernel == 'rbf':
         Kx = get_kernel(X, X, type='rbf', param=param)
-        Ky = get_kernel(Ky.T, Ky.T, type='rbf', param=param)
+        Ky = get_kernel(Ky.T, Ky.T, type='linear', param=param)
     else:
         Kx = X.T.dot(X)
         Ky = Ky.dot(Ky.T)
 
-    Kx = center_kernel(Kx)
-    Ky = center_kernel(Ky)
-    Kx = normalize_kernel(Kx)
-    Ky = normalize_kernel(Ky)
+    if center:
+        Kx = center_kernel(Kx)
+        Ky = center_kernel(Ky)
+    if normalize:
+        Kx = normalize_kernel(Kx)
+        Ky = normalize_kernel(Ky)
     return kta_align_general(Kx, Ky)
 
 

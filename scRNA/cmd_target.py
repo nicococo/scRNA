@@ -42,54 +42,46 @@ parser.add_argument(
     help = "Disable cell filter for source and target datasets.",
     dest = "use_cell_filter",
     action = 'store_false')
-parser.set_defaults(use_cell_filter = True)
+parser.set_defaults(use_cell_filter=True)
 
-parser.add_argument(
-    "--gene-filter",
-    help = "Enable gene filter for source and target datasets.",
-    dest = "use_gene_filter",
-    action = 'store_true')
-parser.add_argument(
-    "--no-gene-filter",
-    help = "Disable gene filter for source and target datasets.",
-    dest = "use_gene_filter",
-    action = 'store_false')
-parser.set_defaults(use_gene_filter = True)
+parser.add_argument("--gene-filter",
+    help="Enable gene filter for source and target datasets.",
+    dest="use_gene_filter",
+    action='store_true')
+parser.add_argument("--no-gene-filter",
+    help="Disable gene filter for source and target datasets.",
+    dest="use_gene_filter",
+    action='store_false')
+parser.set_defaults(use_gene_filter=True)
 
-parser.add_argument(
-    "--transform",
-    help = "Transform data to log2(x+1)",
-    dest = "transform",
-    action = 'store_true')
-parser.add_argument(
-    "--no-transform",
-    help = "Disable transform data to log2(x+1)",
-    dest = "transform",
-    action = 'store_false')
-parser.set_defaults(transform = True)
+parser.add_argument("--transform",
+    help="Transform data to log2(x+1)",
+    dest="transform",
+    action='store_true')
+parser.add_argument("--no-transform",
+    help="Disable transform data to log2(x+1)",
+    dest="transform",
+    action='store_false')
+parser.set_defaults(transform=True)
 
-parser.add_argument(
-    "--tsne",
-    help = "Enable t-SNE plots.",
-    dest = "tsne",
-    action = 'store_true')
-parser.add_argument(
-    "--no-tsne",
-    help = "Disable t-SNE plots.",
-    dest = "tsne",
-    action = 'store_false')
+parser.add_argument("--tsne",
+    help="Enable t-SNE plots.",
+    dest="tsne",
+    action='store_true')
+parser.add_argument("--no-tsne",
+    help="Disable t-SNE plots.",
+    dest="tsne",
+    action='store_false')
 parser.set_defaults(tsne=True)
 
-parser.add_argument(
-    "--transferability",
-    help = "Enable transferability score calculation.",
-    dest = "calc_transf",
-    action = 'store_true')
-parser.add_argument(
-    "--no-transferability",
-    help = "Disable transferability score calculation.",
-    dest = "calc_transf",
-    action = 'store_false')
+parser.add_argument("--transferability",
+    help="Enable transferability score calculation.",
+    dest="calc_transf",
+    action='store_true')
+parser.add_argument("--no-transferability",
+    help="Disable transferability score calculation.",
+    dest="calc_transf",
+    action='store_false')
 parser.set_defaults(calc_transf=True)
 
 arguments = parser.parse_args(sys.argv[1:])
@@ -105,8 +97,15 @@ data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname, argumen
 # data = data[:, inds]
 # if labels is not None:
 #     labels = labels[inds]
+# inds = np.random.permutation(data.shape[1])
+# data = data[:, inds]
 
-print('Target data  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
+# inds = np.random.permutation(data.shape[1])[:400]
+# data = data[:, inds]
+# if labels is not None:
+#     labels = labels[inds]
+
+print('Target data {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 print np.unique(labels)
 
 print('Number of genes/transcripts in data and gene-ids must coincide.')
@@ -133,7 +132,7 @@ if arguments.transform:
 num_cluster = map(np.int, arguments.cluster_range.split(","))
 mixtures = map(np.float, arguments.mixtures.split(","))
 
-accs_names = ['KTA (linear)', 'Silhouette (euc)', 'Silhouette (pearson)', 'Silhouette (spearman)', 'ARI']
+accs_names = ['KTA (linear)', 'Silhouette (euc)', 'Silhouette (pearson)', 'Silhouette (spearman)', 'MixARI', 'ARI']
 
 accs_dist = np.zeros((len(accs_names), len(mixtures), len(num_cluster)))
 accs_mix = np.zeros((len(accs_names), len(mixtures), len(num_cluster)))
@@ -173,7 +172,7 @@ for i in range(len(num_cluster)):
             calc_transf = True
         if not arguments.calc_transf:
             calc_transf = False
-        mix_data, _, _ = da_nmf.get_mixed_data(k=k, mix=mix, reject_ratio=0.,
+        mix_data, _, mix_trg_data = da_nmf.get_mixed_data(k=k, mix=mix, reject_ratio=0.,
                                                calc_transferability=calc_transf, max_iter=2000)
         # mix_gene_ids = da_nmf.common_ids
         mix_gene_ids = da_nmf.gene_ids
@@ -245,16 +244,37 @@ for i in range(len(num_cluster)):
         accs_dist[1, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='euclidean')
         accs_dist[2, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='pearson')
         accs_dist[3, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='spearman')
+        # accs_dist[4, j, i] is not used
         if labels is not None:
-            accs_dist[4, j, i] = metrics.adjusted_rand_score(labels[sc3_dist.remain_cell_inds], sc3_dist.cluster_labels)
+            accs_dist[5, j, i] = metrics.adjusted_rand_score(labels[sc3_dist.remain_cell_inds], sc3_dist.cluster_labels)
         print accs_dist[:, j, i]
         print('\nSC3 mix evaluation:')
-        accs_mix[0, j, i] = unsupervised_acc_kta(sc3_mix.pp_data, sc3_mix.cluster_labels, kernel='linear')
-        accs_mix[1, j, i] = unsupervised_acc_silhouette(sc3_mix.pp_data, sc3_mix.cluster_labels, metric='euclidean')
-        accs_mix[2, j, i] = unsupervised_acc_silhouette(sc3_mix.pp_data, sc3_mix.cluster_labels, metric='pearson')
-        accs_mix[3, j, i] = unsupervised_acc_silhouette(sc3_mix.pp_data, sc3_mix.cluster_labels, metric='spearman')
+
+        from sklearn.multiclass import OneVsRestClassifier
+        from sklearn.svm import LinearSVC
+        from sklearn.linear_model import LinearRegression
+        include_inds = []
+        pred_lbls = np.unique(sc3_mix.cluster_labels)
+        for p in pred_lbls:
+            inds = np.where(sc3_mix.cluster_labels == p)[0]
+            if inds.size >= 2:
+                include_inds.extend(inds)
+
+        # W, H, H2 = da_nmf.intermediate_model
+        accs_mix[0, j, i] = unsupervised_acc_kta(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), kernel='linear')
+        accs_mix[1, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='euclidean')
+        accs_mix[2, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='pearson')
+        accs_mix[3, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='spearman')
+
+        if len(include_inds) > 5:
+            cls = OneVsRestClassifier(LinearRegression(fit_intercept=True, normalize=False, copy_X=True, n_jobs=1)).fit(sc3_mix.pp_data[:, include_inds].T.copy(), sc3_mix.cluster_labels[include_inds].copy())
+            # cls = OneVsRestClassifier(LinearSVC(random_state=0)).fit(sc3_mix.pp_data[:, include_inds].T, sc3_mix.cluster_labels[include_inds])
+            ret = cls.predict(mix_trg_data[:, include_inds].T.copy())
+            # accs_mix[4, j, i] = np.sum(ret == sc3_mix.cluster_labels[include_inds]) / np.float(ret.size)
+            accs_mix[4, j, i] = metrics.adjusted_rand_score(ret, sc3_mix.cluster_labels[include_inds].copy())
+
         if labels is not None:
-            accs_mix[4, j, i] = metrics.adjusted_rand_score(labels[da_nmf.remain_cell_inds], sc3_mix.cluster_labels)
+            accs_mix[5, j, i] = metrics.adjusted_rand_score(labels[da_nmf.remain_cell_inds], sc3_mix.cluster_labels)
         print accs_mix[:, j, i]
 
         # --------------------------------------------------
