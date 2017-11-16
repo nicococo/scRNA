@@ -25,9 +25,9 @@ install:
 script:
   - scRNA-generate-data.sh
   - ls
-  - scRNA-source.sh --fname fout_source_data_T1_100_S1_200.tsv --fgene-ids fout_geneids.tsv
-    --fout src --cluster-range 7,8 --flabels fout_source_labels_T1_100_S1_200.tsv
+  - scRNA-source.sh --fname fout_source_data_T1_100_S1_800.tsv --fgene-ids fout_geneids.tsv
+    --fout src --cluster-range 7,8 --flabels fout_source_labels_T1_100_S1_800.tsv
     --no-tsne --no-cell-filter --no-gene-filter --no-transform
-  - scRNA-target.sh --src-fname src_c8.npz --fname fout_target_data_T1_100_S1_200.tsv
-    --fgene-ids fout_geneids.tsv --flabels fout_target_labels_T1_100_S1_200.tsv
+  - scRNA-target.sh --src-fname src_c8.npz --fname fout_target_data_T1_100_S1_800.tsv
+    --fgene-ids fout_geneids.tsv --flabels fout_target_labels_T1_100_S1_800.tsv
     --no-cell-filter --no-gene-filter
