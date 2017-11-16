@@ -31,6 +31,7 @@ def plot_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, co
     print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
     print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
     print '#Common ', common, ' ind/# = ', ind_common, '/', common[ind_common]
+    print percs
 
     color = ['blue', 'green', 'red']
     plt.figure(fig_num)
@@ -114,16 +115,16 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
 
 def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
     ind_genes = 0
-    ind_src = 2
-    ind_percs = 7
+    ind_src = 0
+    ind_percs = 5
     print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
     print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
     print '#Percs ', percs, ' ind/# = ', ind_percs, '/', percs[ind_percs]
 
     color = ['blue', 'green', 'red']
     plt.figure(fig_num)
-    ind_percs = [0, 3, 5, 6, 7, 8]
-    # ind_percs = np.arange(len(percs))
+    # ind_percs = [0, 3, 5, 6, 7, 8]
+    ind_percs = np.arange(len(percs))
     ind_methods = [1, 3]
     for p in range(len(ind_percs)):
         for i in range(len(ind_methods)):
@@ -170,133 +171,15 @@ def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
     plt.show()
 
 
-def plot_reject_mix(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    ind_genes = 0
-    ind_src = 1
-    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
-    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
-    print '#Common ', common
-
-    color = ['green', 'red']
+def plot_src_accs(fig_num, res, genes, n_src, n_trg, common):
     plt.figure(fig_num)
     inds = [0, 1, 2, 3, 4]
-    fcnt = 1
-    for c in inds:
-        cnt = 3
-        for i in range(2):
-            ind_common = c
-            # ari overall
-            ari_1_baseline = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, 0], axis=0)
-            ari_1_max = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt], axis=0)
-            ari_1_min = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt+1], axis=0)
-            cnt += 2
-
-            plt.subplot(1, len(inds), fcnt)
-            if i==0:
-                plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
-            plt.fill_between(percs, ari_1_max, ari_1_min, alpha=0.2, facecolor=color[i], interpolate=True)
-            if c==0:
-                plt.title('Overlap: None', fontsize=16)
-                plt.xlabel('Target datapts', fontsize=16)
-                plt.ylabel('ARI', fontsize=16)
-            else:
-                plt.title('{0}'.format(common[c]), fontsize=16)
-            plt.xlim([0, np.max(percs)])
-            plt.semilogx()
-            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
-                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
-            plt.ylim([0., 1.])
-        fcnt += 1
-    plt.legend(['SC3',
-                'SC3-Mix',
-                'SC3-Reject'], fontsize=9, loc=4)
-    plt.show()
-
-
-def plot_rejection_percentage(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    ind_genes = 1
-    ind_src = 0
-    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
-    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
-    print '#Common ', common
-
-    color = ['green', 'red', 'blue']
-    plt.figure(fig_num)
-    inds = [1, 2, 3]
-    fcnt = 1
-    for c in inds:
-        cnt = 1
-        for i in range(3):
-            ind_common = c
-            # ari overall
-            ari_baseline = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, 0], axis=0)
-            ari_max = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt], axis=0)
-            ari_min = np.mean(res[ind_src, ind_genes, ind_common, 10+i, :, :, cnt+1], axis=0)
-
-            plt.subplot(1, len(inds), fcnt)
-            if i == 0:
-                plt.plot(percs, ari_baseline, '--k', linewidth=2.0)
-
-            plt.fill_between(percs, ari_max, ari_min, alpha=0.2, facecolor=color[i], interpolate=True)
-            if c == 1:
-                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
-                plt.legend(['SC3', 'Reject 10%', 'Reject 20%', 'Reject 30%'], fontsize=12, loc=3)
-            else:
-                plt.title('{0}'.format(common[c]), fontsize=16)
-            plt.xlabel('Target datapts', fontsize=16)
-            plt.ylabel('ARI', fontsize=16)
-            plt.xlim([0, np.max(percs)])
-            plt.semilogx()
-            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
-                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
-            plt.ylim([0., 1.])
-        fcnt += 1
-    plt.show()
-
-
-def plot_rejection_aucs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    ind_genes = 1
-    ind_src = 0
-    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
-    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
-    print '#Common ', common
-
-    color = ['green', 'red', 'blue']
-    plt.figure(fig_num)
-    inds = [0, 1, 2, 3, 4]
-    fcnt = 1
-    for c in inds:
-        cnt = 1
-        for i in range(3):
-            ind_common = c
-            auc_max = np.mean(res[ind_src, ind_genes, ind_common, 7+i, :, :, cnt], axis=0)
-
-            plt.subplot(1, len(inds), fcnt)
-            plt.plot(percs, auc_max, alpha=0.8, color=color[i], linewidth=2.)
-            plt.xlim([0, np.max(percs)])
-            plt.semilogx()
-            plt.title('{0}'.format(common[c]), fontsize=16)
-            if c == 0:
-                plt.xlabel('Target datapts', fontsize=16)
-                plt.ylabel('AUC', fontsize=16)
-                plt.title('#Common cluster: {0}'.format(common[c]), fontsize=16)
-                plt.legend(['Reconstr. Error', 'Entropy', 'Kurtosis'], fontsize=12, loc=3)
-            plt.xticks([np.min(percs), np.max(percs)/4, np.max(percs)/2, np.max(percs)],
-                       np.array([np.min(percs), np.max(percs)/4, np.max(percs)/2,  np.max(percs)]*n_trg, dtype=np.int))
-            plt.ylim([0., 1.])
-        fcnt += 1
-
-    plt.show()
-
-
-def plot_src_accs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    plt.figure(fig_num)
-    inds = [0, 1, 2, 3, 4]
+    print res
     fcnt = 1
     for c in inds:
         ind_common = c
-        aris = np.mean(res[:, :, ind_common, 2, :, 0, 0], axis=2)
-        print np.mean(res[:, :, ind_common, 2, :, 0, 0], axis=2)
+        aris = np.mean(res[:, :, ind_common, :], axis=2)
+        print np.mean(res[:, :, ind_common, :], axis=2)
 
         plt.subplot(1, len(inds), fcnt)
         plt.pcolor(aris, cmap=plt.get_cmap('Reds'), vmin=0., vmax=1.)
@@ -316,7 +199,7 @@ def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n
     plt.figure(fig_num)
 
     print res.shape
-    aris = np.mean(res[0, :, :, 13, :, -1, 0], axis=2).T
+    aris = np.mean(res[0, :, :, -1, :, -1, 0], axis=2).T
     print aris, aris.shape
     plt.subplot(1, 3, 1)
     plt.pcolor(aris, cmap=plt.get_cmap('Blues'), vmin=0., vmax=1.)
@@ -362,18 +245,19 @@ def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n
     plt.show()
 
 
-def plot_acc_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+def plot_unsupervised_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
     plt.figure(fig_num)
-    inds = [0, 1, 2, 3]
+    inds = [0, 1, 5, 6, 7, 8]
     fcnt = 1
     for c in inds:
-        aris = np.mean(res[0, 0, :, 3+c, :, 8, :-3], axis=1)
-        print np.mean(res[0, 0, :, 3+c, :, 8, :-3], axis=1)
+        aris = np.mean(res[0, 0, :, c, :, -1, :], axis=1)
+        print np.mean(res[0, 0, :, c, :, -1, :], axis=1)
 
         plt.subplot(1, len(inds), fcnt)
         plt.pcolor(aris, cmap=plt.get_cmap('Greens'))
         # plt.pcolor(aris, cmap=plt.get_cmap('Greens'), vmin=0., vmax=1.)
-        plt.title('{0}'.format(c), fontsize=16)
+        print accs_desc[c]
+        plt.title('{0}'.format(accs_desc[c]), fontsize=16)
         plt.xticks(np.arange(aris.shape[1])+0.5, ['SC3', 'Dist max', 'Dist min', 'Mix max', 'Mix min'], rotation=60)
         plt.yticks(np.arange(len(common))+0.5, common)
         if c == 0:
@@ -384,18 +268,14 @@ def plot_acc_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_tr
 
 
 if __name__ == "__main__":
-    # foo = np.load('intermediate.npz')
-    # foo = np.load('main_v2.npz')
-    # foo = np.load('main_short_v4.npz')
-    # foo = np.load('test_v4.npz')
-    foo = np.load('test_transfer_v2.npz')
-    # foo = np.load('main_cluster_v1.npz')
-    # foo = np.load('main_results_2.npz')
+    foo = np.load('results/main_short_v2.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
     res = foo['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
+    source_aris = foo['source_aris'] # n_src x genes x common x reps
     accs_desc = foo['accs_desc']
+    print accs_desc
     method_desc = foo['method_desc']
     percs = foo['percs']
     # reps = foo['reps']
@@ -409,15 +289,11 @@ if __name__ == "__main__":
     # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    # plot_reject_mix(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    # plot_rejection_percentage(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    # plot_rejection_aucs(5, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_src_accs(6, source_aris, genes, n_src, n_trg, common)
 
-    # plot_src_accs(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-
-    # plot_acc_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_unsupervised_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_cluster(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_cluster_acc_measures(10, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)

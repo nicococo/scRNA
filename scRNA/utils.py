@@ -34,7 +34,7 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
 
         labels_2_ids = np.unique(label_ids)
         unique_ind = np.arange(start=0, stop=labels_2_ids.shape[0])
-        labels = np.zeros((data.shape[1]))
+        labels = np.zeros((data.shape[1]), dtype=np.int)
         print('Found {0} unique labels:'.format(labels_2_ids.size))
         print labels_2_ids
         for i in range(unique_ind.size):
@@ -121,7 +121,7 @@ def get_kernel(X, Y, type='linear', param=1.0):
 def unsupervised_acc_silhouette(X, labels, metric='euclidean'):
     dists = sc.distances(X, gene_ids=np.arange(X.shape[1]), metric=metric)
     num_lbls = np.unique(labels).size
-    if num_lbls > 1:
+    if num_lbls > 1 and not np.any(np.isnan(dists)) and not np.any(np.isinf(dists)):
         return metrics.silhouette_score(dists, labels, metric='precomputed')
     return 0.0
 
@@ -147,3 +147,40 @@ def unsupervised_acc_kta(X, labels, kernel='linear', param=1.0, center=True, nor
     return kta_align_general(Kx, Ky)
 
 
+def get_matching_gene_inds(src_gene_ids, trg_gene_ids):
+    if not np.unique(src_gene_ids).size == src_gene_ids.size:
+        # raise Exception('(MTL) Gene ids are supposed to be unique.')
+        print('\nWarning! (MTL gene ids) Gene ids are supposed to be unique. '
+              'Only {0} of {1}  entries are unique.'.format(np.unique(src_gene_ids).shape[0], src_gene_ids.shape[0]))
+        print('Only first occurance will be used.\n')
+    if not np.unique(trg_gene_ids).size == trg_gene_ids.size:
+        # raise Exception('(Target) Gene ids are supposed to be unique.')
+        print('\nWarning! (Target gene ids) Gene ids are supposed to be unique. '
+              'Only {0} of {1}  entries are unique.'.format(np.unique(trg_gene_ids).shape[0], trg_gene_ids.shape[0]))
+        print('Only first occurance will be used.\n')
+
+    # common_ids = np.intersect1d(trg_gene_ids, src_gene_ids)
+    # sort the common ids according to target gene ids
+    common_ids = []
+    for i in range(trg_gene_ids.size):
+        if np.any(trg_gene_ids[i] == src_gene_ids):
+            common_ids.append(trg_gene_ids[i])
+    # common_ids = np.array(common_ids, dtype=np.str)
+    common_ids = np.array(common_ids)
+
+    print('Both datasets have (after processing) {0} (src={1}%,trg={2}%) gene ids in common.'.format(
+        common_ids.shape[0],
+        np.int(np.float(common_ids.size) / np.float(src_gene_ids.size)*100.0),
+        np.int(np.float(common_ids.size) / np.float(trg_gene_ids.size)*100.0)))
+
+    print('Number of common genes must not be 0!')
+    assert(common_ids.shape[0] > 0)
+
+    # find indices of common_ids in pgene_ids and gene_ids
+    inds1 = np.zeros(common_ids.shape[0], dtype=np.int)
+    inds2 = np.zeros(common_ids.shape[0], dtype=np.int)
+    for i in range(common_ids.shape[0]):
+        inds1[i] = np.where(common_ids[i] == trg_gene_ids)[0][0]
+        inds2[i] = np.where(common_ids[i] == src_gene_ids)[0][0]
+
+    return inds1, inds2

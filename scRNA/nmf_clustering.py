@@ -3,7 +3,7 @@ import scipy.stats as stats
 from sklearn import decomposition as decomp
 
 from abstract_clustering import AbstractClustering
-from utils import center_kernel, normalize_kernel, kta_align_binary
+from utils import center_kernel, normalize_kernel, kta_align_binary, get_matching_gene_inds
 
 
 class NmfClustering(AbstractClustering):
@@ -50,129 +50,39 @@ class DaNmfClustering(NmfClustering):
     transferability_score = 0.0
     transferability_percs = None
     transferability_rand_scores = None
-
     src = None
-    common_ids = None
-
-    src_common_gene_inds = None
-    trg_common_gene_inds = None
-
     intermediate_model = None
+    mixed_data = None
 
     def __init__(self, src, trg_data, trg_gene_ids, num_cluster):
         super(DaNmfClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster)
         self.src = src
-        # assert(isinstance(self.src, NmfClustering))
 
-    def get_mixed_data(self, k=-1, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=True,
-                       alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+    def get_mixed_data(self, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=True, max_iter=4000, rel_err=1e-3):
         trg_data = self.pre_processing()
-        assert(self.src.pp_data is not None)  # source data should always be pre-processed
-        # src_data = self.src.pre_processing()
-        src_data = self.src.pp_data  # use the pre-processed source data
-
         trg_gene_ids = self.gene_ids[self.remain_gene_inds]
         print self.src.gene_ids.shape
         print self.src.remain_gene_inds.shape
-        src_gene_ids = self.src.gene_ids[self.src.remain_gene_inds]
-
-        if not np.unique(src_gene_ids).size == src_gene_ids.size:
-            # raise Exception('(MTL) Gene ids are supposed to be unique.')
-            print('\nWarning! (MTL gene ids) Gene ids are supposed to be unique. '
-                  'Only {0} of {1}  entries are unique.'.format(np.unique(src_gene_ids).shape[0], src_gene_ids.shape[0]))
-            print('Only first occurance will be used.\n')
-        if not np.unique(trg_gene_ids).size == trg_gene_ids.size:
-            # raise Exception('(Target) Gene ids are supposed to be unique.')
-            print('\nWarning! (Target gene ids) Gene ids are supposed to be unique. '
-                  'Only {0} of {1}  entries are unique.'.format(np.unique(trg_gene_ids).shape[0], trg_gene_ids.shape[0]))
-            print('Only first occurance will be used.\n')
-
-        # common_ids = np.intersect1d(trg_gene_ids, src_gene_ids)
-        # sort the common ids according to target gene ids
-        common_ids = []
-        for i in range(trg_gene_ids.size):
-            if np.any(trg_gene_ids[i] == src_gene_ids):
-                common_ids.append(trg_gene_ids[i])
-        common_ids = np.array(common_ids, dtype=np.str)
-
-        print('Both datasets have (after processing) {0} (src={1}%,trg={2}%) gene ids in common.'.format(
-            common_ids.shape[0],
-            np.int(np.float(common_ids.size)/np.float(src_gene_ids.size)*100.0),
-            np.int(np.float(common_ids.size)/np.float(trg_gene_ids.size)*100.0) ))
-
-        print('Number of common genes must not be 0!')
-        assert(common_ids.shape[0] > 0)
-
-        # find indices of common_ids in pgene_ids and gene_ids
-        inds1 = np.zeros(common_ids.shape[0], dtype=np.int)
-        inds2 = np.zeros(common_ids.shape[0], dtype=np.int)
-        for i in range(common_ids.shape[0]):
-            inds1[i] = np.where(common_ids[i] == trg_gene_ids)[0][0]
-            inds2[i] = np.where(common_ids[i] == src_gene_ids)[0][0]
+        src_gene_ids = self.src.gene_ids[self.src.remain_gene_inds].copy()
+        inds1, inds2 = get_matching_gene_inds(src_gene_ids, trg_gene_ids)
 
         print 'MTL source {0} genes -> {1} genes.'.format(src_gene_ids.size, inds2.size)
         print 'MTL target {0} genes -> {1} genes.'.format(trg_gene_ids.size, inds1.size)
 
-        self.common_ids = common_ids
-        self.src_common_gene_inds = inds2
-        self.trg_common_gene_inds = inds1
-
-        # src_data = src_data[inds2, :]
-        print('WARNING! Src data will be changed.')
-        # for i in range(10):
-        #     print self.src.gene_ids[i], self.src.remain_gene_inds[i]
-
-        # self.src.pp_data = src_data[inds2, :]  # this is going to be generated again
-        self.src.data = src_data[inds2, :]
-        self.src.gene_ids = src_gene_ids[inds2]
-        # self.src.gene_ids = self.src.gene_ids[inds2]
-
-        # self.src.data = src_data[self.src.remain_gene_inds[inds2], :]
-        # self.src.gene_ids = self.src.gene_ids[self.src.remain_gene_inds[inds2]]
-        self.src.apply()
-
-        # self.gene_ids = self.gene_ids[self.remain_gene_inds[inds1]]
-        # trg_data = trg_data[self.remain_gene_inds[inds1], :]
-        # self.gene_ids = self.gene_ids[inds1]
+        src_gene_ids = src_gene_ids[inds2]
         self.gene_ids = trg_gene_ids[inds1]
         trg_data = trg_data[inds1, :]
 
         print('Sorted, filtered gene ids for src/trg. They should coincide!')
         for i in range(inds1.size):
-            if i < 10 or self.src.gene_ids[i] != self.gene_ids[i]:
-                print i, self.src.gene_ids[i], self.gene_ids[i]
-            assert(self.src.gene_ids[i] == self.gene_ids[i])
+            if i < 10 or src_gene_ids[i] != self.gene_ids[i]:
+                print i, src_gene_ids[i], self.gene_ids[i]
+            assert(src_gene_ids[i] == self.gene_ids[i])
 
-        W = self.src.dictionary
-        H = np.random.randn(self.src.num_cluster, trg_data.shape[1])
+        assert(self.src.dictionary is not None)  # source data should always be pre-processed
+        W, H, H2, new_err = self.get_transferred_data_matrix(
+            self.src.dictionary[inds2, :], trg_data, max_iter=max_iter, rel_err=rel_err)
 
-        a1, a2 = np.where(H < 0.)
-        H[a1, a2] *= -1.
-        a1, a2 = np.where(H < 1e-10)
-        H[a1, a2] = 1e-10
-
-        n_iter = 0
-        err = 1e10
-        while n_iter < max_iter:
-            n_iter += 1
-            if np.any(W.T.dot(W.dot(H)) == 0.):
-                raise Exception('DA target nmf: division by zero.')
-            H *= W.T.dot(trg_data) / W.T.dot(W.dot(H))
-            new_err = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
-            # new_err = np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)  # frobenius
-            if np.abs((err - new_err) / err) <= rel_err and err > new_err:
-                break
-            err = new_err
-        print '  Number of iterations for reconstruction     : ', n_iter
-        self.print_reconstruction_error(trg_data, W, H)
-
-        if np.any(np.isnan(H)):
-            raise Exception('Htrg contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
-                alpha, self.src.num_cluster, l1, trg_data.shape[0], trg_data.shape[1]))
-
-        H2 = np.zeros((self.src.num_cluster, trg_data.shape[1]))
-        H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = 1
-        # H2[ (np.argmax(H, axis=0), np.arange(Xtrg.shape[1])) ] = np.sum(H, axis=0)
         self.cluster_labels = np.argmax(H, axis=0)
         self.print_reconstruction_error(trg_data, W, H2)
         self.intermediate_model = (W, H, H2)
@@ -209,26 +119,23 @@ class DaNmfClustering(NmfClustering):
             print('Error! Negative values in reconstructed data!')
         return mixed_data, new_trg_data, trg_data
 
-    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0,
-              l1=0.75, max_iter=4000, rel_err=1e-3):
+    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3, calc_transferability=True):
         if k == -1:
             k = self.num_cluster
-        mixed_data, new_trg_data, trg_data = self.get_mixed_data(k=k,
-                                                                 mix=mix,
+        mixed_data, new_trg_data, trg_data = self.get_mixed_data(mix=mix,
                                                                  reject_ratio=reject_ratio,
-                                                                 alpha=alpha,
-                                                                 l1=l1,
                                                                  max_iter=max_iter,
-                                                                 rel_err=rel_err)
-
-        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=2000,
+                                                                 rel_err=rel_err,
+                                                                 calc_transferability=calc_transferability)
+        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
                          n_components=k, random_state=0, shuffle=True, solver='cd',
-                         tol=0.00001, verbose=0)
+                         tol=1e-6, verbose=0)
         W = nmf.fit_transform(mixed_data)
         H = nmf.components_
         self.dictionary = W
         self.data_matrix = H
         self.cluster_labels = np.argmax(nmf.components_, axis=0)
+        self.mixed_data = mixed_data
         print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
 
     def calc_transferability_score(self, W, H, trg_data, reps=10, alpha=0.0, l1=0.75, max_iter=4000, rel_err=1e-3):
@@ -236,9 +143,8 @@ class DaNmfClustering(NmfClustering):
         errs = np.zeros((reps,))
         for i in range(errs.size):
             rand_gene_inds = np.random.permutation(W.shape[0])
-            _, _, _, errs[i] = self.get_transferred_data_matrix(W[rand_gene_inds, :], trg_data,
-                                                                max_iter=max_iter, rel_err=rel_err)
-
+            _, _, _, errs[i] = self.get_transferred_data_matrix(
+                W[rand_gene_inds, :], trg_data, max_iter=max_iter, rel_err=rel_err)
         # minimum transfer error
         nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
                          n_components=W.shape[1], random_state=0, shuffle=True, solver='cd',
@@ -272,12 +178,32 @@ class DaNmfClustering(NmfClustering):
             H *= W.T.dot(trg_data) / W.T.dot(W.dot(H))
             new_err = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
             # new_err = np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)  # frobenius
-            if np.abs((err - new_err) / err) <= rel_err and err > new_err:
+            if np.abs((err - new_err) / err) <= rel_err and err >= new_err:
                 break
             err = new_err
         print '  Number of iterations for reconstruction + reconstruction error    : ', n_iter, new_err
         H2 = np.zeros((self.src.num_cluster, trg_data.shape[1]))
+
         H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = 1
+        # H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = np.sum(H, axis=0)  # DOES NOT WORK WELL!
+
+        # normalization
+        n_iter = 0
+        err = 1e10
+        sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
+        print n_iter, ': sparse rec error: ', sparse_rec_err
+        while n_iter < max_iter:
+            n_iter += 1
+            H2 *= W.T.dot(trg_data) / W.T.dot(W.dot(H2))
+            # foo = 0.05 * W.T.dot(trg_data - W.dot(H2))
+            # H2[np.argmax(H, axis=0), :] -= foo[np.argmax(H, axis=0), :]
+            sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
+            print n_iter, ': sparse rec error: ', sparse_rec_err
+            if np.abs((err - sparse_rec_err) / err) <= rel_err and err >= sparse_rec_err:
+                break
+            err = sparse_rec_err
+        # print H2
+
         return W, H, H2, new_err
 
     def calc_rejection(self, trg_data, W, H, H2):

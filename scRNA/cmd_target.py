@@ -100,10 +100,12 @@ data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname, argumen
 # inds = np.random.permutation(data.shape[1])
 # data = data[:, inds]
 
-# inds = np.random.permutation(data.shape[1])[:400]
+# inds = np.random.permutation(data.shape[1])[:100]
 # data = data[:, inds]
 # if labels is not None:
 #     labels = labels[inds]
+
+print np.histogram(labels, bins=np.unique(labels).size)
 
 print('Target data {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 print np.unique(labels)
