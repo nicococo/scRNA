@@ -23,7 +23,7 @@ install:
   - source activate test-environment
   - python setup.py install
 script:
-  - scRNA-generate-data.sh --target_ncells 100 --source_ncells 200 --cluster_spec [1, 2, [3, 4]]
+  - scRNA-generate-data.sh --target_ncells 100 --source_ncells 200 --cluster_spec "[1, 2, [3, 4]]"
     --num_genes 250 --splitting_mode 4
   - ls
   - scRNA-source.sh --fname fout_source_data_T1_100_S1_200.tsv --fgene-ids fout_geneids.tsv
