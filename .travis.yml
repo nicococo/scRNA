@@ -23,11 +23,12 @@ install:
   - source activate test-environment
   - python setup.py install
 script:
-  - scRNA-generate-data.sh
+  - scRNA-generate-data.sh --target_ncells 100 --source_ncells 200 --cluster_spec [1, 2, [3, 4]]
+    --num_genes 250 --splitting_mode 4
   - ls
-  - scRNA-source.sh --fname fout_source_data_T1_100_S1_800.tsv --fgene-ids fout_geneids.tsv
-    --fout src --cluster-range 7,8 --flabels fout_source_labels_T1_100_S1_800.tsv
+  - scRNA-source.sh --fname fout_source_data_T1_100_S1_200.tsv --fgene-ids fout_geneids.tsv
+    --fout src --cluster-range 2,3 --flabels fout_source_labels_T1_100_S1_200.tsv
     --no-tsne --no-cell-filter --no-gene-filter --no-transform
-  - scRNA-target.sh --src-fname src_c8.npz --fname fout_target_data_T1_100_S1_800.tsv
-    --fgene-ids fout_geneids.tsv --flabels fout_target_labels_T1_100_S1_800.tsv
-    --no-cell-filter --no-gene-filter
+  - scRNA-target.sh --src-fname src_c2.npz --fname fout_target_data_T1_100_S1_200.tsv
+    --fgene-ids fout_geneids.tsv --flabels fout_target_labels_T1_100_S1_200.tsv
+    --no-cell-filter --no-gene-filter --cluster-range 3
