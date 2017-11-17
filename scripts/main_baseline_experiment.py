@@ -60,8 +60,8 @@ if __name__ == "__main__":
     acc_funcs.append(acc_classification)
     acc_funcs.append(acc_transferability)
 
-    mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    # mixes = [0.0, 0.1, 0.4]
+    # mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    mixes = [0.0, 0.1, 0.4]
     dist_list = list()
     for m in mixes:
         dist_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=True))
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # combined baseline
     methods.append(partial(method_sc3_combined, metric='euclidean'))
 
-    fname = 'results/main_full_v1.npz'
+    fname = 'results/main_short_v1.npz'
 
     # FULL 1
     percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
@@ -113,13 +113,13 @@ if __name__ == "__main__":
     # common = [0, 1, 2, 3, 4]
 
     # # # CLUSTER 1
-    # percs = [1.0]
-    # cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
-    # n_trg = 200
-    # n_src = [600]
-    # reps = 2
-    # genes = [200]
-    # common = [2]
+    percs = [0.5, 1.0]
+    cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
+    n_trg = 200
+    n_src = [600]
+    reps = 2
+    genes = [200]
+    common = [0, 2]
 
     res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
     source_aris = np.zeros((len(n_src), len(genes), len(common), reps))
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     results = []
     print "ret fields AFTER execution on local machine"
     for (i, result) in enumerate(processedJobs):
-        print "Job #", i
+        print "Job #", i, result
         src_aris, accs, accs_desc, m_desc = result
         s, g, c = params[i]
         res[s, g, c, :, :, :, :] = accs

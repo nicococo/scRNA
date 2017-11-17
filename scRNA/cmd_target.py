@@ -174,8 +174,7 @@ for i in range(len(num_cluster)):
             calc_transf = True
         if not arguments.calc_transf:
             calc_transf = False
-        mix_data, _, mix_trg_data = da_nmf.get_mixed_data(k=k, mix=mix, reject_ratio=0.,
-                                               calc_transferability=calc_transf, max_iter=2000)
+        mix_data, _, mix_trg_data = da_nmf.get_mixed_data(mix=mix, reject_ratio=0., calc_transferability=calc_transf, max_iter=2000)
         # mix_gene_ids = da_nmf.common_ids
         mix_gene_ids = da_nmf.gene_ids
         if calc_transf:
@@ -253,7 +252,6 @@ for i in range(len(num_cluster)):
         print('\nSC3 mix evaluation:')
 
         from sklearn.multiclass import OneVsRestClassifier
-        from sklearn.svm import LinearSVC
         from sklearn.linear_model import LinearRegression
         include_inds = []
         pred_lbls = np.unique(sc3_mix.cluster_labels)
@@ -270,9 +268,7 @@ for i in range(len(num_cluster)):
 
         if len(include_inds) > 5:
             cls = OneVsRestClassifier(LinearRegression(fit_intercept=True, normalize=False, copy_X=True, n_jobs=1)).fit(sc3_mix.pp_data[:, include_inds].T.copy(), sc3_mix.cluster_labels[include_inds].copy())
-            # cls = OneVsRestClassifier(LinearSVC(random_state=0)).fit(sc3_mix.pp_data[:, include_inds].T, sc3_mix.cluster_labels[include_inds])
             ret = cls.predict(mix_trg_data[:, include_inds].T.copy())
-            # accs_mix[4, j, i] = np.sum(ret == sc3_mix.cluster_labels[include_inds]) / np.float(ret.size)
             accs_mix[4, j, i] = metrics.adjusted_rand_score(ret, sc3_mix.cluster_labels[include_inds].copy())
 
         if labels is not None:
