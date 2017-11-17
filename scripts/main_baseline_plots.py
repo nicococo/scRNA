@@ -174,7 +174,7 @@ def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
 def plot_src_accs(fig_num, res, genes, n_src, n_trg, common):
     plt.figure(fig_num)
     inds = [0, 1, 2, 3, 4]
-    print res
+    print res[0,0,2,:]
     fcnt = 1
     for c in inds:
         ind_common = c
@@ -268,7 +268,7 @@ def plot_unsupervised_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_
 
 
 if __name__ == "__main__":
-    foo = np.load('results/main_short_v2.npz')
+    foo = np.load('results/main_debug_v1.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    # plot_src_accs(6, source_aris, genes, n_src, n_trg, common)
+    plot_src_accs(6, source_aris, genes, n_src, n_trg, common)
 
     # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
