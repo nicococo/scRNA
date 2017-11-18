@@ -180,7 +180,17 @@ def get_matching_gene_inds(src_gene_ids, trg_gene_ids):
     inds1 = np.zeros(common_ids.shape[0], dtype=np.int)
     inds2 = np.zeros(common_ids.shape[0], dtype=np.int)
     for i in range(common_ids.shape[0]):
-        inds1[i] = np.where(common_ids[i] == trg_gene_ids)[0][0]
-        inds2[i] = np.where(common_ids[i] == src_gene_ids)[0][0]
+        # 1: inds1[i] = np.where(common_ids[i] == trg_gene_ids)[0][0]
+        inds = np.where(common_ids[i] == trg_gene_ids)[0]
+        if inds.size > 1:
+            inds1[i] = inds[0]
+        else:
+            inds1[i] = inds
+        # 2: inds2[i] = np.where(common_ids[i] == src_gene_ids)[0][0]
+        inds = np.where(common_ids[i] == src_gene_ids)[0]
+        if inds.size > 1:
+            inds2[i] = inds[0]
+        else:
+            inds2[i] = inds
 
     return inds1, inds2

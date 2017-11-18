@@ -13,6 +13,7 @@ from scRNA.utils import *
 
 def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=None):
     aris = np.zeros(len(method_list))
+    desc = {}
     trg_nmfs = list()
     trg_lbls = np.zeros((len(method_list), trg_labels.size), dtype=np.int)
     for i in range(len(method_list)):
