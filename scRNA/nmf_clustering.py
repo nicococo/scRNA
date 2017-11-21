@@ -161,7 +161,7 @@ class DaNmfClustering(NmfClustering):
         score = 1.0 - np.max([err_curr - err_best, 0]) / (err_worst - err_best)
         return score, percs
 
-    def get_transferred_data_matrix(self, W, trg_data, max_iter=4000, rel_err=1e-3):
+    def get_transferred_data_matrix(self, W, trg_data, normalize_H2=False, max_iter=4000, rel_err=1e-3):
         # initialize H: data matrix
         H = np.random.randn(W.shape[1], trg_data.shape[1])
         a1, a2 = np.where(H < 0.)
@@ -188,20 +188,22 @@ class DaNmfClustering(NmfClustering):
         # H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = np.sum(H, axis=0)  # DOES NOT WORK WELL!
 
         # normalization
-        n_iter = 0
-        err = 1e10
-        sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
-        print n_iter, ': sparse rec error: ', sparse_rec_err
-        while n_iter < max_iter:
-            n_iter += 1
-            H2 *= W.T.dot(trg_data) / W.T.dot(W.dot(H2))
-            # foo = 0.05 * W.T.dot(trg_data - W.dot(H2))
-            # H2[np.argmax(H, axis=0), :] -= foo[np.argmax(H, axis=0), :]
+        if normalize_H2:
+            print 'Normalize H2.'
+            n_iter = 0
+            err = 1e10
             sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
             print n_iter, ': sparse rec error: ', sparse_rec_err
-            if np.abs((err - sparse_rec_err) / err) <= rel_err and err >= sparse_rec_err:
-                break
-            err = sparse_rec_err
+            while n_iter < max_iter:
+                n_iter += 1
+                H2 *= W.T.dot(trg_data) / W.T.dot(W.dot(H2))
+                # foo = 0.05 * W.T.dot(trg_data - W.dot(H2))
+                # H2[np.argmax(H, axis=0), :] -= foo[np.argmax(H, axis=0), :]
+                sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
+                print n_iter, ': sparse rec error: ', sparse_rec_err
+                if np.abs((err - sparse_rec_err) / err) <= rel_err and err >= sparse_rec_err:
+                    break
+                err = sparse_rec_err
         # print H2
 
         return W, H, H2, new_err

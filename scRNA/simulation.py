@@ -375,7 +375,8 @@ def split_source_target(toy_data, true_toy_labels,
             cluster_spec:
                 = None: no subcluster structures
                 = [1,2,[3,4],[5,6,7],8]: indicate the subcluster structure. The first level cluster structures are taken as one
-                cluster - here for instance we would have 5 clusters: [1,2,3,4,5], where cluster 3 automatically involve the subcluster 			3 and 4 from the original cluster_spec
+                cluster - here for instance we would have 5 clusters: [1,2,3,4,5], where cluster 3 automatically involve the subcluster
+                3 and 4 from the original cluster_spec
         '''
 
         if cluster_spec == None:
@@ -388,7 +389,9 @@ def split_source_target(toy_data, true_toy_labels,
             Sidx = np.concatenate((np.array(Cidx).copy(),np.random.choice(np.setdiff1d(nclusters,Cidx),nsrc-common)),axis=0)
             Tidx = np.concatenate((np.array(Cidx).copy(),np.random.choice(np.setdiff1d(nclusters,Sidx),ntrg-common)),axis=0)
         else:
+            print cluster_spec
             nclusters = np.arange(len(cluster_spec))  # compute cluster dependence for the first level cluster structure
+            print nclusters
             ntrg = np.int(np.floor((len(nclusters) + common)/2.))
             nsrc = len(nclusters) - ntrg
 

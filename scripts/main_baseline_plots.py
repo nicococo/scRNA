@@ -70,7 +70,7 @@ def plot_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, co
 def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
     ind_genes = 0
     ind_src = 0
-    ind_common = 2
+    ind_common = 0
     print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
     print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
     print '#Common ', common, ' ind/# = ', ind_common, '/', common[ind_common]
@@ -78,7 +78,9 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
     color = ['blue', 'green', 'red']
     plt.figure(fig_num)
     inds = [0, 1, 2, 3, 4]
+    # inds = [0]
     fcnt = 1
+    # res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
     for c in inds:
         cnt = 1
         for i in range(2):
@@ -114,9 +116,9 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
 
 
 def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    ind_genes = 0
+    ind_genes = 2
     ind_src = 0
-    ind_percs = 5
+    ind_percs = 8
     print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
     print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
     print '#Percs ', percs, ' ind/# = ', ind_percs, '/', percs[ind_percs]
@@ -249,6 +251,7 @@ def plot_unsupervised_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_
     plt.figure(fig_num)
     inds = [0, 1, 5, 6, 7, 8]
     fcnt = 1
+    # res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
     for c in inds:
         aris = np.mean(res[0, 0, :, c, :, -1, :], axis=1)
         print np.mean(res[0, 0, :, c, :, -1, :], axis=1)
@@ -263,12 +266,13 @@ def plot_unsupervised_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_
         if c == 0:
             plt.ylabel('#Common cluster', fontsize=16)
         fcnt += 1
-        plt.colorbar(ticks=[0.0, 0.25, 0.5, 0.75, 1.0])
+        plt.colorbar(ticks=[-0.01, 0.0, 0.25, 0.5, 0.75, 1.0, 1.01])
     plt.show()
 
 
 if __name__ == "__main__":
-    foo = np.load('results/main_debug_v1.npz')
+    foo = np.load('results/main_short_v1.npz')
+    # foo = np.load('results/main_result_v1.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
@@ -287,9 +291,9 @@ if __name__ == "__main__":
     print 'Result dimensionality: ', res.shape
 
     # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    plot_src_accs(6, source_aris, genes, n_src, n_trg, common)
+    # plot_src_accs(6, source_aris, genes, n_src, n_trg, common)
 
     # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 

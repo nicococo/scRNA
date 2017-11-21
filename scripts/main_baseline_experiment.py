@@ -40,7 +40,8 @@ def combine_intermediate_results(fname, n_src, genes, common):
         if all_files[i] not in missing_files:
             foo = np.load(all_files[i])
             s, g, c = params[i]
-            res[s, g, c, :, :, :] = foo['accs']
+            print foo['accs'].shape
+            res[s, g, c, :, :, :, :] = foo['accs']
             cnt += 1
     print res.shape, res.size, cnt
     print cnt, '/', cnt_all
@@ -60,8 +61,8 @@ if __name__ == "__main__":
     acc_funcs.append(acc_classification)
     acc_funcs.append(acc_transferability)
 
-    # mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    mixes = [0.0, 0.4]
+    mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    # mixes = [0.0, 0.1]
     dist_list = list()
     for m in mixes:
         dist_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=True))
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     # combined baseline
     methods.append(partial(method_sc3_combined, metric='euclidean'))
 
-    fname = 'results/main_result_v1.npz'
+    fname = 'results/main_short_v1.npz'
 
     # FULL 1
     percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 9, 11]]
@@ -113,13 +114,14 @@ if __name__ == "__main__":
     # common = [0, 1, 2, 3, 4]
 
     # # # CLUSTER 1
-    percs = [1.0]
+    percs = np.logspace(-1.3, -0, 12)[[3, 5, 6, 9, 11]]
+    # percs = [0.5, 1.0]
     cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]
-    n_trg = 200
-    n_src = [600]
+    n_trg = 800
+    n_src = [1000]
     reps = 3
-    genes = [100]
-    common = [2]
+    genes = [500]
+    common = [5]
 
     res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
     source_aris = np.zeros((len(n_src), len(genes), len(common), reps))
@@ -150,7 +152,7 @@ if __name__ == "__main__":
         source_aris[s, g, c, :] = src_aris
 
     res = combine_intermediate_results(fname, n_src, genes, common)
-    np.savez(fname, methods=methods, acc_funcs=acc_funcs, res=res,
-             accs_desc=accs_desc, method_desc=m_desc, source_aris=source_aris,
+    np.savez(fname, methods=methods, acc_funcs=acc_funcs, res=res, accs_desc=accs_desc,
+             method_desc=m_desc, source_aris=source_aris,
              percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, common=common)
     print('Done.')
