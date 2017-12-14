@@ -155,7 +155,7 @@ for i in range(len(num_cluster)):
     nmf.data_transf = None
     print('\nSaving data structures and results to file with prefix \'{0}_c{1}\'.'.format(arguments.fout, k))
     np.savez('{0}_c{1}.npz'.format(arguments.fout, k), src=nmf, args=arguments)
-    np.savetxt('{0}_c{1}_labels.tsv'.format(arguments.fout, k),
+    np.savetxt('{0}_c{1}.labels.tsv'.format(arguments.fout, k),
                (nmf.cluster_labels, nmf.remain_cell_inds), fmt='%u', delimiter='\t')
 
     # --------------------------------------------------
@@ -169,7 +169,7 @@ for i in range(len(num_cluster)):
         plt.xticks([])
         plt.yticks([])
 
-        plt.savefig('{0}_c{1}_tsne.png'.format(arguments.fout, k), format='png', bbox_inches=None, pad_inches=0.1)
+        plt.savefig('{0}_c{1}.tsne.png'.format(arguments.fout, k), format='png', bbox_inches=None, pad_inches=0.1)
         # plt.show()
 
 # --------------------------------------------------
@@ -230,7 +230,7 @@ for i in range(accs.shape[0]):
     plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
     plt.grid('on')
 
-plt.savefig('{0}_accs.png'.format(arguments.fout), format='png',
+plt.savefig('{0}.accs.png'.format(arguments.fout), format='png',
             bbox_inches=None, pad_inches=0.1, dpi=100)
 # plt.show()
 

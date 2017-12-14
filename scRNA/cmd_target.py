@@ -328,7 +328,7 @@ for i in range(len(num_cluster)):
             plt.xticks([])
             plt.yticks([])
 
-            plt.savefig('{0}_m{1}_c{2}_tsne.png'.format(arguments.fout, mix, k), format='png', bbox_inches=None, pad_inches=0.1)
+            plt.savefig('{0}_m{1}_c{2}.tsne.png'.format(arguments.fout, mix, k), format='png', bbox_inches=None, pad_inches=0.1)
             # plt.show()
 
 
@@ -400,7 +400,7 @@ for i in range(n):
     # if i == accs_mix.shape[0]-1:
     # plt.clim(0.,+1.)
 
-plt.savefig('{0}_{1}.png'.format(arguments.fout, 'accs'), format='png',
+plt.savefig('{0}.{1}.png'.format(arguments.fout, 'accs'), format='png',
             bbox_inches=None, pad_inches=0.1, dpi=1000)
 # plt.show()
 
