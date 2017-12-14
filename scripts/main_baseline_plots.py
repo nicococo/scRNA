@@ -68,7 +68,7 @@ def plot_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, co
 
 
 def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    ind_genes = 0
+    ind_genes = 1
     ind_src = 0
     ind_common = 0
     print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
@@ -116,9 +116,9 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
 
 
 def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    ind_genes = 2
+    ind_genes = 0
     ind_src = 0
-    ind_percs = 8
+    ind_percs = 4
     print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
     print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
     print '#Percs ', percs, ' ind/# = ', ind_percs, '/', percs[ind_percs]
@@ -253,26 +253,70 @@ def plot_unsupervised_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_
     fcnt = 1
     # res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
     for c in inds:
-        aris = np.mean(res[0, 0, :, c, :, -1, :], axis=1)
-        print np.mean(res[0, 0, :, c, :, -1, :], axis=1)
+        aris = np.mean(res[0, 0, :, c, :, 5, :], axis=1)
+        print np.mean(res[0, 0, :, c, :, 5, :], axis=1)
 
         plt.subplot(1, len(inds), fcnt)
         plt.pcolor(aris, cmap=plt.get_cmap('Greens'))
         # plt.pcolor(aris, cmap=plt.get_cmap('Greens'), vmin=0., vmax=1.)
         print accs_desc[c]
         plt.title('{0}'.format(accs_desc[c]), fontsize=16)
-        plt.xticks(np.arange(aris.shape[1])+0.5, ['SC3', 'Dist max', 'Dist min', 'Mix max', 'Mix min'], rotation=60)
+        plt.xticks(np.arange(aris.shape[1])+0.5, ['SC3', 'Dist max', 'Dist min', 'Mix max', 'Mix min', 'Comb'], rotation=60)
         plt.yticks(np.arange(len(common))+0.5, common)
         if c == 0:
             plt.ylabel('#Common cluster', fontsize=16)
         fcnt += 1
-        plt.colorbar(ticks=[-0.01, 0.0, 0.25, 0.5, 0.75, 1.0, 1.01])
+        # plt.colorbar(ticks=[-0.01, 0.0, 0.25, 0.5, 0.75, 1.0, 1.01])
+        plt.colorbar()
+    plt.show()
+
+
+def plot_unsupervised_measures_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+    ind_genes = 1
+    ind_src = 0
+    ind_common = 0
+    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
+    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
+    print '#Common ', common, ' ind/# = ', ind_common, '/', common[ind_common]
+
+    plt.figure(fig_num)
+    inds = [0, 1, 2, 3, 4]
+    accs = [0, 1, 5, 6, 7, 8]
+    fcnt = 1
+    # res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
+    for i in accs:
+        for ind_common in inds:
+            dist_max = np.mean(res[ind_src, ind_genes, ind_common, i, :, :, 1], axis=0)
+            dist_min = np.mean(res[ind_src, ind_genes, ind_common, i, :, :, 2], axis=0)
+
+            mix_max = np.mean(res[ind_src, ind_genes, ind_common, i, :, :, 3], axis=0)
+            mix_min = np.mean(res[ind_src, ind_genes, ind_common, i, :, :, 4], axis=0)
+
+            plt.subplot(len(accs), len(inds), fcnt)
+            plt.fill_between(percs, dist_max, dist_min, alpha=0.2, facecolor='blue', interpolate=True)
+            plt.fill_between(percs, mix_max, mix_min, alpha=0.2, facecolor='green', interpolate=True)
+            if ind_common == 0:
+                plt.title('Overlap: {0}'.format(ind_common), fontsize=16)
+                plt.xlabel('Target datapts', fontsize=16)
+                plt.ylabel(accs_desc[i], fontsize=16)
+            else:
+                plt.title('{0}'.format(ind_common), fontsize=16)
+            plt.xlim([0, np.max(percs)])
+            # plt.semilogx()
+            # plt.xticks([np.min(percs), np.mean(percs), np.max(percs)],
+            #            np.array([np.min(percs), np.mean(percs), np.max(percs)]*n_trg, dtype=np.int))
+            plt.ylim([0., 1.])
+            fcnt += 1
+    plt.legend(['SC3-Dist', 'SC3-Mix'], fontsize=12, loc=3)
     plt.show()
 
 
 if __name__ == "__main__":
-    foo = np.load('results/main_short_v1.npz')
-    # foo = np.load('results/main_result_v1.npz')
+    # foo = np.load('results/main_debug_v2.npz')
+    # foo = np.load('results/main_short_v1.npz')
+
+    # foo = np.load('results/main_result_v3.npz')
+    foo = np.load('results/main_result_lowmix.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
@@ -291,13 +335,14 @@ if __name__ == "__main__":
     print 'Result dimensionality: ', res.shape
 
     # plot_percs(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_overlapping_cluster(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_src_accs(6, source_aris, genes, n_src, n_trg, common)
 
     # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_unsupervised_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_unsupervised_measures_percs(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_cluster(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_cluster_acc_measures(10, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)

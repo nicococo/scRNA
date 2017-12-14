@@ -3,7 +3,8 @@ import scipy.stats as stats
 from sklearn import decomposition as decomp
 
 from abstract_clustering import AbstractClustering
-from utils import center_kernel, normalize_kernel, kta_align_binary, get_matching_gene_inds
+from utils import center_kernel, normalize_kernel, kta_align_binary, \
+                    get_matching_gene_inds, get_transferred_data_matrix, get_transferability_score
 
 
 class NmfClustering(AbstractClustering):
@@ -80,8 +81,7 @@ class DaNmfClustering(NmfClustering):
             assert(src_gene_ids[i] == self.gene_ids[i])
 
         assert(self.src.dictionary is not None)  # source data should always be pre-processed
-        W, H, H2, new_err = self.get_transferred_data_matrix(
-            self.src.dictionary[inds2, :], trg_data, max_iter=max_iter, rel_err=rel_err)
+        W, H, H2, new_err = get_transferred_data_matrix(self.src.dictionary[inds2, :], trg_data, max_iter=max_iter, rel_err=rel_err)
 
         self.cluster_labels = np.argmax(H, axis=0)
         self.print_reconstruction_error(trg_data, W, H2)
@@ -90,8 +90,7 @@ class DaNmfClustering(NmfClustering):
 
         if calc_transferability:
             print('Calculating transferability score...')
-            self.transferability_score, self.transferability_rand_scores = \
-                self.calc_transferability_score(W, H, trg_data, max_iter=max_iter)
+            self.transferability_score, self.transferability_rand_scores = get_transferability_score(W, H, trg_data, max_iter=max_iter)
             self.transferability_percs = np.percentile(self.transferability_rand_scores, [25, 50, 75, 100])
             self.reject.append(('Transfer_Percentiles', self.transferability_percs))
             self.reject.append(('Transferability', self.transferability_score))
@@ -128,8 +127,7 @@ class DaNmfClustering(NmfClustering):
                                                                  rel_err=rel_err,
                                                                  calc_transferability=calc_transferability)
         nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
-                         n_components=k, random_state=0, shuffle=True, solver='cd',
-                         tol=1e-6, verbose=0)
+                         n_components=k, random_state=0, shuffle=True, solver='cd', tol=1e-6, verbose=0)
         W = nmf.fit_transform(mixed_data)
         H = nmf.components_
         self.dictionary = W
@@ -137,76 +135,6 @@ class DaNmfClustering(NmfClustering):
         self.cluster_labels = np.argmax(nmf.components_, axis=0)
         self.mixed_data = mixed_data
         print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
-
-    def calc_transferability_score(self, W, H, trg_data, reps=10, alpha=0.0, l1=0.75, max_iter=4000, rel_err=1e-3):
-        # estimate maximum error without any transfer
-        errs = np.zeros((reps,))
-        for i in range(errs.size):
-            rand_gene_inds = np.random.permutation(W.shape[0])
-            _, _, _, errs[i] = self.get_transferred_data_matrix(
-                W[rand_gene_inds, :], trg_data, max_iter=max_iter, rel_err=rel_err)
-        # minimum transfer error
-        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
-                         n_components=W.shape[1], random_state=0, shuffle=True, solver='cd',
-                         tol=0.00001, verbose=0)
-        W_best = nmf.fit_transform(trg_data)
-        H_best = nmf.components_
-
-        err_best = np.sum(np.abs(trg_data - W_best.dot(H_best))) / np.float(trg_data.size)  # absolute
-        err_curr = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
-        err_worst = np.max(errs)
-
-        errs[errs < err_best] = err_best
-        percs = 1.0 - (errs - err_best) / (err_worst - err_best)
-        score = 1.0 - np.max([err_curr - err_best, 0]) / (err_worst - err_best)
-        return score, percs
-
-    def get_transferred_data_matrix(self, W, trg_data, normalize_H2=False, max_iter=4000, rel_err=1e-3):
-        # initialize H: data matrix
-        H = np.random.randn(W.shape[1], trg_data.shape[1])
-        a1, a2 = np.where(H < 0.)
-        H[a1, a2] *= -1.
-        a1, a2 = np.where(H < 1e-10)
-        H[a1, a2] = 1e-10
-
-        n_iter = 0
-        err = 1e10
-        while n_iter < max_iter:
-            n_iter += 1
-            if np.any(W.T.dot(W.dot(H))==0.):
-                raise Exception('DA target nmf: division by zero.')
-            H *= W.T.dot(trg_data) / W.T.dot(W.dot(H))
-            new_err = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
-            # new_err = np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)  # frobenius
-            if np.abs((err - new_err) / err) <= rel_err and err >= new_err:
-                break
-            err = new_err
-        print '  Number of iterations for reconstruction + reconstruction error    : ', n_iter, new_err
-        H2 = np.zeros((self.src.num_cluster, trg_data.shape[1]))
-
-        H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = 1
-        # H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = np.sum(H, axis=0)  # DOES NOT WORK WELL!
-
-        # normalization
-        if normalize_H2:
-            print 'Normalize H2.'
-            n_iter = 0
-            err = 1e10
-            sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
-            print n_iter, ': sparse rec error: ', sparse_rec_err
-            while n_iter < max_iter:
-                n_iter += 1
-                H2 *= W.T.dot(trg_data) / W.T.dot(W.dot(H2))
-                # foo = 0.05 * W.T.dot(trg_data - W.dot(H2))
-                # H2[np.argmax(H, axis=0), :] -= foo[np.argmax(H, axis=0), :]
-                sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
-                print n_iter, ': sparse rec error: ', sparse_rec_err
-                if np.abs((err - sparse_rec_err) / err) <= rel_err and err >= sparse_rec_err:
-                    break
-                err = sparse_rec_err
-        # print H2
-
-        return W, H, H2, new_err
 
     def calc_rejection(self, trg_data, W, H, H2):
         diffs = np.zeros(H2.shape[1])

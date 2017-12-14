@@ -82,12 +82,12 @@ def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidea
         dist2 = distances(W.dot(H), [], metric=metric)
 
     # normalize distance
-    if np.max(dist2) < 1e-10:
+    if np.max(dist2) < 1e-12:
         if mixture == 1.0:
-            raise Exception('Distances are all zero and mixture=1.0. Seems that source and target'
-                            ' data do not go well together.')
+            raise Exception('Distances are all close to zero and mixture=1.0. '
+                            'Seems that source and target data do not go well together.')
         else:
-            print 'Warning! Max distance is 0.0.'
+            print 'Warning! Max distance is close to zero.'
     else:
         print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
         dist2 *= np.max(dist1) / np.max(dist2)

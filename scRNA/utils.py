@@ -1,7 +1,10 @@
 import os
 import numpy as np
 import sklearn.metrics as metrics
+import sklearn.decomposition as decomp
+
 import sc3_clustering_impl as sc
+
 
 def load_dataset_tsv(fname, fgenes=None, flabels=None):
     # check data filename
@@ -79,20 +82,20 @@ def center_kernel(K):
 
 
 def kta_align_general(K1, K2):
-    # Computes the (empirical) alignment of two kernels K1 and K2
-
-    # Definition 1: (Empirical) Alignment
-    #   a = <K1, K2>_Frob
-    #   b = sqrt( <K1, K1> <K2, K2>)
-    #   kta = a / b
-    # with <A, B>_Frob = sum_ij A_ij B_ij = tr(AB')
+    """
+    Computes the (empirical) alignment of two kernels K1 and K2
+    Definition 1: (Empirical) Alignment
+      a = <K1, K2>_Frob
+      b = sqrt( <K1, K1> <K2, K2>)
+      kta = a / b
+    with <A, B>_Frob = sum_ij A_ij B_ij = tr(AB')
+    """
     return K1.dot(K2.T).trace() / np.sqrt(K1.dot(K1.T).trace() * K2.dot(K2.T).trace())
 
 
 def kta_align_binary(K, y):
     # Computes the (empirical) alignment of kernel K1 and
     # a corresponding binary label  vector y \in \{+1, -1\}^m
-
     m = np.int(y.size)
     YY = y.reshape((m, 1)).dot(y.reshape((1, m)))
     return K.dot(YY).trace() / (m * np.sqrt(K.dot(K.T).trace()))
@@ -147,6 +150,74 @@ def unsupervised_acc_kta(X, labels, kernel='linear', param=1.0, center=True, nor
     return kta_align_general(Kx, Ky)
 
 
+def get_transferability_score(W, H, trg_data, reps=10, alpha=0.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+    # estimate maximum error without any transfer
+    errs = np.zeros((reps,))
+    for i in range(errs.size):
+        rand_gene_inds = np.random.permutation(W.shape[0])
+        _, _, _, errs[i] = get_transferred_data_matrix(W[rand_gene_inds, :], trg_data, max_iter=max_iter, rel_err=rel_err)
+    # minimum transfer error
+    nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
+                     n_components=W.shape[1], random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
+    W_best = nmf.fit_transform(trg_data)
+    H_best = nmf.components_
+
+    err_best = np.sum(np.abs(trg_data - W_best.dot(H_best))) / np.float(trg_data.size)  # absolute
+    err_curr = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
+    err_worst = np.max(errs)
+
+    errs[errs < err_best] = err_best
+    percs = 1.0 - (errs - err_best) / (err_worst - err_best)
+    score = 1.0 - np.max([err_curr - err_best, 0]) / (err_worst - err_best)
+    return score, percs
+
+
+def get_transferred_data_matrix(W, trg_data, normalize_H2=False, max_iter=4000, rel_err=1e-3):
+    # initialize H: data matrix
+    H = np.random.randn(W.shape[1], trg_data.shape[1])
+    a1, a2 = np.where(H < 0.)
+    H[a1, a2] *= -1.
+    a1, a2 = np.where(H < 1e-10)
+    H[a1, a2] = 1e-10
+
+    n_iter = 0
+    err = 1e10
+    while n_iter < max_iter:
+        n_iter += 1
+        if np.any(W.T.dot(W.dot(H))==0.):
+            raise Exception('DA target: division by zero.')
+        H *= W.T.dot(trg_data) / W.T.dot(W.dot(H))
+        new_err = np.sum(np.abs(trg_data - W.dot(H))) / np.float(trg_data.size)  # absolute
+        # new_err = np.sqrt(np.sum((Xtrg - W.dot(H))*(Xtrg - W.dot(H)))) / np.float(Xtrg.size)  # frobenius
+        if np.abs((err - new_err) / err) <= rel_err and err >= new_err:
+            break
+        err = new_err
+    print '  Number of iterations for reconstruction + reconstruction error    : ', n_iter, new_err
+    H2 = np.zeros((W.shape[1], trg_data.shape[1]))
+
+    H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = 1
+    # H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = np.sum(H, axis=0)  # DOES NOT WORK WELL!
+
+    # normalization
+    if normalize_H2:
+        print 'Normalize H2.'
+        n_iter = 0
+        err = 1e10
+        sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
+        print n_iter, ': sparse rec error: ', sparse_rec_err
+        while n_iter < max_iter:
+            n_iter += 1
+            H2 *= W.T.dot(trg_data) / W.T.dot(W.dot(H2))
+            # foo = 0.05 * W.T.dot(trg_data - W.dot(H2))
+            # H2[np.argmax(H, axis=0), :] -= foo[np.argmax(H, axis=0), :]
+            sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
+            print n_iter, ': sparse rec error: ', sparse_rec_err
+            if np.abs((err - sparse_rec_err) / err) <= rel_err and err >= sparse_rec_err:
+                break
+            err = sparse_rec_err
+    return W, H, H2, new_err
+
+
 def get_matching_gene_inds(src_gene_ids, trg_gene_ids):
     if not np.unique(src_gene_ids).size == src_gene_ids.size:
         # raise Exception('(MTL) Gene ids are supposed to be unique.')
@@ -192,5 +263,4 @@ def get_matching_gene_inds(src_gene_ids, trg_gene_ids):
             inds2[i] = inds[0]
         else:
             inds2[i] = inds
-
     return inds1, inds2

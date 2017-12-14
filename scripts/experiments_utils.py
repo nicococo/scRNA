@@ -112,8 +112,7 @@ def acc_classification(trg_nmf, X_trg, trg_labels, lbls_pred):
 
 def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False):
     if use_strat:
-        stratify = lambda s, t, i: stratify(s, [t[0]], i) + stratify(s, t[1:], i + 1) if len(t) > 1 else [i] if t[
-                                                                                                                    0] in s else []
+        stratify = lambda s, t, i: stratify(s, [t[0]], i) + stratify(s, t[1:], i + 1) if len(t) > 1 else [i] if t[0] in s else []
         strat_lbl_inds = stratify(np.unique(trg_nmf.src.cluster_labels), trg_labels, 0)
         ari = metrics.adjusted_rand_score(trg_labels[strat_lbl_inds], lbls_pred[strat_lbl_inds])
         perc = np.int(np.float(len(strat_lbl_inds)) / np.float(trg_labels.size) * 100.0)

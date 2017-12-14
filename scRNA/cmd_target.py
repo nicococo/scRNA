@@ -134,7 +134,7 @@ if arguments.transform:
 num_cluster = map(np.int, arguments.cluster_range.split(","))
 mixtures = map(np.float, arguments.mixtures.split(","))
 
-accs_names = ['KTA (linear)', 'Silhouette (euc)', 'Silhouette (pearson)', 'Silhouette (spearman)', 'MixARI', 'ARI']
+accs_names = ['KTA', 'KTA (WH2)', 'KTA (WH)', 'Sil (euc)', 'Sil (pearson)', 'Sil (spearman)', 'MixARI', 'ARI']
 
 accs_dist = np.zeros((len(accs_names), len(mixtures), len(num_cluster)))
 accs_mix = np.zeros((len(accs_names), len(mixtures), len(num_cluster)))
@@ -174,7 +174,8 @@ for i in range(len(num_cluster)):
             calc_transf = True
         if not arguments.calc_transf:
             calc_transf = False
-        mix_data, _, mix_trg_data = da_nmf.get_mixed_data(mix=mix, reject_ratio=0., calc_transferability=calc_transf, max_iter=2000)
+        mix_data, mix_new_trg_data, mix_trg_data = \
+            da_nmf.get_mixed_data(mix=mix, reject_ratio=0., calc_transferability=calc_transf, max_iter=2000)
         # mix_gene_ids = da_nmf.common_ids
         mix_gene_ids = da_nmf.gene_ids
         if calc_transf:
@@ -240,14 +241,18 @@ for i in range(len(num_cluster)):
         # --------------------------------------------------
         # 3.3. EVALUATE CLUSTER ASSIGNMENT
         # --------------------------------------------------
+        W, H, H2 = da_nmf.intermediate_model
+
         print('\nSC3 dist evaluation:')
         accs_dist[0, j, i] = unsupervised_acc_kta(sc3_dist.pp_data, sc3_dist.cluster_labels, kernel='linear')
-        accs_dist[1, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='euclidean')
-        accs_dist[2, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='pearson')
-        accs_dist[3, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='spearman')
-        # accs_dist[4, j, i] is not used
+        accs_dist[1, j, i] = unsupervised_acc_kta(W.dot(H2), sc3_dist.cluster_labels, kernel='linear')
+        accs_dist[2, j, i] = unsupervised_acc_kta(W.dot(H), sc3_dist.cluster_labels, kernel='linear')
+        accs_dist[3, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='euclidean')
+        accs_dist[4, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='pearson')
+        accs_dist[5, j, i] = unsupervised_acc_silhouette(sc3_dist.pp_data, sc3_dist.cluster_labels, metric='spearman')
+        # accs_dist[6, j, i] is not used
         if labels is not None:
-            accs_dist[5, j, i] = metrics.adjusted_rand_score(labels[sc3_dist.remain_cell_inds], sc3_dist.cluster_labels)
+            accs_dist[7, j, i] = metrics.adjusted_rand_score(labels[sc3_dist.remain_cell_inds], sc3_dist.cluster_labels)
         print accs_dist[:, j, i]
         print('\nSC3 mix evaluation:')
 
@@ -260,19 +265,20 @@ for i in range(len(num_cluster)):
             if inds.size >= 2:
                 include_inds.extend(inds)
 
-        # W, H, H2 = da_nmf.intermediate_model
         accs_mix[0, j, i] = unsupervised_acc_kta(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), kernel='linear')
-        accs_mix[1, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='euclidean')
-        accs_mix[2, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='pearson')
-        accs_mix[3, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='spearman')
+        accs_mix[1, j, i] = unsupervised_acc_kta(W.dot(H2), sc3_mix.cluster_labels.copy(), kernel='linear')
+        accs_mix[2, j, i] = unsupervised_acc_kta(W.dot(H), sc3_mix.cluster_labels.copy(), kernel='linear')
+        accs_mix[3, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='euclidean')
+        accs_mix[4, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='pearson')
+        accs_mix[5, j, i] = unsupervised_acc_silhouette(mix_trg_data.copy(), sc3_mix.cluster_labels.copy(), metric='spearman')
 
         if len(include_inds) > 5:
             cls = OneVsRestClassifier(LinearRegression(fit_intercept=True, normalize=False, copy_X=True, n_jobs=1)).fit(sc3_mix.pp_data[:, include_inds].T.copy(), sc3_mix.cluster_labels[include_inds].copy())
             ret = cls.predict(mix_trg_data[:, include_inds].T.copy())
-            accs_mix[4, j, i] = metrics.adjusted_rand_score(ret, sc3_mix.cluster_labels[include_inds].copy())
+            accs_mix[6, j, i] = metrics.adjusted_rand_score(ret, sc3_mix.cluster_labels[include_inds].copy())
 
         if labels is not None:
-            accs_mix[5, j, i] = metrics.adjusted_rand_score(labels[da_nmf.remain_cell_inds], sc3_mix.cluster_labels)
+            accs_mix[7, j, i] = metrics.adjusted_rand_score(labels[da_nmf.remain_cell_inds], sc3_mix.cluster_labels)
         print accs_mix[:, j, i]
 
         # --------------------------------------------------
@@ -292,33 +298,37 @@ for i in range(len(num_cluster)):
         # 3.5. T-SNE PLOT
         # --------------------------------------------------
         if arguments.tsne:
-
             print 'Data:'
             print sc3_dist.data[sc3_dist.remain_gene_inds[0], :10]
             print sc3_mix.data[sc3_mix.remain_gene_inds[0], :10]
 
-            match = metrics.adjusted_rand_score(sc3_dist.cluster_labels, sc3_mix.cluster_labels)
-
             plt.clf()
-            plt.subplot(1, 2, 1)
-            plt.title('SC3-Dist(l), SC3-mix(r) cluster={0}, mix={1}, (match={2:0.2f})'.format(k, mix, match), fontsize=10)
+            plt.subplot(1, 3, 1)
+            # plt.title('SC3-Dist(l), SC3-mix(r) cluster={0}, mix={1}, (match={2:0.2f})'.format(k, mix, match), fontsize=10)
+            plt.title('SC3-Dist')
             model = TSNE(n_components=2, random_state=0, init='pca', method='exact', metric='euclidean', perplexity=30)
             ret = model.fit_transform(sc3_dist.pp_data.T)
             plt.scatter(ret[:, 0], ret[:, 1], 20, sc3_dist.cluster_labels)
             plt.xticks([])
             plt.yticks([])
 
-
-            plt.subplot(1, 2, 2)
-            # plt.title('SC3-Mix match={0}'.format(match), fontsize=10)
+            plt.subplot(1, 3, 2)
+            plt.title('SC3-Mix (mixed target)', fontsize=10)
             model = TSNE(n_components=2, random_state=0, init='pca', method='exact', metric='euclidean', perplexity=30)
             ret = model.fit_transform(sc3_mix.pp_data.T)
             plt.scatter(ret[:, 0], ret[:, 1], 20, sc3_mix.cluster_labels)
             plt.xticks([])
             plt.yticks([])
 
+            plt.subplot(1, 3, 3)
+            plt.title('SC3-Mix (target)', fontsize=10)
+            model = TSNE(n_components=2, random_state=0, init='pca', method='exact', metric='euclidean', perplexity=30)
+            ret = model.fit_transform(mix_trg_data.T)
+            plt.scatter(ret[:, 0], ret[:, 1], 20, sc3_mix.cluster_labels)
+            plt.xticks([])
+            plt.yticks([])
 
-            plt.savefig('{0}_m{1}_c{2}.tsne.png'.format(arguments.fout, mix, k), format='png', bbox_inches=None, pad_inches=0.1)
+            plt.savefig('{0}_m{1}_c{2}_tsne.png'.format(arguments.fout, mix, k), format='png', bbox_inches=None, pad_inches=0.1)
             # plt.show()
 
 
@@ -357,15 +367,17 @@ for i in range(accs_mix.shape[0]):
 
 
 plt.figure(0)
-fig, axes = plt.subplots(nrows=2, ncols=accs_mix.shape[0])
+n = accs_mix.shape[0]
+fig, axes = plt.subplots(nrows=4, ncols=n / 2)
+fig.suptitle("Mixture (y-axis) vs Clusters (x-axis)", fontsize=6)
 fig.tight_layout(h_pad=2.08, pad=2.2) # Or equivalently,  "plt.tight_layout()"
-for i in range(accs_mix.shape[0]):
-    plt.subplot(2, accs_mix.shape[0], i+1)
-    plt.title(accs_names[i], fontsize=10)
+for i in range(n):
+    plt.subplot(4, n/2, i+1)
+    plt.title(accs_names[i], fontsize=8)
     plt.pcolor(accs_dist[i, :, :], cmap=plt.get_cmap('Reds'))
-    plt.xlabel('Cluster', fontsize=12)
+    # plt.xlabel('Cluster', fontsize=12)
     if i == 0:
-        plt.ylabel('SC3-dist results\nMixture', fontsize=12)
+        plt.ylabel('SC3-dist results', fontsize=10)
     plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
     plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures, fontsize=8)
     cbar = plt.colorbar()
@@ -374,12 +386,12 @@ for i in range(accs_mix.shape[0]):
     # if i == accs_mix.shape[0]-1:
     # plt.clim(0.,+1.)
 
-    plt.subplot(2, accs_mix.shape[0], i+1+accs_mix.shape[0])
-    plt.title(accs_names[i], fontsize=10)
+    plt.subplot(4, n/2, i+1+n)
+    plt.title(accs_names[i], fontsize=8)
     plt.pcolor(accs_mix[i, :, :], cmap=plt.get_cmap('Blues'))
-    plt.xlabel('Cluster', fontsize=12)
+    # plt.xlabel('Cluster', fontsize=12)
     if i == 0:
-        plt.ylabel('SC3-mix results\nMixture', fontsize=12)
+        plt.ylabel('SC3-mix results', fontsize=10)
     plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
     plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures, fontsize=8)
     cbar = plt.colorbar()
@@ -388,7 +400,8 @@ for i in range(accs_mix.shape[0]):
     # if i == accs_mix.shape[0]-1:
     # plt.clim(0.,+1.)
 
-plt.savefig('{0}.{1}.png'.format(arguments.fout, 'accs'), format='png', bbox_inches=None, pad_inches=0.1)
+plt.savefig('{0}_{1}.png'.format(arguments.fout, 'accs'), format='png',
+            bbox_inches=None, pad_inches=0.1, dpi=1000)
 # plt.show()
 
 
