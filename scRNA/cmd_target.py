@@ -93,22 +93,11 @@ print('Command line arguments:')
 print("\nLoading target dataset (data={0} and gene_ids={1}).".format(arguments.fname, arguments.fgene_ids))
 data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname, arguments.fgene_ids, flabels=arguments.flabels)
 
-# inds = np.random.permutation(data.shape[1])[:80]
-# data = data[:, inds]
-# if labels is not None:
-#     labels = labels[inds]
-# inds = np.random.permutation(data.shape[1])
-# data = data[:, inds]
-
-# inds = np.random.permutation(data.shape[1])[:100]
-# data = data[:, inds]
-# if labels is not None:
-#     labels = labels[inds]
-
-print np.histogram(labels, bins=np.unique(labels).size)
-
-print('Target data {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
-print np.unique(labels)
+# labels can be empty
+if labels is not None:
+    print np.histogram(labels, bins=np.unique(labels).size)
+    print('Target data {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
+    print np.unique(labels)
 
 print('Number of genes/transcripts in data and gene-ids must coincide.')
 assert(data.shape[0] == gene_ids.shape[0])
@@ -141,7 +130,6 @@ accs_mix = np.zeros((len(accs_names), len(mixtures), len(num_cluster)))
 
 transferability = 0.0
 transferability_percs = None
-
 for i in range(len(num_cluster)):
     for j in range(len(mixtures)):
         k = num_cluster[i]
