@@ -98,6 +98,7 @@ if labels is not None:
     print np.histogram(labels, bins=np.unique(labels).size)
     print('Target data {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
     print np.unique(labels)
+    np.savetxt('{0}.labels2ids.tsv'.format(arguments.fout), (np.arange(labels_2_ids.size), labels_2_ids), fmt='%s', delimiter='\t')
 
 print('Number of genes/transcripts in data and gene-ids must coincide.')
 assert(data.shape[0] == gene_ids.shape[0])
