@@ -2,6 +2,8 @@ import os
 import numpy as np
 import sklearn.metrics as metrics
 import sklearn.decomposition as decomp
+import pdb
+import matplotlib.pyplot as plt
 
 import sc3_clustering_impl as sc
 
@@ -150,13 +152,16 @@ def unsupervised_acc_kta(X, labels, kernel='linear', param=1.0, center=True, nor
     return kta_align_general(Kx, Ky)
 
 
-def get_transferability_score(W, H, trg_data, reps=10, alpha=0.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+def get_transferability_score(W, H, trg_data, reps=100, alpha=0.0, l1=0.75, max_iter=100, rel_err=1e-3):
     # estimate maximum error without any transfer
     errs = np.zeros((reps,))
     for i in range(errs.size):
         rand_gene_inds = np.random.permutation(W.shape[0])
         _, _, _, errs[i] = get_transferred_data_matrix(W[rand_gene_inds, :], trg_data, max_iter=max_iter, rel_err=rel_err)
-    # minimum transfer error
+
+    print 'Calculating non-permuted error score'
+    _, _, _, err_nonpermuted = get_transferred_data_matrix(W, trg_data, max_iter=max_iter, rel_err=rel_err)  # minimum transfer error
+
     nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
                      n_components=W.shape[1], random_state=0, shuffle=True, solver='cd', tol=0.00001, verbose=0)
     W_best = nmf.fit_transform(trg_data)
@@ -169,10 +174,17 @@ def get_transferability_score(W, H, trg_data, reps=10, alpha=0.0, l1=0.75, max_i
     errs[errs < err_best] = err_best
     percs = 1.0 - (errs - err_best) / (err_worst - err_best)
     score = 1.0 - np.max([err_curr - err_best, 0]) / (err_worst - err_best)
-    return score, percs
+
+    p_value = sum(errs < err_nonpermuted)/reps
+    plt.hist(errs)
+    plt.title("Histogram of random error scores")
+    plt.axvline(err_best, color='k', linestyle='dashed', linewidth=1)
+    plt.show()
+
+    return score, percs, p_value
 
 
-def get_transferred_data_matrix(W, trg_data, normalize_H2=False, max_iter=4000, rel_err=1e-3):
+def get_transferred_data_matrix(W, trg_data, normalize_H2=False, max_iter=100, rel_err=1e-3):
     # initialize H: data matrix
     H = np.random.randn(W.shape[1], trg_data.shape[1])
     a1, a2 = np.where(H < 0.)

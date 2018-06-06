@@ -308,6 +308,9 @@ def split_source_target(toy_data, true_toy_labels,
             int(len(cluster_names) * proportion_source):len(cluster_names)
         ]
 
+
+        pdb.set_trace()
+
         source_indices_mat = []
         for i in range(len(source_clusters)):
             source_indices_mat.append(true_toy_labels == source_clusters[i])

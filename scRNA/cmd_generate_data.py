@@ -10,31 +10,31 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--fout_target_data",
     help = "Output filename target data",
-    default = 'fout_target_data.tsv',
+    default = 'fout_target_data_excl.tsv',
     type = str
 )
 parser.add_argument(
     "--fout_source_data",
     help = "Output filename source data",
-    default = 'fout_source_data.tsv',
+    default = 'fout_source_data_excl.tsv',
     type = str
 )
 parser.add_argument(
     "--fout_geneids",
     help = "Output filename geneids",
-    default = 'fout_geneids.tsv',
+    default = 'fout_geneids_excl.tsv',
     type = str
 )
 parser.add_argument(
     "--fout_target_labels",
     help = "Output filename target labels",
-    default = 'fout_target_labels.tsv',
+    default = 'fout_target_labels_excl.tsv',
     type = str
 )
 parser.add_argument(
     "--fout_source_labels",
     help = "Output filename source labels",
-    default = 'fout_source_labels.tsv',
+    default = 'fout_source_labels_excl.tsv',
     type = str
 )
 
@@ -47,7 +47,7 @@ parser.add_argument(
 parser.add_argument(
     "--num_cells",
     help = "Number of cells (default 2000)",
-    default = 2000,
+    default = 1000,
     type = int
 )
 
@@ -154,7 +154,7 @@ parser.add_argument(
 parser.add_argument(
     "--splitting_mode",
     help = "Splitting mode:\n\t- 1 = split randomly\n\t- 2 = split randomly, but stratified\n\t- 3 = Split randomly but antistratified\n\t- 4 = Have some overlapping and some exclusive clusters\n\t- 5 = Have only exclusive clusters\n\t- 6 = Have some defined clusters as the source\n\t(default 2)",
-    default = 2,
+    default = 5,
     type = int
 )
 parser.add_argument(

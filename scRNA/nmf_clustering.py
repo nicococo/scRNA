@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.stats as stats
 from sklearn import decomposition as decomp
+import pdb
+
 
 from abstract_clustering import AbstractClustering
 from utils import center_kernel, normalize_kernel, kta_align_binary, \
@@ -16,12 +18,12 @@ class NmfClustering(AbstractClustering):
         super(NmfClustering, self).__init__(data, gene_ids=gene_ids)
         self.num_cluster = num_cluster
 
-    def apply(self, k=-1, alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3):
+    def apply(self, k=-1, alpha=1.0, l1=0.75, max_iter=100, rel_err=1e-3):
         if k == -1:
             k = self.num_cluster
         X = self.pre_processing()
 
-        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=1000,
+        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=100,
                          n_components=k, random_state=0, shuffle=True, solver='cd',
                          tol=0.00001, verbose=0)
 
@@ -51,6 +53,7 @@ class DaNmfClustering(NmfClustering):
     transferability_score = 0.0
     transferability_percs = None
     transferability_rand_scores = None
+    transferability_pvalue = 1.0
     src = None
     intermediate_model = None
     mixed_data = None
@@ -59,7 +62,7 @@ class DaNmfClustering(NmfClustering):
         super(DaNmfClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster)
         self.src = src
 
-    def get_mixed_data(self, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=True, max_iter=4000, rel_err=1e-3):
+    def get_mixed_data(self, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=True, max_iter=100, rel_err=1e-3):
         trg_data = self.pre_processing()
         trg_gene_ids = self.gene_ids[self.remain_gene_inds]
         print self.src.gene_ids.shape
@@ -82,7 +85,6 @@ class DaNmfClustering(NmfClustering):
 
         assert(self.src.dictionary is not None)  # source data should always be pre-processed
         W, H, H2, new_err = get_transferred_data_matrix(self.src.dictionary[inds2, :], trg_data, max_iter=max_iter, rel_err=rel_err)
-
         self.cluster_labels = np.argmax(H, axis=0)
         self.print_reconstruction_error(trg_data, W, H2)
         self.intermediate_model = (W, H, H2)
@@ -90,10 +92,12 @@ class DaNmfClustering(NmfClustering):
 
         if calc_transferability:
             print('Calculating transferability score...')
-            self.transferability_score, self.transferability_rand_scores = get_transferability_score(W, H, trg_data, max_iter=max_iter)
+            self.transferability_score, self.transferability_rand_scores, self.transferability_pvalue = get_transferability_score(W, H, trg_data, max_iter=max_iter)
             self.transferability_percs = np.percentile(self.transferability_rand_scores, [25, 50, 75, 100])
             self.reject.append(('Transfer_Percentiles', self.transferability_percs))
             self.reject.append(('Transferability', self.transferability_score))
+            self.reject.append(('Transferability p-value', self.transferability_pvalue))
+
 
         if use_H2:
             new_trg_data = W.dot(H2)
@@ -116,12 +120,12 @@ class DaNmfClustering(NmfClustering):
             print('Error! Negative values in target data!')
         if np.any(mixed_data < 0.0):
             print('Error! Negative values in reconstructed data!')
-        return mixed_data, new_trg_data, trg_data
+        return mixed_data, new_trg_data, trg_data, self.transferability_pvalue
 
-    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=4000, rel_err=1e-3, calc_transferability=True):
+    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=100, rel_err=1e-3, calc_transferability=True):
         if k == -1:
             k = self.num_cluster
-        mixed_data, new_trg_data, trg_data = self.get_mixed_data(mix=mix,
+        mixed_data, new_trg_data, trg_data, transferability_pvalue = self.get_mixed_data(mix=mix,
                                                                  reject_ratio=reject_ratio,
                                                                  max_iter=max_iter,
                                                                  rel_err=rel_err,
@@ -134,6 +138,7 @@ class DaNmfClustering(NmfClustering):
         self.data_matrix = H
         self.cluster_labels = np.argmax(nmf.components_, axis=0)
         self.mixed_data = mixed_data
+        self.transferability_pvalue = transferability_pvalue
         print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
 
     def calc_rejection(self, trg_data, W, H, H2):
