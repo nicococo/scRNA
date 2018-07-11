@@ -52,7 +52,7 @@ def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
     data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
     res_l = np.sum(data >= non_zero_threshold , axis=1)
-    res_h = np.sum(data > 0 , axis=1)
+    res_h = np.sum(data > 0, axis=1)
     lower_bound = np.float(num_cells)*(1.-perc_consensus_genes)
     upper_bound = np.float(num_cells)*perc_consensus_genes
     return np.where((res_l >= lower_bound) & (res_h <= upper_bound))[0]
