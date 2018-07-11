@@ -110,13 +110,13 @@ parser.add_argument(
 parser.add_argument(
     "--target_ncells",
     help = "How much of data will be target data (default 200)",
-    default = 200,
+    default = 100,
     type = int
 )
 parser.add_argument(
     "--source_ncells",
     help = "How much of data will be source data (default 800)",
-    default = 800,
+    default = 200,
     type = int
 )
 parser.add_argument(

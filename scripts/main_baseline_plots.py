@@ -80,6 +80,9 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
     inds = [0, 1, 2, 3, 4]
     # inds = [0]
     fcnt = 1
+
+    data = []
+
     # res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
     for c in inds:
         cnt = 1
@@ -91,6 +94,15 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
             ari_1_max = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt], axis=0)
             ari_1_min = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, cnt+1], axis=0)
             cnt += 2
+
+            if i == 0:
+                data.append((c, 0, np.array2string(ari_1_baseline, 200)))
+                data.append((c, 1, np.array2string(ari_2_baseline, 200)))
+                data.append((c, 2, np.array2string(ari_1_min, 200)))
+                data.append((c, 3, np.array2string(ari_1_max, 200)))
+            else:
+                data.append((c, 4, np.array2string(ari_1_min, 200)))
+                data.append((c, 5, np.array2string(ari_1_max, 200)))
 
             plt.subplot(1, len(inds), fcnt)
             if i == 0:
@@ -112,6 +124,30 @@ def plot_percs(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, comm
     plt.legend(['SC3', 'SC3-Comb',
                 'SC3-Dist',
                 'SC3-Mix'], fontsize=12, loc=3)
+
+    # Save the description of the plotted experiment
+    desc = []
+    desc.append(('Number of repetitions:', res.shape[4]))
+    desc.append(('Number of source data sample:', n_src[ind_src]))
+    desc.append(('Number of genes/transcripts:', genes[ind_genes]))
+    desc.append(('ARI x #Target-datapoints plots for the following methods:', ''))
+    desc.append((' 0. ', 'SC3 (trained on target data only)'))
+    desc.append((' 1. ', 'SC3-Comb (trained on source and target data combined)'))
+    desc.append((' 2. ', 'Min SC3-Dist (transfer happens within SC3)'))
+    desc.append((' 3. ', 'Max SC3-Dist (transfer happens within SC3)'))
+    desc.append((' 4. ', 'Min SC3-Mix (mixed data is provided to SC3)'))
+    desc.append((' 5. ', 'Max SC3-Mix (mixed data is provided to SC3)'))
+    desc.append(('Number of overlapping cluster:', np.array2string(common[inds], 200)))
+    desc.append(('Fractions of target datapoints used:', np.array2string(percs, 200)))
+    desc.append(('Format in the data file (col entries):', ''))
+    desc.append((' 0. ', 'Number of overlapping cluster index(!) )'))
+    desc.append((' 1. ', 'Method (0-5, see above)'))
+    desc.append((' 2. ', 'Data (for each fraction)'))
+
+    np.savetxt('res_ari_vs_num_trgt_dtpts.desc.tsv', desc, fmt='%s', delimiter='\t')
+    np.savetxt('res_ari_vs_num_trgt_dtpts.data.tsv', data, fmt='%s', delimiter='\t', newline='\n')
+
+    plt.savefig('res_ari_vs_num_trgt_dtpts.png', format='png', bbox_inches=None, pad_inches=0.1, dpi=100)
     plt.show()
 
 
@@ -122,6 +158,9 @@ def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
     print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
     print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
     print '#Percs ', percs, ' ind/# = ', ind_percs, '/', percs[ind_percs]
+
+    data1 = []
+    data2 = []
 
     color = ['blue', 'green', 'red']
     plt.figure(fig_num)
@@ -138,6 +177,22 @@ def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
             ari_1_baseline = np.mean(res[ind_src, ind_genes,  :, 1, :, ind_percs[p], 0], axis=1)
             ari_1_max      = np.mean(res[ind_src, ind_genes,  :, 1, :, ind_percs[p], ind_methods[i]], axis=1)
             ari_1_min      = np.mean(res[ind_src, ind_genes,  :, 1, :, ind_percs[p], ind_methods[i]+1], axis=1)
+
+            if i == 0:
+                data1.append((p, 0, np.array2string(ari_1_baseline, 200)))
+                data1.append((p, 1, np.array2string(ari_1_min, 200)))
+                data1.append((p, 2, np.array2string(ari_1_max, 200)))
+
+                data2.append((p, 0, np.array2string(ari_0_baseline, 200)))
+                data2.append((p, 1, np.array2string(ari_0_min, 200)))
+                data2.append((p, 2, np.array2string(ari_0_max, 200)))
+            else:
+                data1.append((p, 3, np.array2string(ari_1_min, 200)))
+                data1.append((p, 4, np.array2string(ari_1_max, 200)))
+
+                data2.append((p, 3, np.array2string(ari_0_min, 200)))
+                data2.append((p, 4, np.array2string(ari_0_max, 200)))
+
 
             plt.subplot(2, len(ind_percs), p+1)
             if i == 0:
@@ -170,7 +225,35 @@ def plot_overlapping_cluster(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
                 'SC3-Dist',
                 'SC3-Mix',
                 'SC3-Rejectpfizer'], fontsize=12, loc=3)
+
+    plt.savefig('res_ari_vs_overlap.png', format='png', bbox_inches=None, pad_inches=0.1, dpi=100)
     plt.show()
+
+    # Save the description of the plotted experiment
+    desc = []
+    desc.append(('Number of repetitions:', res.shape[4]))
+    desc.append(('Number of source data sample:', n_src[ind_src]))
+    desc.append(('Number of genes/transcripts:', genes[ind_genes]))
+    desc.append(('ARI vs. #overlapping cluster plots for the following methods:', ''))
+    desc.append((' 0. ', 'SC3 (trained on target data only)'))
+    desc.append((' 1. ', 'Min SC3-Dist (transfer happens within SC3)'))
+    desc.append((' 2. ', 'Max SC3-Dist (transfer happens within SC3)'))
+    desc.append((' 3. ', 'Min SC3-Mix (mixed data is provided to SC3)'))
+    desc.append((' 4. ', 'Max SC3-Mix (mixed data is provided to SC3)'))
+    desc.append(('Number of overlapping cluster:', np.array2string(common, 200)))
+    desc.append(('Fractions of target datapoints used:', np.array2string(percs, 200)))
+    desc.append(('Format in the data files (col entries):', ''))
+    desc.append((' 0. ', 'Number of target data used (index!)'))
+    desc.append((' 1. ', 'Method (0-4, see above)'))
+    desc.append((' 2. ', 'Data (for each fraction)'))
+    desc.append(('Data file 1 contains overall ari scores.', ''))
+    desc.append(('Data file 2 contains stratified ari scores (only for data in overlapping cluster).', ''))
+
+    np.savetxt('res_ari_vs_overlap.desc.tsv', desc, fmt='%s', delimiter='\t')
+    np.savetxt('res_ari_vs_overlap.data1.tsv', data1, fmt='%s', delimiter='\t', newline='\n')
+    np.savetxt('res_ari_vs_overlap.data2.tsv', data2, fmt='%s', delimiter='\t', newline='\n')
+
+
 
 
 def plot_src_accs(fig_num, res, genes, n_src, n_trg, common):
@@ -315,8 +398,8 @@ if __name__ == "__main__":
     # foo = np.load('results/main_debug_v2.npz')
     # foo = np.load('results/main_short_v1.npz')
 
-    # foo = np.load('results/main_result_v3.npz')
-    foo = np.load('results/main_result_lowmix.npz')
+    foo = np.load('results/main_result_v3.npz')
+    # foo = np.load('results/main_result_lowmix.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
@@ -342,9 +425,9 @@ if __name__ == "__main__":
     # plot_transferability(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # plot_unsupervised_measures(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    plot_unsupervised_measures_percs(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_unsupervised_measures_percs(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
-    # plot_cluster(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_cluster(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # plot_cluster_acc_measures(10, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
 
