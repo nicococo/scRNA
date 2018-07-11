@@ -92,12 +92,12 @@ class DaNmfClustering(NmfClustering):
 
         if calc_transferability:
             print('Calculating transferability score...')
-            self.transferability_score, self.transferability_rand_scores, self.transferability_pvalue = get_transferability_score(W, H, trg_data, max_iter=max_iter)
+            self.transferability_score, self.transferability_rand_scores, self.transferability_pvalue = \
+                get_transferability_score(W, H, trg_data, max_iter=max_iter)
             self.transferability_percs = np.percentile(self.transferability_rand_scores, [25, 50, 75, 100])
             self.reject.append(('Transfer_Percentiles', self.transferability_percs))
             self.reject.append(('Transferability', self.transferability_score))
             self.reject.append(('Transferability p-value', self.transferability_pvalue))
-
 
         if use_H2:
             new_trg_data = W.dot(H2)
@@ -120,12 +120,12 @@ class DaNmfClustering(NmfClustering):
             print('Error! Negative values in target data!')
         if np.any(mixed_data < 0.0):
             print('Error! Negative values in reconstructed data!')
-        return mixed_data, new_trg_data, trg_data, self.transferability_pvalue
+        return mixed_data, new_trg_data, trg_data
 
     def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=100, rel_err=1e-3, calc_transferability=True):
         if k == -1:
             k = self.num_cluster
-        mixed_data, new_trg_data, trg_data, transferability_pvalue = self.get_mixed_data(mix=mix,
+        mixed_data, new_trg_data, trg_data = self.get_mixed_data(mix=mix,
                                                                  reject_ratio=reject_ratio,
                                                                  max_iter=max_iter,
                                                                  rel_err=rel_err,
@@ -138,7 +138,6 @@ class DaNmfClustering(NmfClustering):
         self.data_matrix = H
         self.cluster_labels = np.argmax(nmf.components_, axis=0)
         self.mixed_data = mixed_data
-        self.transferability_pvalue = transferability_pvalue
         print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
 
     def calc_rejection(self, trg_data, W, H, H2):
