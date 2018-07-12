@@ -176,10 +176,10 @@ def get_transferability_score(W, H, trg_data, reps=100, alpha=0.0, l1=0.75, max_
     score = 1.0 - np.max([err_curr - err_best, 0]) / (err_worst - err_best)
 
     p_value = sum(errs < err_nonpermuted)/reps
-    plt.hist(errs)
-    plt.title("Histogram of random error scores")
-    plt.axvline(err_best, color='k', linestyle='dashed', linewidth=1)
-    plt.show()
+    # plt.hist(errs)
+    # plt.title("Histogram of random error scores")
+    # plt.axvline(err_best, color='k', linestyle='dashed', linewidth=1)
+    # plt.show()
 
     return score, percs, p_value
 
@@ -204,7 +204,7 @@ def get_transferred_data_matrix(W, trg_data, normalize_H2=False, max_iter=100, r
         if np.abs((err - new_err) / err) <= rel_err and err >= new_err:
             break
         err = new_err
-    print '  Number of iterations for reconstruction + reconstruction error    : ', n_iter, new_err
+    # print '  Number of iterations for reconstruction + reconstruction error    : ', n_iter, new_err
     H2 = np.zeros((W.shape[1], trg_data.shape[1]))
 
     H2[(np.argmax(H, axis=0), np.arange(trg_data.shape[1]))] = 1
