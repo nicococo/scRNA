@@ -61,11 +61,11 @@ def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
         print('Limit PC range to :'.format(limit_pc_range))
         num_cells = limit_pc_range
     max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
-    min_pca_comp = np.floor(num_cells * 0.04).astype(np.int)
+    min_pca_comp = np.max([1,np.floor(num_cells * 0.04).astype(np.int)])
     print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
 
     trg_nmf = DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
-    mixed_data, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
+    mixed_data, _, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
 
     # use mixed data are mixed distances
     cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],
