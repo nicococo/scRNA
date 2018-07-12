@@ -65,7 +65,7 @@ def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
     print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
 
     trg_nmf = DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
-    mixed_data, _, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
+    mixed_data, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
 
     # use mixed data are mixed distances
     cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],
