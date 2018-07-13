@@ -21,9 +21,15 @@ def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=N
         trg_nmfs.append(trg_nmf)
         aris[i] = metrics.adjusted_rand_score(trg_labels, trg_lbls[i, :])
     ind = func(aris)
+    if np.array_equal(ind, aris):
+        trg_nmfs_out = trg_nmfs
+        trg_lbls_out = trg_lbls
+    else:
+        trg_nmfs_out = trg_nmfs[ind]
+        trg_lbls_out = trg_lbls[ind, :]
     desc['hub'] = func
     desc['stats'] = (np.max(aris), np.min(aris), np.mean(aris))
-    return desc, trg_nmfs[ind], trg_lbls[ind, :]
+    return desc, trg_nmfs_out, trg_lbls_out
 
 
 def method_random(src_nmf, trg, trg_labels, n_trg_cluster):
@@ -56,6 +62,7 @@ def method_sc3_combined(src_nmf, trg, trg_labels, n_trg_cluster, consensus_mode=
 def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
                limit_pc_range=-1, metric='euclidean', consensus_mode=0,
                mix=0.5, use_da_dists=True, calc_transferability=True):
+    print [mix, 'Mixture Parameter']
     num_cells = trg.shape[1]
     if num_cells > limit_pc_range > 0:
         print('Limit PC range to :'.format(limit_pc_range))
@@ -111,15 +118,30 @@ def acc_classification(trg_nmf, X_trg, trg_labels, lbls_pred):
 
 
 def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False):
-    if use_strat:
-        stratify = lambda s, t, i: stratify(s, [t[0]], i) + stratify(s, t[1:], i + 1) if len(t) > 1 else [i] if t[0] in s else []
-        strat_lbl_inds = stratify(np.unique(trg_nmf.src.cluster_labels), trg_labels, 0)
-        ari = metrics.adjusted_rand_score(trg_labels[strat_lbl_inds], lbls_pred[strat_lbl_inds])
-        perc = np.int(np.float(len(strat_lbl_inds)) / np.float(trg_labels.size) * 100.0)
-        desc = 'ARI (strat={0})'.format(perc)
+    if len(lbls_pred.shape) == 1:
+        if use_strat:
+            stratify = lambda s, t, i: stratify(s, [t[0]], i) + stratify(s, t[1:], i + 1) if len(t) > 1 else [i] if t[0] in s else []
+            strat_lbl_inds = stratify(np.unique(trg_nmf.src.cluster_labels), trg_labels, 0)
+            perc = np.int(np.float(len(strat_lbl_inds)) / np.float(trg_labels.size) * 100.0)
+            desc = 'ARI (strat={0})'.format(perc)
+            ari = metrics.adjusted_rand_score(trg_labels[strat_lbl_inds], lbls_pred[strat_lbl_inds])
+        else:
+            desc = 'ARI'
+            ari = metrics.adjusted_rand_score(trg_labels, lbls_pred)
     else:
-        desc = 'ARI'
-        ari = metrics.adjusted_rand_score(trg_labels, lbls_pred)
+        ari = np.zeros(lbls_pred.shape[0])
+        if use_strat:
+            stratify = lambda s, t, i: stratify(s, [t[0]], i) + stratify(s, t[1:], i + 1) if len(t) > 1 else [i] if t[0] in s else []
+            strat_lbl_inds = stratify(np.unique(trg_nmf.src.cluster_labels), trg_labels, 0)
+            perc = np.int(np.float(len(strat_lbl_inds)) / np.float(trg_labels.size) * 100.0)
+            desc = 'ARI (strat={0})'.format(perc)
+            for ind in range(lbls_pred.shape[0]):
+                ari[ind] = metrics.adjusted_rand_score(trg_labels[strat_lbl_inds], lbls_pred[ind, strat_lbl_inds])
+        else:
+            desc = 'ARI'
+            for ind in range(lbls_pred.shape[0]):
+                # print ind, lbls_pred.shape[1]
+                ari[ind] = metrics.adjusted_rand_score(trg_labels, lbls_pred[ind,:])
     return ari, desc
 
 
