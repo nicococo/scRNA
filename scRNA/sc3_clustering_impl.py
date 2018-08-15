@@ -149,7 +149,17 @@ def transformations(dm, components=5, method='pca'):
         # J = np.eye(num_cells) - 1./np.float(num_cells)*np.ones((num_cells, num_cells))
         # dm = 0.5*J.dot(dm.dot(J))
         dm = dm - np.repeat(np.mean(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
-        dm = dm / np.repeat(np.std(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
+        np.place(dm, np.isinf(dm), np.nan)
+        np.place(dm, np.isneginf(dm), np.nan)
+        print "Number of infs: ", sum(sum(np.isinf(dm)))+sum(sum(np.isneginf(dm)))
+        print "Number of nans: ", sum(sum(np.isnan(dm)))
+        print "std: ", np.nanstd(dm, axis=0)
+        print "Percentage of zero-entries in std", 100*sum(np.nanstd(dm, axis=0) == 0)/len(np.nanstd(dm, axis=0)), "%"
+
+        if sum(np.nanstd(dm, axis=0) == 0) == len(np.nanstd(dm, axis=0)):
+            print "All values are Zero!"
+        else:
+            dm = dm / np.repeat(np.nanstd(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
 
     # vals: the eigenvalues in ascending order, each repeated according to its multiplicity.
     # vecs: the column v[:, i] is the normalized eigenvector corresponding to the eigenvalue w[i]
