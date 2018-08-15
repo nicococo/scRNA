@@ -211,6 +211,8 @@ def experiment_loop(fname, methods, acc_funcs,
     res_desc = []
     r = 0
     while r < reps:
+        print 'running experiment: r, fname'
+        print r, fname
         # 1. Generate scRNA data
         data, labels = generate_toy_data(num_genes=n_genes, num_cells=10. * (n_trg + n_src), cluster_spec=cluster_spec)
         # 2. Split source and target according to specified mode/setting
