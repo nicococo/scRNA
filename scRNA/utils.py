@@ -13,7 +13,7 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
     if not os.path.exists(fname):
         raise StandardError('File \'{0}\' not found.'.format(fname))
 
-    print('Loading TSV data file from {0}.'.format(fname))
+    #print('Loading TSV data file from {0}.'.format(fname))
     data = np.loadtxt(fname, delimiter='\t')
     print data.shape
 
@@ -24,7 +24,7 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
         print('Warning! Gene identifier file is not specified. Gene ids are now generated.')
     else:
         gene_ids = np.loadtxt(fgenes, delimiter='\t', dtype=np.str)
-        print('Gene ids loaded for {0} genes.'.format(gene_ids.shape[0]))
+        #print('Gene ids loaded for {0} genes.'.format(gene_ids.shape[0]))
         if not np.unique(gene_ids).shape[0] == gene_ids.shape[0]:
             print('Warning! Gene ids are supposed to be unique. '
                   'Only {0} of {1}  entries are unique.'.format(np.unique(gene_ids).shape[0], gene_ids.shape[0]))
@@ -32,7 +32,7 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
     labels = None
     labels_2_ids = None
     if flabels is not None:
-        print('Loading labels from \'{0}\'.'.format(flabels))
+        #print('Loading labels from \'{0}\'.'.format(flabels))
         # labels are handled as string values even though they are numerical
         label_ids = np.loadtxt(flabels, delimiter='\t', dtype=np.str_)
         assert label_ids.size == data.shape[1]
@@ -40,12 +40,12 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
         labels_2_ids = np.unique(label_ids)
         unique_ind = np.arange(start=0, stop=labels_2_ids.shape[0])
         labels = np.zeros((data.shape[1]), dtype=np.int)
-        print('Found {0} unique labels:'.format(labels_2_ids.size))
+        #print('Found {0} unique labels:'.format(labels_2_ids.size))
         print labels_2_ids
         for i in range(unique_ind.size):
             inds = np.where(label_ids == labels_2_ids[i])[0]
             labels[inds] = unique_ind[i]
-            print('Label {0} occured {1} times. Assigned class is {2}.'.format(labels_2_ids[i], inds.size, unique_ind[i]))
+            #print('Label {0} occured {1} times. Assigned class is {2}.'.format(labels_2_ids[i], inds.size, unique_ind[i]))
 
     return data, gene_ids, labels, labels_2_ids
 
@@ -110,11 +110,11 @@ def get_kernel(X, Y, type='linear', param=1.0):
 
     kernel = 1.0
     if type=='linear':
-        print('Calculating linear kernel with size {0}x{1}.'.format(Xn, Yn))
+        #print('Calculating linear kernel with size {0}x{1}.'.format(Xn, Yn))
         kernel = X.T.dot(Y)
 
     if type=='rbf':
-        print('Calculating Gaussian kernel with size {0}x{1} and sigma2={2}.'.format(Xn, Yn, param))
+        #print('Calculating Gaussian kernel with size {0}x{1} and sigma2={2}.'.format(Xn, Yn, param))
         Dx = (np.ones((Yn, 1)) * np.diag(X.T.dot(X)).reshape(1, Xn)).T
         Dy = (np.ones((Xn, 1)) * np.diag(Y.T.dot(Y)).reshape(1, Yn))
         kernel = Dx - 2.* np.array(X.T.dot(Y)) + Dy
@@ -159,7 +159,7 @@ def get_transferability_score(W, H, trg_data, reps=100, alpha=0.0, l1=0.75, max_
         rand_gene_inds = np.random.permutation(W.shape[0])
         _, _, _, errs[i] = get_transferred_data_matrix(W[rand_gene_inds, :], trg_data, max_iter=max_iter, rel_err=rel_err)
 
-    print 'Calculating non-permuted error score'
+    #print 'Calculating non-permuted error score'
     _, _, _, err_nonpermuted = get_transferred_data_matrix(W, trg_data, max_iter=max_iter, rel_err=rel_err)  # minimum transfer error
 
     nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
@@ -212,18 +212,18 @@ def get_transferred_data_matrix(W, trg_data, normalize_H2=False, max_iter=100, r
 
     # normalization
     if normalize_H2:
-        print 'Normalize H2.'
+        #print 'Normalize H2.'
         n_iter = 0
         err = 1e10
         sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
-        print n_iter, ': sparse rec error: ', sparse_rec_err
+        #print n_iter, ': sparse rec error: ', sparse_rec_err
         while n_iter < max_iter:
             n_iter += 1
             H2 *= W.T.dot(trg_data) / W.T.dot(W.dot(H2))
             # foo = 0.05 * W.T.dot(trg_data - W.dot(H2))
             # H2[np.argmax(H, axis=0), :] -= foo[np.argmax(H, axis=0), :]
             sparse_rec_err = np.sum(np.abs(trg_data - W.dot(H2))) / np.float(trg_data.size)  # absolute
-            print n_iter, ': sparse rec error: ', sparse_rec_err
+            #print n_iter, ': sparse rec error: ', sparse_rec_err
             if np.abs((err - sparse_rec_err) / err) <= rel_err and err >= sparse_rec_err:
                 break
             err = sparse_rec_err
@@ -251,12 +251,12 @@ def get_matching_gene_inds(src_gene_ids, trg_gene_ids):
     # common_ids = np.array(common_ids, dtype=np.str)
     common_ids = np.array(common_ids)
 
-    print('Both datasets have (after processing) {0} (src={1}%,trg={2}%) gene ids in common.'.format(
-        common_ids.shape[0],
-        np.int(np.float(common_ids.size) / np.float(src_gene_ids.size)*100.0),
-        np.int(np.float(common_ids.size) / np.float(trg_gene_ids.size)*100.0)))
+    #print('Both datasets have (after processing) {0} (src={1}%,trg={2}%) gene ids in common.'.format(
+    #    common_ids.shape[0],
+    #    np.int(np.float(common_ids.size) / np.float(src_gene_ids.size)*100.0),
+    #    np.int(np.float(common_ids.size) / np.float(trg_gene_ids.size)*100.0)))
 
-    print('Number of common genes must not be 0!')
+    #print('Number of common genes must not be 0!')
     assert(common_ids.shape[0] > 0)
 
     # find indices of common_ids in pgene_ids and gene_ids

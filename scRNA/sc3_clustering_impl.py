@@ -34,7 +34,7 @@ def cell_filter(data, num_expr_genes=2000, non_zero_threshold=2):
     :param data: transcripts x cells data matrix
     :return: indices of valid cells
     """
-    print('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold))
+    # print('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold))
     ai, bi = np.where(np.isnan(data))
     data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
@@ -47,7 +47,7 @@ def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
     :param data: transcripts x cells data matrix
     :return: indices of valid transcripts
     """
-    print('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold))
+    # print('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold))
     ai, bi = np.where(np.isnan(data))
     data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
@@ -63,7 +63,7 @@ def data_transformation_log2(data):
     :param data: transcripts x cells data matrix
     :return: log2 transformed data
     """
-    print('SC3 log2 data transformation.')
+    # print('SC3 log2 data transformation.')
     return np.log2(data + 1.)
 
 
@@ -89,7 +89,7 @@ def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidea
         else:
             print 'Warning! Max distance is close to zero.'
     else:
-        print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
+        # print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
         dist2 *= np.max(dist1) / np.max(dist2)
     return mixture*dist2 + (1.-mixture)*dist1
 
@@ -101,7 +101,7 @@ def distances(data, gene_ids, metric='euclidean'):
     :param metric: string with distance metric name (ie. 'euclidean','pearson','spearman')
     :return: cells x cells distance matrix
     """
-    print('SC3 pairwise distance computations (metric={0}).'.format(metric))
+    # print('SC3 pairwise distance computations (metric={0}).'.format(metric))
 
     # Euclidean: Use the standard Euclidean (as-the-crow-flies) distance.
     # Euclidean Squared: Use the Euclidean squared distance in cases where you would use regular Euclidean distance in Jarvis-Patrick or K-Means clustering.
@@ -130,7 +130,7 @@ def transformations(dm, components=5, method='pca'):
     :param method: either 'pca' or 'spectral'
     :return: cells x cells (centered!) distance matrix, cells x components Eigenvectors
     """
-    print('SC3 {1} transformation (components={0}).'.format(components, method.upper()))
+    # print('SC3 {1} transformation (components={0}).'.format(components, method.upper()))
     if method == 'spectral':
         A = np.exp(-dm/np.max(dm))
         D = np.sum(dm, axis=1)
@@ -151,10 +151,10 @@ def transformations(dm, components=5, method='pca'):
         dm = dm - np.repeat(np.mean(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
         np.place(dm, np.isinf(dm), np.nan)
         np.place(dm, np.isneginf(dm), np.nan)
-        print "Number of infs: ", sum(sum(np.isinf(dm)))+sum(sum(np.isneginf(dm)))
-        print "Number of nans: ", sum(sum(np.isnan(dm)))
-        print "std: ", np.nanstd(dm, axis=0)
-        print "Percentage of zero-entries in std", 100*sum(np.nanstd(dm, axis=0) == 0)/len(np.nanstd(dm, axis=0)), "%"
+        # print "Number of infs: ", sum(sum(np.isinf(dm)))+sum(sum(np.isneginf(dm)))
+        # print "Number of nans: ", sum(sum(np.isnan(dm)))
+        # print "std: ", np.nanstd(dm, axis=0)
+        #print "Percentage of zero-entries in std", 100*sum(np.nanstd(dm, axis=0) == 0)/len(np.nanstd(dm, axis=0)), "%"
 
         if sum(np.nanstd(dm, axis=0) == 0) == len(np.nanstd(dm, axis=0)):
             print "All values are Zero!"
@@ -230,7 +230,7 @@ def consensus_clustering(consensus, n_components=5):
     :param n_components: number of clusters
     :return: cells x 1 labels
     """
-    print 'SC3 Agglomorative hierarchical clustering.'
+    # print 'SC3 Agglomorative hierarchical clustering.'
     # condensed distance matrix
     cdm = dist.pdist(consensus)
     # hierarchical clustering (SC3: complete agglomeration + cutree)

@@ -44,8 +44,7 @@ def method_sc3_combined(src_nmf, trg, trg_labels, n_trg_cluster, consensus_mode=
     num_cells = trg.shape[1] + src_nmf.data.shape[1]
     max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
     min_pca_comp = np.floor(num_cells * 0.04).astype(np.int)
-    print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
-
+    #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
     cp = SC3Clustering(np.hstack([trg, src_nmf.data]), pc_range=[min_pca_comp, max_pca_comp],
                        consensus_mode=consensus_mode, sub_sample=True)
     cp.add_distance_calculation(partial(sc.distances, metric=metric))
@@ -62,14 +61,15 @@ def method_sc3_combined(src_nmf, trg, trg_labels, n_trg_cluster, consensus_mode=
 def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
                limit_pc_range=-1, metric='euclidean', consensus_mode=0,
                mix=0.5, use_da_dists=True, calc_transferability=True):
-    print [mix, 'Mixture Parameter']
+    #print [mix, 'Mixture Parameter']
     num_cells = trg.shape[1]
+    #print num_cells
     if num_cells > limit_pc_range > 0:
-        print('Limit PC range to :'.format(limit_pc_range))
+        #print('Limit PC range to :'.format(limit_pc_range))
         num_cells = limit_pc_range
     max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
     min_pca_comp = np.max([1,np.floor(num_cells * 0.04).astype(np.int)])
-    print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
+    #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
 
     trg_nmf = DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
     mixed_data, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
@@ -201,7 +201,7 @@ def experiment_loop(fname, methods, acc_funcs,
                     min_src_cluster_ari=0.94):
     flatten = lambda l: flatten(l[0]) + (flatten(l[1:]) if len(l) > 1 else []) if type(l) is list else [l]
     n_cluster = len(flatten(cluster_spec))
-    print 'Number of cluster is ', n_cluster
+    #print 'Number of cluster is ', n_cluster
 
     source_aris = np.zeros(reps)
     accs = np.zeros((len(acc_funcs), reps, len(percs), len(methods)))
@@ -214,7 +214,7 @@ def experiment_loop(fname, methods, acc_funcs,
         print 'running experiment: r, fname'
         print r, fname
         # 1. Generate scRNA data
-        data, labels = generate_toy_data(num_genes=n_genes, num_cells=10. * (n_trg + n_src), cluster_spec=cluster_spec)
+        data, labels = generate_toy_data(num_genes=n_genes, num_cells=10. * (n_trg + n_src), cluster_spec=cluster_spec) # num_cells is so high to make sure we have enough points in every cluster to choose from when splitting in source and target
         # 2. Split source and target according to specified mode/setting
         src, trg, src_labels, trg_labels = split_source_target(data, labels,
                                                                target_ncells=n_trg,
@@ -238,7 +238,7 @@ def experiment_loop(fname, methods, acc_funcs,
         source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=n_src_cluster)
         source_nmf.apply(k=n_src_cluster, max_iter=4000, rel_err=1e-3)
         source_aris[r] = metrics.adjusted_rand_score(src_labels, source_nmf.cluster_labels)
-        print 'ITER(', r, '): SOURCE ARI = ', source_aris[r]
+        #print 'ITER(', r, '): SOURCE ARI = ', source_aris[r]
         if source_aris[r] < min_src_cluster_ari:
             continue
 

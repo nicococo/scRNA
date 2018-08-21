@@ -38,7 +38,7 @@ class NmfClustering(AbstractClustering):
             raise Exception('W contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
                 alpha, k, l1, X.shape[0], X.shape[1]))
 
-        self.print_reconstruction_error(X, W, H)
+        # self.print_reconstruction_error(X, W, H)
         self.dictionary = W
         self.data_matrix = H
 
@@ -65,33 +65,33 @@ class DaNmfClustering(NmfClustering):
     def get_mixed_data(self, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=True, max_iter=100, rel_err=1e-3):
         trg_data = self.pre_processing()
         trg_gene_ids = self.gene_ids[self.remain_gene_inds]
-        print self.src.gene_ids.shape
-        print self.src.remain_gene_inds.shape
+        # print self.src.gene_ids.shape
+        # print self.src.remain_gene_inds.shape
         src_gene_ids = self.src.gene_ids[self.src.remain_gene_inds].copy()
         inds1, inds2 = get_matching_gene_inds(src_gene_ids, trg_gene_ids)
 
-        print 'MTL source {0} genes -> {1} genes.'.format(src_gene_ids.size, inds2.size)
-        print 'MTL target {0} genes -> {1} genes.'.format(trg_gene_ids.size, inds1.size)
+        #print 'MTL source {0} genes -> {1} genes.'.format(src_gene_ids.size, inds2.size)
+        #print 'MTL target {0} genes -> {1} genes.'.format(trg_gene_ids.size, inds1.size)
 
         src_gene_ids = src_gene_ids[inds2]
         self.gene_ids = trg_gene_ids[inds1]
         trg_data = trg_data[inds1, :]
 
-        print('Sorted, filtered gene ids for src/trg. They should coincide!')
+        #print('Sorted, filtered gene ids for src/trg. They should coincide!')
         for i in range(inds1.size):
-            if i < 10 or src_gene_ids[i] != self.gene_ids[i]:
-                print i, src_gene_ids[i], self.gene_ids[i]
+            #if i < 10 or src_gene_ids[i] != self.gene_ids[i]:
+                #print i, src_gene_ids[i], self.gene_ids[i]
             assert(src_gene_ids[i] == self.gene_ids[i])
 
         assert(self.src.dictionary is not None)  # source data should always be pre-processed
         W, H, H2, new_err = get_transferred_data_matrix(self.src.dictionary[inds2, :], trg_data, max_iter=max_iter, rel_err=rel_err)
         self.cluster_labels = np.argmax(H, axis=0)
-        self.print_reconstruction_error(trg_data, W, H2)
+        #self.print_reconstruction_error(trg_data, W, H2)
         self.intermediate_model = (W, H, H2)
         self.reject = self.calc_rejection(trg_data, W, H, H2)
 
         if calc_transferability:
-            print('Calculating transferability score...')
+            #print('Calculating transferability score...')
             self.transferability_score, self.transferability_rand_scores, self.transferability_pvalue = \
                 get_transferability_score(W, H, trg_data, max_iter=max_iter)
             self.transferability_percs = np.percentile(self.transferability_rand_scores, [25, 50, 75, 100])
@@ -138,7 +138,7 @@ class DaNmfClustering(NmfClustering):
         self.data_matrix = H
         self.cluster_labels = np.argmax(nmf.components_, axis=0)
         self.mixed_data = mixed_data
-        print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
+        # print('Labels used: {0} of {1}.'.format(np.unique(self.cluster_labels).size, k))
 
     def calc_rejection(self, trg_data, W, H, H2):
         diffs = np.zeros(H2.shape[1])

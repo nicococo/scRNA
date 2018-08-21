@@ -1,6 +1,8 @@
 import numpy as np
 
 from abstract_clustering import AbstractClustering
+import pdb
+
 
 
 class SC3Clustering(AbstractClustering):
@@ -62,14 +64,14 @@ class SC3Clustering(AbstractClustering):
         X = self.pre_processing()
 
         # 4. distance calculations
-        print '4. Distance calculations ({0} methods).'.format(len(self.dists_list))
+        #print '4. Distance calculations ({0} methods).'.format(len(self.dists_list))
         dists = list()
         for d in self.dists_list:
             dists.append(d(X, self.gene_ids[self.remain_gene_inds]))
 
         # 5. transformations (dimension reduction)
-        print '5. Distance transformations ({0} transformations * {1} distances = {2} in total).'.format(
-            len(self.dimred_list), len(self.dists_list), len(self.dists_list)*len(self.dimred_list))
+        #print '5. Distance transformations ({0} transformations * {1} distances = {2} in total).'.format(
+        #    len(self.dimred_list), len(self.dists_list), len(self.dists_list)*len(self.dimred_list))
         transf = list()
         for d in dists:
             for t in self.dimred_list:
@@ -77,15 +79,15 @@ class SC3Clustering(AbstractClustering):
                 transf.append((dres, deigv))
 
         # 6. intermediate  clustering and consensus matrix generation
-        print '6. Intermediate clustering and consensus matrix generation.'
+        #print '6. Intermediate clustering and consensus matrix generation.'
         range_inds = range(self.pc_range[0], self.pc_range[1]+1)
         if self.sub_sample and len(range_inds) > 15:
             # subsample 15 inds from this range
             range_inds = np.random.permutation(range_inds)[:15]
-            print 'Subsample 15 eigenvectors for intermediate clustering: ', range_inds
-        else:
-            print('Using complete range of eigenvectors from {0} to {1}.'.format(
-                self.pc_range[0], self.pc_range[1]))
+            #print 'Subsample 15 eigenvectors for intermediate clustering: ', range_inds
+        #else:
+            #print('Using complete range of eigenvectors from {0} to {1}.'.format(
+            #   self.pc_range[0], self.pc_range[1]))
 
         cnt = 0.
         consensus2 = np.zeros((self.remain_cell_inds.size, self.remain_cell_inds.size))
@@ -104,5 +106,5 @@ class SC3Clustering(AbstractClustering):
         consensus2 /= cnt
 
         # 7. consensus clustering
-        print '7. Consensus clustering.'
+        #print '7. Consensus clustering.'
         self.cluster_labels, self.dists = self.consensus_clustering(consensus2)

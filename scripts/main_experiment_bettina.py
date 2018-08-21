@@ -56,60 +56,20 @@ def combine_intermediate_results(fname, n_src, genes, common):
 
 
 if __name__ == "__main__":
-
-    ## Final Parameters  (Figure 1-5)
-    #fname = 'final_toy_experiments_now'
-    #fname_final = 'final_toy_experiments.npz'
-    #reps = 20  # number of repetitions
-    #genes = [500]  # number of genes
-    #n_src = [1000]  # number of source data points
-    #n_trg = 800  # overall number of target data points
-    #percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]  # different percentages of target data points used
-    #cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]  # hierarchical cluster structure
-    #common = [0, 1, 2, 3, 4]  # different numbers of overlapping clusters in source and target data
-    #mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Mixture parameters of transfer learning SC3
-    ## List of accuracy functions to be used
-    #acc_funcs = list()
-    #acc_funcs.append(partial(acc_ari, use_strat=True))
-    #acc_funcs.append(partial(acc_ari, use_strat=False))
-    ##acc_funcs.append(partial(acc_silhouette, metric='euclidean'))
-    ##acc_funcs.append(partial(acc_silhouette, metric='pearson'))
-    ##acc_funcs.append(partial(acc_silhouette, metric='spearman'))
-    ##acc_funcs.append(partial(acc_kta, mode=0))
-    ##acc_funcs.append(partial(acc_kta, mode=1))
-    ##acc_funcs.append(partial(acc_kta, mode=2))
-    ##acc_funcs.append(acc_classification)
-    ##acc_funcs.append(acc_transferability)
-    ## Create list of methods to be applied
-    #methods = list()
-    ## original SC3 (SC3 on target data)
-    #methods.append(partial(method_sc3, mix=0.0, metric='euclidean'))
-    ## combined baseline SC3 (SC3 on combined source and target data)
-    #methods.append(partial(method_sc3_combined, metric='euclidean'))
-    ## transfer via mixing (Transfer learning via mixing source and target before SC3)
-    ## Experiments keeping only min and max results from all mixture parameters
-    #mixed_list = list()
-    #for m in mixes:
-    #    mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
-    #methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
-    #methods.append(partial(method_hub, method_list=mixed_list, func=np.argmin))
-    ## Experiment for all mixture_parameters
-    #for m in mixes:
-    #    mixed_list = list()
-    #    mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
-    #    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
-
-    # Final Parameters  (Figure 6-8)
-    fname = 'final_toy_experiments_part2'
-    fname_final = 'final_toy_experiments_part2.npz'
+    # Final Parameters  (Figure 1-5)
+    fname = 'final_toy_experiments_0817'
+    fname_final = 'final_toy_experiments_0817.npz'
     reps = 20  # number of repetitions
-    genes = [500, 1000, 2000]  # number of genes
-    n_src = [500, 1000, 2000]  # number of source data points
-    n_trg = 800  # overall number of target data points
-    percs = np.logspace(-1.3, -0, 12)[[0, 3, 5, 8, 11]]  # different percentages of target data points used
+    genes = [500]  # number of genes
+    n_src = [1000]  # number of source data points
+    n_trg = 2000  # overall number of target data points
+    #percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]  # different percentages of target data points used
+    percs = np.true_divide([10,20,40,70,100,150,200,300,500,700,1000],n_trg)
     cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]  # hierarchical cluster structure
-    common = [0, 1, 2, 3, 4]  # different numbers of overlapping clusters in source and target data
-    mixes = [0.0, 0.3, 0.5, 0.7, 1.0]  # Mixture parameters of transfer learning SC3
+    common = [0, 1, 4,5]  # different numbers of overlapping clusters in source and target data
+    #common = [0,5]
+    mixes = [0.0, 0.3, 0.6,  0.9,1]  # Mixture parameters of transfer learning SC3
+    #mixes = [0.0,0.9]
     # List of accuracy functions to be used
     acc_funcs = list()
     # acc_funcs.append(partial(acc_ari, use_strat=True))
@@ -129,17 +89,59 @@ if __name__ == "__main__":
     # combined baseline SC3 (SC3 on combined source and target data)
     methods.append(partial(method_sc3_combined, metric='euclidean'))
     # transfer via mixing (Transfer learning via mixing source and target before SC3)
-    # Experiments keeping only min and max results from all mixture parameters
-    mixed_list = list()
-    for m in mixes:
-        mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
-    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
-    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmin))
-    # Experiment for all mixture_parameters
+    ## Experiments keeping only min and max results from all mixture parameters
+    #mixed_list = list()
     #for m in mixes:
-    #    mixed_list = list()
     #    mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
-    #    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
+    #methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
+    #methods.append(partial(method_hub, method_list=mixed_list, func=np.argmin))
+    # Experiment for all mixture_parameters
+    for m in mixes:
+        mixed_list = list()
+        mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
+        methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
+
+    ## Final Parameters  (Figure 6-8)
+    ##fname = 'final_toy_experiments_part2'
+    #fname_final = 'final_toy_experiments_part2.npz'
+    #reps = 20  # number of repetitions
+    #genes = [500, 1000, 2000]  # number of genes
+    #n_src = [500, 1000, 2000]  # number of source data points
+    #n_trg = 800  # overall number of target data points
+    #percs = np.logspace(-1.3, -0, 12)[[0, 3, 5, 8, 11]]  # different percentages of target data points used
+    #cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]  # hierarchical cluster structure
+    #common = [0, 1, 2, 3, 4]  # different numbers of overlapping clusters in source and target data
+    #mixes = [0.0, 0.3, 0.5, 0.7, 1.0]  # Mixture parameters of transfer learning SC3
+    ## List of accuracy functions to be used
+    #acc_funcs = list()
+    ## acc_funcs.append(partial(acc_ari, use_strat=True))
+    #acc_funcs.append(partial(acc_ari, use_strat=False))
+    #acc_funcs.append(partial(acc_silhouette, metric='euclidean'))
+    #acc_funcs.append(partial(acc_silhouette, metric='pearson'))
+    #acc_funcs.append(partial(acc_silhouette, metric='spearman'))
+    #acc_funcs.append(partial(acc_kta, mode=0))
+    ##acc_funcs.append(partial(acc_kta, mode=1))
+    ##acc_funcs.append(partial(acc_kta, mode=2))
+    ##acc_funcs.append(acc_classification)
+    #acc_funcs.append(acc_transferability)
+    ## Create list of methods to be applied
+    #methods = list()
+    ## original SC3 (SC3 on target data)
+    #methods.append(partial(method_sc3, mix=0.0, metric='euclidean'))
+    ## combined baseline SC3 (SC3 on combined source and target data)
+    #methods.append(partial(method_sc3_combined, metric='euclidean'))
+    ## transfer via mixing (Transfer learning via mixing source and target before SC3)
+    ## Experiments keeping only min and max results from all mixture parameters
+    #mixed_list = list()
+    #for m in mixes:
+    #    mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
+    #methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
+    #methods.append(partial(method_hub, method_list=mixed_list, func=np.argmin))
+    ## Experiment for all mixture_parameters
+    ##for m in mixes:
+    ##    mixed_list = list()
+    ##    mixed_list.append(partial(method_sc3, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
+    ##    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))#
 
     ## For Debugging
     #percs = np.logspace(-1.3, -0, 12)[[0, 5, 11]]  # different percentages of target data points used

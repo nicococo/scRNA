@@ -37,6 +37,7 @@ def plot_main(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, commo
     # plt.plot(percs, ari_1_min, '-b', linewidth=2.0)
 
     plt.title('ARI for 1000 src datapts, 500 genes, {0} overlapping clusters'.format(common[ind_common]), fontsize=16)
+    #plt.title('ARI for 1000 src datapts, 500 genes, 100% overlapping clusters', fontsize=16)
     plt.xlabel('Target datapts', fontsize=16)
     plt.ylabel('ARI', fontsize=16)
 
@@ -90,42 +91,42 @@ def plot_mixture_min_max(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n
 
 def plot_mixture_all(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common, mixes):
     # Indices of the mixing parameters to plot:
-    # indices = range(4, len(m_desc))
-    indices = [4, 7, 10,13,14]
+    indices = range(2, len(m_desc))
+    # indices = [4, 7, 10,13,14]
 
     # Other indices
     ind_genes = 0
     ind_src = 0
     plt.figure(fig_num)
-    ind_common = common[-1]
+    #ind_common = common[-1]
 
     # ari overall
-    ari_1_baseline = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, 0], axis=0)
-    ari_2_baseline = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, 1], axis=0)
+    ari_1_baseline = np.mean(res[ind_src, ind_genes, -1, 1, :, :, 0], axis=0)
+    ari_2_baseline = np.mean(res[ind_src, ind_genes, -1, 1, :, :, 1], axis=0)
 
     # Standard errors
-    # ste_ari_2_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 1, :, :, 3], axis=0, ddof=0)
-    # ste_ari_1_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 1, :, :, 0], axis=0, ddof=0)
+    ste_ari_1_baseline = stats.sem(res[ind_src, ind_genes, -1, 1, :, :, 0], axis=0, ddof=0)
+    ste_ari_2_baseline = stats.sem(res[ind_src, ind_genes, -1, 1, :, :, 1], axis=0, ddof=0)
 
     # Plot with errorbars
-    # plt.errorbar(percs, ari_1_baseline, fmt='--k', yerr=ste_ari_1_baseline, linewidth=2.0)
-    # plt.errorbar(percs, ari_2_baseline, fmt='-.g', yerr=ste_ari_2_baseline, linewidth=2.0)
-    plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
-    plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
-
-    # plt.fill_between(percs, ari_1_max, ari_1_min, alpha=0.2, facecolor='blue', interpolate=True)
+    plt.errorbar(percs, ari_1_baseline, fmt='--k', yerr=ste_ari_1_baseline, linewidth=2.0)
+    plt.errorbar(percs, ari_2_baseline, fmt='-.g', yerr=ste_ari_2_baseline, linewidth=2.0)
+    #plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
+    #plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
 
     cmap = plt.cm.get_cmap('hsv', len(indices)+1)
 
     count = 0
     for ind in indices:
-        ari = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, ind], axis=0)
-        # ste = stats.sem(res[ind_src, ind_genes, ind_common, 1, :, :, ind], axis=0, ddof=0)
-        # plt.errorbar(percs, ari, color=cmap(ind-3), yerr=ste, linewidth=2.0)
-        plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
+        ari = np.mean(res[ind_src, ind_genes, -1, 1, :, :, ind], axis=0)
+        ste = stats.sem(res[ind_src, ind_genes, -1, 1, :, :, ind], axis=0, ddof=0)
+        plt.errorbar(percs, ari, color=cmap(count), yerr=ste, linewidth=2.0)
+        #plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
         count += 1
 
-    plt.title('ARI for 1000 src datapts, 500 genes, {0} overlapping clusters, various mixture parameter'.format(common[ind_common]), fontsize=16)
+    plt.title('ARI for 1000 src datapts, 500 genes, {0} overlapping clusters, various mixture parameter'.format(common[-1]), fontsize=16)
+    #plt.title('ARI for 1000 src datapts, 500 genes, 100% overlapping clusters', fontsize=16)
+
     plt.xlabel('Target datapts', fontsize=16)
     plt.ylabel('ARI', fontsize=16)
 
@@ -133,7 +134,7 @@ def plot_mixture_all(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg
     plt.semilogx()
     plt.xticks(percs, np.array(percs*n_trg, dtype=np.int))
 
-    plt.ylim([0., 1.])
+    plt.ylim([-0.1, 1.1])
     indices_now = [x - 4 for x in indices]
     mixes_legend = list(map(str, mixes[indices_now]))
     for i in range(len(mixes_legend)):
@@ -195,16 +196,26 @@ def plot_percs_new(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, 
         ari_1_baseline = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, 0], axis=0)
         ari_2_baseline = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, 1], axis=0)
         plt.subplot(1, len(common), fcnt)
-        plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
-        plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
+        #plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
+        #plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
 
+        # Standard errors
+        ste_ari_1_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 1, :, :, 0], axis=0, ddof=0)
+        ste_ari_2_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 1, :, :, 1], axis=0, ddof=0)
+
+        # Plot with errorbars
+        plt.errorbar(percs, ari_1_baseline, fmt='--k', yerr=ste_ari_1_baseline, linewidth=2.0)
+        plt.errorbar(percs, ari_2_baseline, fmt='-.g', yerr=ste_ari_2_baseline, linewidth=2.0)
+
+        # Plot our method
         cmap = plt.cm.get_cmap('hsv', len(indices) + 1)
         count = 0
         for ind in indices:
             ari = np.mean(res[ind_src, ind_genes, ind_common, 1, :, :, ind], axis=0)
-            plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
+            ste = stats.sem(res[ind_src, ind_genes, ind_common, 1, :, :, ind], axis=0, ddof=0)
+            plt.errorbar(percs, ari, color=cmap(count), yerr=ste, linewidth=2.0)
+            # plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
             count += 1
-
 
         if ind_common == 0:
             plt.title('# of overlapping Clusters: {0}'.format(common[ind_common]), fontsize=16)
@@ -430,7 +441,10 @@ def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n
     names = []
     for i in range(res.shape[2]):
         aris = np.mean(res[1, 0, i, -1, :, :, 0], axis=0)
-        plt.plot(percs, aris, linewidth=2., alpha=0.7)
+
+        ste = stats.sem(res[1, 0, i, -1, :, :, 0], axis=0, ddof=0)
+        plt.errorbar(percs, aris, yerr=ste, linewidth=2.0, alpha=0.7)
+        #plt.plot(percs, aris, linewidth=2., alpha=0.7)
         names.append('Overlap: {0}'.format(i))
     # plt.title('Overlap = 2', fontsize=16)
     plt.semilogx()
@@ -563,7 +577,9 @@ if __name__ == "__main__":
     # For Figures 1-5
     # foo = np.load('final_toy_experiments.npz')
     # For Figures 6-...
-    foo = np.load('final_toy_experiments_part2.npz')
+    # foo = np.load('final_toy_experiments_part2.npz')
+    # For debugging data
+    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\debugging_results.npz')
 
     # methods = foo['methods']
     # acc_funcs = foo['acc_funcs']
@@ -588,7 +604,7 @@ if __name__ == "__main__":
     # Plot 2 with min and max
     #plot_mixture_min_max(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     # Plot 3 with various mixture parameters
-    # plot_mixture_all(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+    plot_mixture_all(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
 
     # Number of overlapping clusters
     # plot_percs(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
@@ -600,7 +616,7 @@ if __name__ == "__main__":
     # Second experiment
     # plot_src_accs(6, source_aris, genes, n_src, n_trg, common)
     # plot_unsupervised_measures(7, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    plot_transferability(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    # plot_transferability(8, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
 
     # I don't know whats going on...
     # plot_cluster_acc_measures(9, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)

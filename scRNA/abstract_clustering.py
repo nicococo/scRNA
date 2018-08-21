@@ -30,10 +30,10 @@ class AbstractClustering(object):
         self.data = data
         self.num_transcripts, self.num_cells = data.shape
         if self.gene_ids is None:
-            print('No gene ids provided.')
+            #print('No gene ids provided.')
             self.gene_ids = np.arange(self.num_transcripts)
         self.cluster_labels = np.zeros((self.num_cells, 1))
-        print('Number of cells = {0}, number of transcripts = {1}'.format(self.num_cells, self.num_transcripts))
+        #print('Number of cells = {0}, number of transcripts = {1}'.format(self.num_cells, self.num_transcripts))
 
     def set_data_transformation(self, data_transf):
         self.data_transf = data_transf
@@ -61,7 +61,7 @@ class AbstractClustering(object):
         for c in self.cell_filter_list:
             res = c(data)
             remain_cell_inds = np.intersect1d(remain_cell_inds, res)
-        print('1. Remaining number of cells after filtering: {0}/{1}'.format(remain_cell_inds.size, cells))
+        #print('1. Remaining number of cells after filtering: {0}/{1}'.format(remain_cell_inds.size, cells))
         A = data[:, remain_cell_inds]
 
         # 2. gene filter
@@ -69,18 +69,18 @@ class AbstractClustering(object):
         for g in self.gene_filter_list:
             res = g(data)
             remain_gene_inds = np.intersect1d(remain_gene_inds, res)
-        print('2. Remaining number of transcripts after filtering: {0}/{1}'.format(remain_gene_inds.size, transcripts))
+        #print('2. Remaining number of transcripts after filtering: {0}/{1}'.format(remain_gene_inds.size, transcripts))
 
         # 3. data transformation
         B = A[remain_gene_inds, :]
-        print '3. Data transformation'
-        print 'Before data transformation: '
-        print '- Mean\median\max values: ', np.mean(B), np.median(B), np.max(B)
-        print '- Percentiles: ', np.percentile(B, [50, 75, 90, 99])
+        #print '3. Data transformation'
+        #print 'Before data transformation: '
+        #print '- Mean\median\max values: ', np.mean(B), np.median(B), np.max(B)
+        #print '- Percentiles: ', np.percentile(B, [50, 75, 90, 99])
         X = self.data_transf(B)
-        print 'After data transformation: '
-        print '- Mean\median\max values: ', np.mean(X), np.median(X), np.max(X)
-        print '- Percentiles: ', np.percentile(X, [50, 75, 90, 99])
+        #print 'After data transformation: '
+        #print '- Mean\median\max values: ', np.mean(X), np.median(X), np.max(X)
+        #print '- Percentiles: ', np.percentile(X, [50, 75, 90, 99])
         return X, remain_gene_inds, remain_cell_inds
 
     @abstractmethod
