@@ -209,7 +209,7 @@ def split_source_target(toy_data, true_toy_labels,
     # ntrg = 2 # number of target clusters
     # common = 2 # number of shared clusters
 
-    # assert (target_ncells + source_ncells <= toy_data.shape[1])
+    assert (target_ncells + source_ncells <= toy_data.shape[1])
 
     #First split the 'truth' matrix into a set we will use and a set we wont
     #For mode 6,4,7 we do this differently
@@ -395,9 +395,8 @@ def split_source_target(toy_data, true_toy_labels,
             #print cluster_spec
             nclusters = np.arange(len(cluster_spec))  # compute cluster dependence for the first level cluster structure
             #print nclusters
-            ntrg = np.int(np.floor((len(nclusters) + common)/2.)) # number of clusters in target
-            nsrc = len(nclusters) - ntrg + common # number of clusters in source
-
+            ntrg = np.int(np.floor((len(nclusters) + common)/2.))   # number of clusters in target
+            nsrc = len(nclusters) - ntrg + common   # number of clusters in source
             assert(nsrc + ntrg - common <= len(nclusters))
             Cidx = np.random.choice(nclusters,common,False) # Indices of common clusters, chosen at random
             Sidx = np.random.choice(np.setdiff1d(nclusters,Cidx),nsrc-common,False) # Indices of exclusive source clusters
@@ -433,7 +432,7 @@ def split_source_target(toy_data, true_toy_labels,
             shared_trg_size = int(target_ncells * float(len(Cidx))/(len(Tidx)+len(Cidx)))
             # shared_src_size = source_ncells - sum(np.in1d(true_toy_labels,Sidx))   #
             shared_src_size = int(source_ncells * float(len(Cidx))/(len(Sidx)+len(Cidx)))
-            if common == 0:
+            if shared_trg_size == 0:
                 data_shared_target, data_shared_source, labels_shared_target, labels_shared_source = [],[],[],[]
             else:
                 data_shared_target, data_shared_source, labels_shared_target, labels_shared_source = train_test_split(toy_data[:,shared_idx].transpose(),np.array(true_toy_labels)[shared_idx],train_size=shared_trg_size,test_size=shared_src_size)
@@ -441,17 +440,12 @@ def split_source_target(toy_data, true_toy_labels,
             '''
             get cluster split for target data
             '''
-            if ntrg>common:
+            if ntrg > common:
                 trg_idx = np.in1d(true_toy_labels, Tidx)
-
-                if common == 0:
-                    # toy_data_target = toy_data[:,trg_idx].transpose()
-                    # true_toy_labels_target = np.array(true_toy_labels)[trg_idx]
-                    toy_data_target, _, true_toy_labels_target, _ = train_test_split(toy_data[:,trg_idx].transpose(),np.array(true_toy_labels)[trg_idx],train_size=target_ncells,test_size=0)
-                else:
-                    add_trg_size = int(target_ncells - shared_trg_size)
-                    toy_data_target, _, true_toy_labels_target, _ = train_test_split(toy_data[:, trg_idx].transpose(), np.array(true_toy_labels)[trg_idx],
-                                                                                     train_size=add_trg_size, test_size=0)
+                add_trg_size = int(target_ncells - shared_trg_size)
+                toy_data_target, _, true_toy_labels_target, _ = train_test_split(toy_data[:, trg_idx].transpose(), np.array(true_toy_labels)[trg_idx],
+                                                                                 train_size=add_trg_size, test_size=0)
+                if shared_trg_size != 0:
                     toy_data_target = np.concatenate((data_shared_target,toy_data_target))
                     true_toy_labels_target = np.concatenate((labels_shared_target,true_toy_labels_target))
 
@@ -463,14 +457,10 @@ def split_source_target(toy_data, true_toy_labels,
             '''
             if nsrc>common:
                 src_idx = np.in1d(true_toy_labels, Sidx)
-                if common == 0:
-                    #toy_data_source = toy_data[:,src_idx].transpose()
-                    #true_toy_labels_source = np.array(true_toy_labels)[src_idx]
-                    toy_data_source, _, true_toy_labels_source, _ = train_test_split(toy_data[:,src_idx].transpose(),np.array(true_toy_labels)[src_idx],train_size=source_ncells,test_size=0)
-                if common != 0:
-                    add_src_size = int(source_ncells - shared_src_size)
-                    toy_data_source, _, true_toy_labels_source, _ = train_test_split(toy_data[:,src_idx].transpose(),np.array(true_toy_labels)[src_idx],train_size=add_src_size,test_size=0)
-
+                add_src_size = int(source_ncells - shared_src_size)
+                toy_data_source, _, true_toy_labels_source, _ = train_test_split(toy_data[:, src_idx].transpose(), np.array(true_toy_labels)[src_idx],
+                                                                                 train_size=add_src_size, test_size=0)
+                if shared_src_size != 0:
                     toy_data_source = np.concatenate((data_shared_source,toy_data_source))
                     true_toy_labels_source = np.concatenate((labels_shared_source,true_toy_labels_source))
             else:

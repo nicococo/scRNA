@@ -149,6 +149,7 @@ def transformations(dm, components=5, method='pca'):
         # J = np.eye(num_cells) - 1./np.float(num_cells)*np.ones((num_cells, num_cells))
         # dm = 0.5*J.dot(dm.dot(J))
         dm = dm - np.repeat(np.mean(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
+        #dm = dm / np.repeat(np.nanstd(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
         np.place(dm, np.isinf(dm), np.nan)
         np.place(dm, np.isneginf(dm), np.nan)
         # print "Number of infs: ", sum(sum(np.isinf(dm)))+sum(sum(np.isneginf(dm)))

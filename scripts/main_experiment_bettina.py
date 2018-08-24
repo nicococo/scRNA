@@ -57,18 +57,19 @@ def combine_intermediate_results(fname, n_src, genes, common):
 
 if __name__ == "__main__":
     # Final Parameters  (Figure 1-5)
-    fname = 'final_toy_experiments_0817'
-    fname_final = 'final_toy_experiments_0817.npz'
-    reps = 20  # number of repetitions
-    genes = [500]  # number of genes
+    # start 9.11, 9.59
+    fname = 'toy_experiments_for_08_28_1rep'
+    fname_final = 'toy_experiments_for_08_28_1rep.npz'
+    reps = 1  # number of repetitions
+    genes = [1000]  # number of genes
     n_src = [1000]  # number of source data points
-    n_trg = 2000  # overall number of target data points
+    n_trg = 800  # overall number of target data points
     #percs = np.logspace(-1.3, -0, 12)[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]  # different percentages of target data points used
-    percs = np.true_divide([10,20,40,70,100,150,200,300,500,700,1000],n_trg)
+    percs = np.true_divide([10,20,40,70,100,150,200,300,500,800],n_trg)
     cluster_spec = [1, 2, 3, [4, 5], [6, [7, 8]]]  # hierarchical cluster structure
-    common = [0, 1, 4,5]  # different numbers of overlapping clusters in source and target data
+    common = [0,1,2,3,4,5]  # different numbers of overlapping clusters in source and target data
     #common = [0,5]
-    mixes = [0.0, 0.3, 0.6,  0.9,1]  # Mixture parameters of transfer learning SC3
+    mixes = [0.0, 0.3, 0.6, 0.9, 1]  # Mixture parameters of transfer learning SC3
     #mixes = [0.0,0.9]
     # List of accuracy functions to be used
     acc_funcs = list()
@@ -173,12 +174,13 @@ if __name__ == "__main__":
     #n_trg = 200  # overall number of target data points
 
     # Create results matrix
-    res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
+    # res = np.zeros((len(n_src), len(genes), len(common), len(acc_funcs), reps, len(percs), len(methods)))
     source_aris = np.zeros((len(n_src), len(genes), len(common), reps))
 
     # create empty job vector
     jobs = []
     params = []
+
     # Run jobs on cluster  only if the jobs havnt been done yet, i.e. out_fname dont already exist
     for s in range(len(n_src)):
         for g in range(len(genes)):
@@ -193,6 +195,7 @@ if __name__ == "__main__":
                     jobs.append(job)
                 else:
                     sys.exit("Outputfiles already exist! Change fname and fname_final or delete the existing files.")
+
 
     processedJobs = process_jobs(jobs, temp_dir='/home/bmieth/tmp/', local=False, max_processes=10)
     # results = []
