@@ -179,10 +179,16 @@ def transformations(dm, components=5, method='pca'):
         inds = np.arange(components)
         # print inds
 
-    # inds = range(vals.size-components, vals.size)
-    # inds = range(components)
-    # print inds
-    # print vals.size, vals
+    ## inds = range(vals.size-components, vals.size)
+    ## inds = range(components)
+    ## print inds
+    ## print vals.size, vals
+    #plt.bar(np.arange(len(vals)), np.sort(vals)[::-1])
+    ##print '# of zero eigenvalues: ', sum(vals==0)
+    #plt.xlim(0,int(len(vals)/3))  # eigenvalues between 0 and 2
+    #plt.axvline(x=np.true_divide(len(vals), 100)*4, color='r')
+    #plt.axvline(x=np.true_divide(len(vals), 100)*7, color='r')
+
     D = np.diag(vals[inds])
     return vecs[:, inds].dot(D.dot(vecs[:, inds].T)), vecs[:, inds]
 

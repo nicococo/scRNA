@@ -10,6 +10,11 @@ from scRNA.sc3_clustering import SC3Clustering
 from scRNA.simulation import generate_toy_data, split_source_target
 from scRNA.utils import *
 
+import numpy.linalg
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import pdist, squareform
+from sklearn.metrics.pairwise import linear_kernel
+
 
 def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=None):
     aris = np.zeros(len(method_list))
@@ -45,6 +50,7 @@ def method_sc3_combined(src_nmf, trg, trg_labels, n_trg_cluster, consensus_mode=
     max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
     min_pca_comp = np.floor(num_cells * 0.04).astype(np.int)
     #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
+    # plot_eigenvalue_distribution(np.hstack([trg, src_nmf.data]))
     cp = SC3Clustering(np.hstack([trg, src_nmf.data]), pc_range=[min_pca_comp, max_pca_comp],
                        consensus_mode=consensus_mode, sub_sample=True)
     cp.add_distance_calculation(partial(sc.distances, metric=metric))
@@ -73,7 +79,7 @@ def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
 
     trg_nmf = DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
     mixed_data, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
-
+    # plot_eigenvalue_distribution(mixed_data)
     # use mixed data are mixed distances
     cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],
                        consensus_mode=consensus_mode, sub_sample=True)
@@ -94,7 +100,7 @@ def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
     return {'method': 'SC3', 'metric': metric, 'mix': mix, 'use_da_dists': use_da_dists}, trg_nmf, cp.cluster_labels
 
 
-def acc_transferability(trg_nmf, X_trg, trg_labels, lbls_pred):
+def acc_transferability(trg_nmf, X_trg, trg_labels, lbls_pred, mix=0.0):
     return trg_nmf.transferability_score, 'Transferability'
 
 
@@ -117,7 +123,7 @@ def acc_classification(trg_nmf, X_trg, trg_labels, lbls_pred):
     return metrics.adjusted_rand_score(ret, lbls_pred[include_inds]), 'MixARI'
 
 
-def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False):
+def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False, mix=0.0):
     if len(lbls_pred.shape) == 1:
         if use_strat:
             stratify = lambda s, t, i: stratify(s, [t[0]], i) + stratify(s, t[1:], i + 1) if len(t) > 1 else [i] if t[0] in s else []
@@ -145,7 +151,7 @@ def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False):
     return ari, desc
 
 
-def acc_silhouette(trg_nmf, X_trg, trg_labels, lbls_pred, metric='euclidean'):
+def acc_silhouette(trg_nmf, X_trg, trg_labels, lbls_pred, metric='euclidean', mix =0.0):
     dists = sc.distances(X_trg, gene_ids=np.arange(X_trg.shape[1]), metric=metric)
     if np.unique(lbls_pred).size <= 1:
         return 1.0, 'Silhouette ({0})'.format(metric)
@@ -153,7 +159,7 @@ def acc_silhouette(trg_nmf, X_trg, trg_labels, lbls_pred, metric='euclidean'):
 
 
 def acc_kta(target_nmf, X_trg, trg_labels, trg_lbls_pred, kernel='linear', param=1.0, center=True, normalize=True,
-            mode=0):
+            mode=0, mix=0.0):
     Ky = np.zeros((trg_lbls_pred.size, np.max(trg_lbls_pred) + 1))
     for i in range(len(trg_lbls_pred)):
         Ky[i, trg_lbls_pred[i]] = 1.
@@ -273,3 +279,25 @@ def experiment_loop(fname, methods, acc_funcs,
              num_strat=num_strat, cluster_mode=cluster_mode, source_aris=source_aris)
     print('Done.')
     return source_aris, accs, accs_desc, res_desc
+
+
+def plot_eigenvalue_distribution(data):
+    #dist_matrix_condensed = pdist(np.transpose(data), 'euclidean')
+    #dist_matrix = squareform(dist_matrix_condensed)
+    lin_kern = linear_kernel(np.transpose(data))
+    #e = numpy.linalg.eigvals(dist_matrix)
+    e = numpy.linalg.eigvals(lin_kern)
+    print("Largest eigenvalue:", max(e))
+    print("Smallest eigenvalue:", min(e))
+    #print("smallest d range:", )
+    #print("largest d range:")
+    #plt.hist(e, bins=100)  # histogram with 100 bins
+    #plt.show()
+    #idx = np.argsort(e)
+    #e = e[idx]
+    plt.bar(np.arange(len(e)), np.sort(e)[::-1])
+    plt.xlim(0,len(e))  # eigenvalues between 0 and 2
+    plt.xlabel('ordered evs, overall {0} evs'.format(len(e)))
+    plt.axvline(x=np.true_divide(len(e), 100)*4, color='r')
+    plt.axvline(x=np.true_divide(len(e), 100)*7, color='r')
+    #plt.show()

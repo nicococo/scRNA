@@ -4,7 +4,6 @@ from abstract_clustering import AbstractClustering
 import pdb
 
 
-
 class SC3Clustering(AbstractClustering):
     """ Meta-class for single-cell clustering based on the SC3 pipeline.
         Nico Goernitz, TU Berlin, 2016
@@ -108,3 +107,4 @@ class SC3Clustering(AbstractClustering):
         # 7. consensus clustering
         #print '7. Consensus clustering.'
         self.cluster_labels, self.dists = self.consensus_clustering(consensus2)
+
