@@ -3,7 +3,8 @@ import random
 import ast
 import sys
 import pdb
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
+
 
 def recursive_dirichlet(cluster_spec, num_cells,
                         dirichlet_parameter_cluster_size):
@@ -40,7 +41,8 @@ def recursive_dirichlet(cluster_spec, num_cells,
              )
              
     return(cluster_sizes)
-            
+
+
 def generate_de_logfc(ngenes, prop_genes_de, de_logfc):
 
     nde_genes = int(np.floor(ngenes * prop_genes_de))
@@ -51,6 +53,7 @@ def generate_de_logfc(ngenes, prop_genes_de, de_logfc):
     random.shuffle(logfc)
     
     return(logfc)
+
 
 def recursive_generate_counts(cluster_nums, num_genes, true_means,
                               parent_logfc, nb_dispersion,
@@ -83,7 +86,8 @@ def recursive_generate_counts(cluster_nums, num_genes, true_means,
               )
             
     return(np.hstack(cluster_counts))
-    
+
+
 def generate_counts(num_cells, num_genes, true_means, logfc, nb_dispersion):
     
     #Per cell noise
@@ -106,7 +110,8 @@ def generate_counts(num_cells, num_genes, true_means, logfc, nb_dispersion):
     )
     
     return(sample)
-    
+
+
 def generate_toy_data(
                       num_genes = 10000, num_cells = 1000, 
 

@@ -79,19 +79,19 @@ parser.add_argument(
 parser.set_defaults(tsne=True)
 
 arguments = parser.parse_args(sys.argv[1:])
-print('Command line arguments:')
+#print('Command line arguments:')
 
 # --------------------------------------------------
 # 1. LOAD DATA
 # --------------------------------------------------
 print("\nLoading  dataset (data={0} and gene_ids={1}).".format(arguments.fname, arguments.fgene_ids))
 data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname, arguments.fgene_ids, flabels=arguments.flabels)
-print('Data  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
+print('Data:  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
 if labels is not None:
-    print np.unique(labels)
+    # print np.unique(labels)
     np.savetxt('{0}.labels2ids.tsv'.format(arguments.fout), (np.arange(labels_2_ids.size), labels_2_ids), fmt='%s', delimiter='\t')
 
-print('Number of genes/transcripts in data and gene-ids must coincide.')
+#print('Number of genes/transcripts in data and gene-ids must coincide.')
 assert(data.shape[0] == gene_ids.shape[0])
 
 # --------------------------------------------------
@@ -119,8 +119,7 @@ accs = np.zeros((5, len(num_cluster)))
 
 for i in range(len(num_cluster)):
     k = num_cluster[i]
-    print('Iteration {0}, num-cluster={0}'.format(i, k))
-
+    print('Iteration {0}, num-cluster={1}'.format(i, k))
     # --------------------------------------------------
     # 3.1. SETUP SOURCE DATA NMF CLUSTERING
     # --------------------------------------------------
