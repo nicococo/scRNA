@@ -22,7 +22,7 @@ def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=N
     trg_nmfs = list()
     trg_lbls = np.zeros((len(method_list), trg_labels.size), dtype=np.int)
     for i in range(len(method_list)):
-        desc, trg_nmf, trg_lbls[i, :] = method_list[i](src_nmf, trg, trg_labels, n_trg_cluster)
+        desc, trg_nmf, trg_lbls[i, :], mixed_data = method_list[i](src_nmf, trg, trg_labels, n_trg_cluster)
         trg_nmfs.append(trg_nmf)
         aris[i] = metrics.adjusted_rand_score(trg_labels, trg_lbls[i, :])
     ind = func(aris)
@@ -34,7 +34,7 @@ def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=N
         trg_lbls_out = trg_lbls[ind, :]
     desc['hub'] = func
     desc['stats'] = (np.max(aris), np.min(aris), np.mean(aris))
-    return desc, trg_nmfs_out, trg_lbls_out
+    return desc, trg_nmfs_out, trg_lbls_out, mixed_data
 
 
 def method_random(src_nmf, trg, trg_labels, n_trg_cluster):
@@ -62,6 +62,30 @@ def method_sc3_combined(src_nmf, trg, trg_labels, n_trg_cluster, consensus_mode=
     return {'method': 'SC3-comb', 'metric': metric}, \
            DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster), \
            cp.cluster_labels[:trg_labels.size]
+
+
+def method_sc3_combined_filter(src_nmf, trg, trg_labels, n_trg_cluster, cell_filter, gene_filter, transformation, consensus_mode=0, metric='euclidean'):
+    lbls = np.hstack([trg_labels, src_nmf.cluster_labels])
+    #n_cluster = np.unique(lbls).size
+    num_cells = trg.shape[1] + src_nmf.data.shape[1]
+    max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
+    min_pca_comp = np.floor(num_cells * 0.04).astype(np.int)
+    #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
+    # plot_eigenvalue_distribution(np.hstack([trg, src_nmf.data]))
+    cp = SC3Clustering(np.hstack([trg, src_nmf.data]), pc_range=[min_pca_comp, max_pca_comp],
+                       consensus_mode=consensus_mode, sub_sample=True)
+    cp.add_cell_filter(cell_filter)
+    cp.add_gene_filter(gene_filter)
+    cp.set_data_transformation(transformation)
+    cp.add_distance_calculation(partial(sc.distances, metric=metric))
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
+    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_trg_cluster))
+    cp.set_build_consensus_matrix(sc.build_consensus_matrix)
+    cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_trg_cluster))
+    cp.apply()
+    return {'method': 'SC3-comb', 'metric': metric}, \
+           DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster), \
+           cp.cluster_labels[:trg_labels.size], None
 
 
 def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
@@ -100,7 +124,53 @@ def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
     return {'method': 'SC3', 'metric': metric, 'mix': mix, 'use_da_dists': use_da_dists}, trg_nmf, cp.cluster_labels
 
 
-def acc_transferability(trg_nmf, X_trg, trg_labels, lbls_pred, mix=0.0):
+def method_sc3_filter(src_nmf, trg, trg_labels, n_trg_cluster,cell_filter, gene_filter, transformation,
+               limit_pc_range=-1, metric='euclidean', consensus_mode=0,
+               mix=0.5, use_da_dists=False, calc_transferability=True):
+    #print [mix, 'Mixture Parameter']
+    num_cells = trg.shape[1]
+    #print num_cells
+    if num_cells > limit_pc_range > 0:
+        #print('Limit PC range to :'.format(limit_pc_range))
+        num_cells = limit_pc_range
+    max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
+    min_pca_comp = np.max([1,np.floor(num_cells * 0.04).astype(np.int)])
+    #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
+
+    trg_nmf = DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
+    trg_nmf.add_cell_filter(cell_filter)
+    trg_nmf.add_gene_filter(gene_filter)
+    trg_nmf.set_data_transformation(transformation)
+    mixed_data, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
+    # plot_eigenvalue_distribution(mixed_data)
+    # use mixed data are mixed distances
+    #cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],
+    #                   consensus_mode=consensus_mode, sub_sample=True)
+    #cp.add_cell_filter(cell_filter)
+    #cp.add_gene_filter(gene_filter)
+    #cp.set_data_transformation(transformation)
+    #if not use_da_dists:
+
+    cp = SC3Clustering(mixed_data, pc_range=[min_pca_comp, max_pca_comp], consensus_mode=consensus_mode, sub_sample=True)
+    cp.add_distance_calculation(partial(sc.distances, metric=metric))
+
+    #cp.add_cell_filter(lambda x: np.arange(x.shape[1]).tolist())
+    #cp.add_gene_filter(lambda x: np.arange(x.shape[0]).tolist())
+    #cp.set_data_transformation(lambda x: x)
+    #else:
+    #    cp.add_distance_calculation(partial(sc.da_nmf_distances,
+    #                                        da_model=trg_nmf.intermediate_model,
+    #                                        metric=metric, mixture=mix, reject_ratio=0.))
+
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
+    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_trg_cluster))
+    cp.set_build_consensus_matrix(sc.build_consensus_matrix)
+    cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_trg_cluster))
+    cp.apply()
+    return {'method': 'SC3', 'metric': metric, 'mix': mix, 'use_da_dists': use_da_dists}, trg_nmf, cp.cluster_labels, mixed_data
+
+
+def acc_transferability(trg_nmf, X_trg, trg_labels, lbls_pred):
     return trg_nmf.transferability_score, 'Transferability'
 
 
@@ -123,7 +193,7 @@ def acc_classification(trg_nmf, X_trg, trg_labels, lbls_pred):
     return metrics.adjusted_rand_score(ret, lbls_pred[include_inds]), 'MixARI'
 
 
-def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False, mix=0.0):
+def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False):
     if len(lbls_pred.shape) == 1:
         if use_strat:
             stratify = lambda s, t, i: stratify(s, [t[0]], i) + stratify(s, t[1:], i + 1) if len(t) > 1 else [i] if t[0] in s else []
@@ -151,7 +221,7 @@ def acc_ari(trg_nmf, X_trg, trg_labels, lbls_pred, use_strat=False, mix=0.0):
     return ari, desc
 
 
-def acc_silhouette(trg_nmf, X_trg, trg_labels, lbls_pred, metric='euclidean', mix =0.0):
+def acc_silhouette(trg_nmf, X_trg, trg_labels, lbls_pred, metric='euclidean'):
     dists = sc.distances(X_trg, gene_ids=np.arange(X_trg.shape[1]), metric=metric)
     if np.unique(lbls_pred).size <= 1:
         return 1.0, 'Silhouette ({0})'.format(metric)
@@ -159,7 +229,7 @@ def acc_silhouette(trg_nmf, X_trg, trg_labels, lbls_pred, metric='euclidean', mi
 
 
 def acc_kta(target_nmf, X_trg, trg_labels, trg_lbls_pred, kernel='linear', param=1.0, center=True, normalize=True,
-            mode=0, mix=0.0):
+            mode=0):
     Ky = np.zeros((trg_lbls_pred.size, np.max(trg_lbls_pred) + 1))
     for i in range(len(trg_lbls_pred)):
         Ky[i, trg_lbls_pred[i]] = 1.

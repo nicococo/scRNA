@@ -2,13 +2,68 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pdb
 from scipy import stats
-from random import randint
+# from random import randint
+
+
+def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes):
+    # Indices of the mixing parameters to plot:
+    # indices = range(3, len(m_desc)-1)
+    ind_common = -1
+
+    # Other indices
+    ind_genes = 0
+    ind_src = 0
+    plt.figure(fig_num)
+    # ind_common = common[-1]
+
+    # ari overall
+    ari_1_baseline = np.mean(res[ind_src, ind_genes, ind_common, 0, :, :, 0], axis=0)
+    ari_2_baseline = np.mean(res[ind_src, ind_genes, ind_common, 0, :, :, 1], axis=0)
+    # print ari_1_baseline, ari_2_baseline
+    # print accs_desc
+
+    # Standard errors
+    ste_ari_1_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 0, :, :, 0], axis=0, ddof=0)
+    ste_ari_2_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 0, :, :, 1], axis=0, ddof=0)
+
+    # Plot with errorbars
+    markers, caps, bars = plt.errorbar(percs, ari_1_baseline, fmt='--k', yerr=ste_ari_1_baseline, linewidth=2.0)
+    [bar.set_alpha(0.3) for bar in bars]
+    [cap.set_alpha(0.3) for cap in caps]
+    markers, caps, bars = plt.errorbar(percs, ari_2_baseline, fmt='-.g', yerr=ste_ari_2_baseline, linewidth=2.0)
+    [bar.set_alpha(0.3) for bar in bars]
+    [cap.set_alpha(0.3) for cap in caps]
+    # plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
+    # plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
+
+
+    ari = np.mean(res_opt_mix_aris[ind_src, ind_genes, ind_common, :, :], axis=0)
+    ste = stats.sem(res_opt_mix_aris[ind_src, ind_genes, ind_common, :, :], axis=0, ddof=0)
+    markers, caps, bars = plt.errorbar(percs, ari, fmt='-b', yerr=ste, linewidth=2.0)
+    [bar.set_alpha(0.3) for bar in bars]
+    [cap.set_alpha(0.3) for cap in caps]
+    # plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
+
+    plt.title('ARI for {0} src datapts, {1} genes, {2} overlapping top nodes, KTA mixed optimal parameter'.format(n_src[ind_src], genes[ind_genes], common[ind_common]),
+              fontsize=16)
+    # plt.title('ARI for 1000 src datapts, 500 genes, 100% overlapping clusters', fontsize=16)
+
+    plt.xlabel('Target datapts', fontsize=16)
+    plt.ylabel('ARI', fontsize=16)
+
+    plt.xlim([np.min(percs), np.max(percs)])
+    # plt.semilogx()
+    plt.xticks(percs, np.array(percs * n_trg, dtype=np.int))
+    plt.ylim([0.0, 1.0])
+
+    plt.legend(['SC3', 'SC3-Comb', 'SC3-Transfer'], fontsize=12, loc=4)
+    plt.show()
 
 
 def plot_mixture_all(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common, mixes):
     # Indices of the mixing parameters to plot:
     #indices = range(3, len(m_desc)-1)
-    indices = [2,3,4]
+    indices = [2,3,5,7,9,11]
     ind_common  = -1
 
     # Other indices
@@ -49,7 +104,7 @@ def plot_mixture_all(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg
         #plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
         count += 1
 
-    plt.title('ARI for {0} src datapts, {1} genes, {2} overlapping top nodes, various mixture parameters'.format(n_src[ind_src], genes[ind_genes], common[ind_common]), fontsize=16)
+    plt.title('ARI for {0} src datapts, {1} genes, {2} overlapping top nodes, various constant mixture parameters'.format(n_src[ind_src], genes[ind_genes], common[ind_common]), fontsize=16)
     #plt.title('ARI for 1000 src datapts, 500 genes, 100% overlapping clusters', fontsize=16)
 
     plt.xlabel('Target datapts', fontsize=16)
@@ -63,7 +118,7 @@ def plot_mixture_all(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg
     indices_now = [x - 2 for x in indices]
     mixes_legend = list(map(str, mixes[indices_now]))
     for i in range(len(mixes_legend)):
-        mixes_legend[i] = "SC3 Mix with mix=" + mixes_legend[i]
+        mixes_legend[i] = "SC3 Transfer with mix=" + mixes_legend[i]
     # for i, mixes_legend in enumerate(mixes_legend):
     #    mixes_legend[i] = "SC3 Mix with mix=" + mixes_legend[i]
     legend = np.concatenate((['SC3', 'SC3-Comb'],mixes_legend))
@@ -71,8 +126,63 @@ def plot_mixture_all(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg
     plt.show()
 
 
+def plot_percs_optmix(fig_num,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes):
+    ind_genes = 0
+    ind_src = 0
+    plt.figure(fig_num)
+    fcnt = 1
+    # common = [0,1,2,3]
+    for ind_common in range(len(common)):
+        # common_now = common[ind_common]
+        # print ind_common
+        # ari overall
+        ari_1_baseline = np.mean(res[ind_src, ind_genes, ind_common, 0, :, :, 0], axis=0)
+        ari_2_baseline = np.mean(res[ind_src, ind_genes, ind_common, 0, :, :, 1], axis=0)
+        plt.subplot(1, len(common), fcnt)
+        # plt.plot(percs, ari_1_baseline, '--k', linewidth=2.0)
+        # plt.plot(percs, ari_2_baseline, '-.k', linewidth=2.0)
+
+        # Standard errors
+        ste_ari_1_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 0, :, :, 0], axis=0, ddof=0)
+        ste_ari_2_baseline = stats.sem(res[ind_src, ind_genes, ind_common, 0, :, :, 1], axis=0, ddof=0)
+
+        # Plot with errorbars
+        markers, caps, bars = plt.errorbar(percs, ari_1_baseline, fmt='--k', yerr=ste_ari_1_baseline, linewidth=2.0)
+        [bar.set_alpha(0.1) for bar in bars]
+        [cap.set_alpha(0.1) for cap in caps]
+        markers, caps, bars = plt.errorbar(percs, ari_2_baseline, fmt='-.g', yerr=ste_ari_2_baseline, linewidth=2.0)
+        [bar.set_alpha(0.1) for bar in bars]
+        [cap.set_alpha(0.1) for cap in caps]
+
+        # Plot our method
+
+        ari = np.mean(res_opt_mix_aris[ind_src, ind_genes, ind_common, :, :], axis=0)
+        ste = stats.sem(res_opt_mix_aris[ind_src, ind_genes, ind_common, :, :], axis=0, ddof=0)
+        markers, caps, bars = plt.errorbar(percs, ari, fmt='-b', yerr=ste, linewidth=2.0)
+        [bar.set_alpha(0.1) for bar in bars]
+        [cap.set_alpha(0.1) for cap in caps]
+        # plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
+        plt.title('{0} common top nodes,  \n {1} excl. top nodes in trg, \n {2} excl. top nodes in src'.format(common[fcnt - 1], np.int(
+            np.floor(np.true_divide(5 - common[fcnt - 1], 2))), np.int(np.ceil(np.true_divide(5 - common[fcnt - 1], 2)))), fontsize=12)
+        if ind_common == 0:
+            plt.ylabel('ARI', fontsize=16)
+
+        plt.xlabel('Target datapts', fontsize=16)
+        plt.xlim([np.min(percs), np.max(percs)])
+        # plt.semilogx()
+        # plt.xticks([np.min(percs), np.mean(percs), np.max(percs)], np.array([np.min(percs), np.mean(percs), np.max(percs)] * n_trg, dtype=np.int))
+        plt.xticks(percs[::2], np.array(percs[::2] * n_trg, dtype=np.int))
+
+        plt.ylim([0., 1.])
+
+        fcnt += 1
+
+    plt.legend(['SC3', 'SC3-Comb', 'SC3-Transfer'], fontsize=12, loc=4)
+    plt.show()
+
+
 def plot_percs_new(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
-    indices = [2,3, 4]
+    indices =[3,5,7,9,11]
     ind_genes = 0
     ind_src = 0
     plt.figure(fig_num)
@@ -111,13 +221,12 @@ def plot_percs_new(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, 
             [cap.set_alpha(0.1) for cap in caps]
             # plt.plot(percs, ari, color=cmap(count), linewidth=2.0)
             count += 1
+        plt.title('{0} common top nodes,  \n {1} excl. top nodes in trg, \n {2} excl. top nodes in src'.format(common[fcnt - 1],
+                  np.int(np.floor(np.true_divide(5 - common[fcnt - 1], 2))), np.int(np.ceil(np.true_divide(5 - common[fcnt - 1], 2)))), fontsize=12)
 
         if ind_common == 0:
-            plt.title('0 common top nodes,  \n 2 excl. top nodes in trg, \n 3 excl. top nodes in src', fontsize=12)
-
             plt.ylabel('ARI', fontsize=16)
-        else:
-            plt.title('{0} common top nodes,  \n {1} excl. top nodes in trg, \n {2} excl. top nodes in src'.format(common[fcnt-1], np.int(np.floor(np.true_divide(5-common[fcnt-1],2))), np.int(np.ceil(np.true_divide(5-common[fcnt-1],2)))), fontsize=12)
+
 
         plt.xlabel('Target datapts', fontsize=16)
         plt.xlim([np.min(percs), np.max(percs)])
@@ -132,13 +241,13 @@ def plot_percs_new(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, 
     indices_now = [x - 2 for x in indices]
     mixes_legend = list(map(str, mixes[indices_now]))
     for i in range(len(mixes_legend)):
-        mixes_legend[i] = "SC3 Mix with mix=" + mixes_legend[i]
+        mixes_legend[i] = "SC3 Transfer with mix=" + mixes_legend[i]
     legend = np.concatenate((['SC3', 'SC3-Comb'],mixes_legend))
     plt.legend(legend, fontsize=12, loc=4)
     plt.show()
 
 
-def plot_transferability_new(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
+def plot_transferability_new(fig_num, res, res_opt_mix_ind,res_opt_mix_aris,accs_desc, m_desc, percs, genes, n_src, n_trg, common):
     plt.figure(fig_num)
 
     #print res.shape
@@ -147,8 +256,7 @@ def plot_transferability_new(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
     plt.subplot(1, 2, 1)
     names = []
 
-    common_indices = [0,1,2,3]
-    appr_mix_indices = [-3, -3, -1, -1]# which mixture parameter should be used for each common_indices
+    common_indices = [0,1,2]
 
     for i in common_indices:
         transf = np.mean(res[0, 0, i, -1, :, :, 0], axis=0)
@@ -173,7 +281,7 @@ def plot_transferability_new(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
     cols = ['b', 'g', 'y', 'r', 'm', 'c', 'k', 'w']
     markers = ['o', '^', '<', 's', 'v', 'D', 'X', '*']
     for i in common_indices:
-        aris = np.mean(res[0, 0, i, 0, :, :, appr_mix_indices[i]], axis=0)
+        aris = np.mean(res_opt_mix_aris[0, 0, i, :, :], axis=0)
         transf = np.mean(res[0, 0, i, -1, :, :, 0], axis=0)
         plt.scatter(transf, aris, 20, cols[i],marker=markers[i], alpha=0.7)
 
@@ -184,7 +292,7 @@ def plot_transferability_new(fig_num, res, accs_desc, m_desc, percs, genes, n_sr
     plt.ylabel('ARI', fontsize=16)
     plt.xlim([0, 1])
     plt.ylim([0, 1])
-    plt.text(0.0, -0.1, '*Each point represents one size of targetdata, mixture parameter is chosen appropriately*', fontsize=12)
+    plt.text(0.0, -0.1, '*Each point represents one size of targetdata, KTA mixed optimal mixture parameter*', fontsize=12)
 
     plt.show()
 
@@ -193,15 +301,16 @@ def plot_mixtures_vs_rates(fig_num, res, accs_desc, m_desc, percs, genes, n_src,
     plt.figure(fig_num)
     ind_common = [0,1, 2]
     fcnt = 1
-    accs_indices = [0,4]
+    accs_indices = [0,1]
+    perc_ind = 4
     for c in range(len(ind_common)):
         plt.subplot(1, len(ind_common), fcnt)
         cmap = plt.cm.get_cmap('hsv', len(accs_indices) + 1)
         count = 0
 
         for a in range(len(accs_indices)):
-            aris = np.mean(res[0, 0, ind_common[c], accs_indices[a], :, -1, :], axis=0)
-            ste = stats.sem(res[0, 0, ind_common[c], accs_indices[a], :, -1, :], axis=0, ddof=0)
+            aris = np.mean(res[0, 0, ind_common[c], accs_indices[a], :, perc_ind, 2:], axis=0)
+            ste = stats.sem(res[0, 0, ind_common[c], accs_indices[a], :, perc_ind, 2:], axis=0, ddof=0)
             markers, caps, bars = plt.errorbar(mixes, aris, color=cmap(count), yerr=ste, linewidth=2.0)
             [bar.set_alpha(0.5) for bar in bars]
             [cap.set_alpha(0.5) for cap in caps]
@@ -217,7 +326,7 @@ def plot_mixtures_vs_rates(fig_num, res, accs_desc, m_desc, percs, genes, n_src,
             plt.xlabel('Mixture parameter', fontsize=16)
             plt.ylabel('Accuracy', fontsize=16)
             plt.text(1, 6.5, 'True cluster accuracy rates (ARI) vs. unsupervised accuracy measures (KTA score)', fontsize=20)
-            plt.text(0.3, -0.1, '*{0} source and {1} target datapoints, {2} genes*'.format(n_src[0], n_trg, genes[0]), fontsize=12)
+            plt.text(0.3, -0.1, '*{0} source and {1} target datapoints, {2} genes*'.format(n_src[0], percs[perc_ind]*n_trg, genes[0]), fontsize=12)
             legend = accs_desc[accs_indices]
             plt.legend(legend, fontsize=12, loc=2)
         else:
@@ -840,9 +949,9 @@ def plot_sc3_only(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, c
 if __name__ == "__main__":
 
     # For Part 1, Figures 1-3
-    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\main_results_part1_100reps.npz')
+    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_part1_opt_mixparam.npz')
     # For Part 2, Figures 4
-    #foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\main_results_part2_100reps_100trg.npz')
+    #foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\\results\main_results\main_results_part2_100reps_100trg.npz')
 
     # For Figures 6-...
     # foo = np.load('final_toy_experiments_part2.npz')
@@ -853,9 +962,11 @@ if __name__ == "__main__":
     acc_funcs = foo['acc_funcs']
     res = foo['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
     #res_mixed = foo['res_mixed']
+    res_opt_mix_ind = foo['res_opt_mix_ind']
+    res_opt_mix_aris = foo['res_opt_mix_aris']
     source_aris = foo['source_aris'] # n_src x genes x common x reps
     accs_desc = foo['accs_desc']
-    # print accs_desc
+    print accs_desc
     method_desc = foo['method_desc']
     percs = foo['percs']
     # reps = foo['reps']
@@ -866,13 +977,16 @@ if __name__ == "__main__":
     mixes = foo['mixes']
     print 'n_src x genes x common x acc_funcs x reps x percs x methods'
     print 'Result dimensionality: ', res.shape
+    print 'n_src x genes x common x reps x percs'
+    print 'Result optimal mixture parameter', res_opt_mix_ind.shape
     #  Running
-    # Part 1
-    plot_mixture_all(1, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
-    plot_percs_new(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    plot_transferability_new(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
-    # Part 2
-    # plot_mixtures_vs_rates(4, res_mixed, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+
+    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+    plot_mixture_all(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+    plot_percs_optmix(3,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+    plot_percs_new(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_transferability_new(5, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
+    plot_mixtures_vs_rates(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
 
 
     # plot_mixtures_vs_rates(5, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
