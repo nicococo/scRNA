@@ -497,3 +497,79 @@ def split_source_target(toy_data, true_toy_labels,
 
     return toy_data_source, toy_data_target, \
            true_toy_labels_source, true_toy_labels_target
+
+
+def split_source_target_2labels(toy_data, true_toy_labels_1, true_toy_labels_2,
+                            target_ncells=1000, source_ncells=1000,
+                            mode=2, source_clusters=None,
+                            noise_target=False, noise_sd=0.5, common=2, cluster_spec=None):
+
+    # Parameters for splitting data in source and target set:
+    # target_ncells = 1000 # How much of the data will be target data?
+    # source_ncells = 1000 # How much of the data will be source data?
+    # splitting_mode = 2
+    # Splitting mode: 1 = split randomly,
+    # source_clusters = None # Array of cluster ids to use in mode 6
+    # noise_target = False # Add some per gene gaussian noise to the target?
+    # noise_sd = 0.5 # SD of gaussian noise
+    # nscr = 2 # number of source clusters
+    # ntrg = 2 # number of target clusters
+    # common = 2 # number of shared clusters
+
+    assert (target_ncells + source_ncells <= toy_data.shape[1])
+
+    # First split the 'truth' matrix into a set we will use and a set we wont
+    # For mode 6,4,7 we do this differently
+    if target_ncells + source_ncells < toy_data.shape[1] and mode != 6 and mode != 4 and mode != 7:
+        toy_data, _, true_toy_labels_1, _, true_toy_labels_2,_ = \
+            train_test_split(
+                np.transpose(toy_data),
+                true_toy_labels_1, true_toy_labels_2,
+                test_size=toy_data.shape[1] - (target_ncells + source_ncells),
+                stratify=true_toy_labels_1
+            )
+        toy_data = np.transpose(toy_data)
+
+    if mode == 1:
+        toy_data_source, \
+        toy_data_target, \
+        true_toy_labels_source_1, \
+        true_toy_labels_target_1, \
+        true_toy_labels_source_2, \
+        true_toy_labels_target_2 = \
+            train_test_split(
+                np.transpose(toy_data),
+                true_toy_labels_1,
+                true_toy_labels_2,
+                test_size=target_ncells
+            )
+        toy_data_source = np.transpose(toy_data_source)
+        toy_data_target = np.transpose(toy_data_target)
+
+    else:
+        print "Unknown mode!"
+        toy_data_source = []
+        toy_data_target = []
+        true_toy_labels_source_1 = []
+        true_toy_labels_target_1 = []
+        true_toy_labels_source_2 = []
+        true_toy_labels_target_2 = []
+
+    if noise_target:
+        toy_data_target = np.transpose(
+            np.transpose(toy_data_target) +
+            np.random.normal(size=toy_data.shape[0], scale=noise_sd)
+        )
+
+    # Some modes can by chance gives us n+1 column matrices. This just neatens
+    # this by throwing away the additional column
+    toy_data_source = toy_data_source[:, 0:source_ncells]
+    toy_data_target = toy_data_target[:, 0:target_ncells]
+    true_toy_labels_source_1 = true_toy_labels_source_1[0:source_ncells]
+    true_toy_labels_target_1 = true_toy_labels_target_1[0:target_ncells]
+    true_toy_labels_source_2 = true_toy_labels_source_2[0:source_ncells]
+    true_toy_labels_target_2 = true_toy_labels_target_2[0:target_ncells]
+
+    return toy_data_source, toy_data_target, \
+           true_toy_labels_source_1, true_toy_labels_target_1, \
+           true_toy_labels_source_2, true_toy_labels_target_2

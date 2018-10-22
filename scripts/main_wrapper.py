@@ -15,6 +15,7 @@ import datetime
 #           - 100 reps start Fr,11.02, end So 13.01 , 100reps = 2days + 2h    (with 0,1,3,5 common and without mix =0 und 1), reaching 1% took 30mins
 #           - 50 reps with unsupervised accuracies on mixed data: 1d 12h
 #           - 10 reps with KTA on mixed data - 18h38min for 1,3,5 overlap bwz. 24h for 0,1,3,5 overlap
+#           - 100 reps with KTA on mixed with choosing mix automatically, final run - 8d15h20min, 10percs, 4commons, 11mixes
 now1 = datetime.datetime.now()
 print "Current date and time:"
 print now1.strftime("%Y-%m-%d %H:%M")

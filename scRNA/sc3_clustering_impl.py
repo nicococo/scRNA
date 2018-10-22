@@ -67,6 +67,15 @@ def data_transformation_log2(data):
     return np.log2(data + 1.)
 
 
+def no_data_transformation(data):
+    """
+    :param data: transcripts x cells data matrix
+    :return: identical data
+    """
+    # print('SC3 log2 data transformation.')
+    return data
+
+
 def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidean', mixture=0.5, use_H2=True):
     if mixture == 0.0:
         return distances(data, [], metric=metric)

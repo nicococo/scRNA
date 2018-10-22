@@ -256,7 +256,7 @@ def plot_transferability_new(fig_num, res, res_opt_mix_ind,res_opt_mix_aris,accs
     plt.subplot(1, 2, 1)
     names = []
 
-    common_indices = [0,1,2]
+    common_indices = [0,1,2,3]
 
     for i in common_indices:
         transf = np.mean(res[0, 0, i, -1, :, :, 0], axis=0)
@@ -299,7 +299,7 @@ def plot_transferability_new(fig_num, res, res_opt_mix_ind,res_opt_mix_aris,accs
 
 def plot_mixtures_vs_rates(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common, mixes):
     plt.figure(fig_num)
-    ind_common = [0,1, 2]
+    ind_common = [0,1, 2,3]
     fcnt = 1
     accs_indices = [0,1]
     perc_ind = 4
@@ -949,7 +949,7 @@ def plot_sc3_only(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, c
 if __name__ == "__main__":
 
     # For Part 1, Figures 1-3
-    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_part1_opt_mixparam.npz')
+    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_part1_opt_mixparam_100reps.npz')
     # For Part 2, Figures 4
     #foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\\results\main_results\main_results_part2_100reps_100trg.npz')
 
@@ -981,9 +981,9 @@ if __name__ == "__main__":
     print 'Result optimal mixture parameter', res_opt_mix_ind.shape
     #  Running
 
-    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
-    plot_mixture_all(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
-    plot_percs_optmix(3,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+    plot_main_opt_mix(1, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+    plot_percs_optmix(2, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
+    plot_mixture_all(3, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)
     plot_percs_new(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     plot_transferability_new(5, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common)
     plot_mixtures_vs_rates(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)

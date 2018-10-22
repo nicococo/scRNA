@@ -5,6 +5,7 @@ from scipy import stats
 import pandas as pd
 
 # from random import randint
+from scipy import stats
 
 
 def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes):
@@ -62,7 +63,7 @@ def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc,
 def plot_mixture_all(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, mixes):
     # Indices of the mixing parameters to plot:
     #indices = range(3, len(m_desc)-1)
-    indices = [2,3]
+    indices = [2,3,4,5,6,7,8,9,10,11,12]
 
     # Other indices
     ind_src = 0
@@ -237,7 +238,7 @@ def plot_transferability_new(fig_num, res, res_opt_mix_ind,res_opt_mix_aris,accs
     plt.xlabel('Target proportion of source dataset', fontsize=16)
     plt.ylabel('Transferability', fontsize=16)
     plt.ylim([0., 1.])
-    plt.legend(names, loc=4, fontsize=14)
+    #plt.legend(names, loc=4, fontsize=14)
 
     plt.subplot(1,2, 2)
     # n_src x genes x common x acc_funcs x reps x percs x methods
@@ -247,7 +248,7 @@ def plot_transferability_new(fig_num, res, res_opt_mix_ind,res_opt_mix_aris,accs
     transf = np.mean(res[0, -1, :, :, 0], axis=0)
     plt.scatter(transf, aris, 20, alpha=0.7)
 
-    plt.legend(names, loc=4)
+    #plt.legend(names, loc=4)
     plt.plot([0, 1], [0, 1], '--k')
     plt.grid('on')
     plt.xlabel('Transferability', fontsize=16)
@@ -261,75 +262,83 @@ def plot_transferability_new(fig_num, res, res_opt_mix_ind,res_opt_mix_aris,accs
 
 def plot_mixtures_vs_rates(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, mixes):
     plt.figure(fig_num)
-    fcnt = 1
     accs_indices = [0,1]
-    perc_ind = 1
+    perc_inds = range(len(percs))
     cmap = plt.cm.get_cmap('hsv', len(accs_indices) + 1)
-    count = 0
 
-    for a in range(len(accs_indices)):
-        aris = np.mean(res[0, accs_indices[a], :, perc_ind, 2:], axis=0)
-        ste = stats.sem(res[0, accs_indices[a], :, perc_ind, 2:], axis=0, ddof=0)
-        markers, caps, bars = plt.errorbar(mixes, aris, color=cmap(count), yerr=ste, linewidth=2.0)
-        [bar.set_alpha(0.5) for bar in bars]
-        [cap.set_alpha(0.5) for cap in caps]
-        plt.plot(mixes[aris.tolist().index(max(aris))], max(aris), 'o', color=cmap(count), label='_nolegend_')
-        count += 1
+    for perc_ind in perc_inds:
+        plt.subplot(2, 3, perc_ind+1)
+        count = 0
+        for a in range(len(accs_indices)):
+            aris = np.mean(res[0, accs_indices[a], :, perc_ind, 2:], axis=0)
+            ste = stats.sem(res[0, accs_indices[a], :, perc_ind, 2:], axis=0, ddof=0)
+            markers, caps, bars = plt.errorbar(mixes, aris, color=cmap(count), yerr=ste, linewidth=2.0)
+            [bar.set_alpha(0.5) for bar in bars]
+            [cap.set_alpha(0.5) for cap in caps]
+            plt.plot(mixes[aris.tolist().index(max(aris))], max(aris), 'o', color=cmap(count), label='_nolegend_')
+            count += 1
+        plt.title('{0} target datapoints'.format(percs[perc_ind] * n_trg), fontsize=20)
+        plt.xlabel('Mixture parameter', fontsize=12)
+        plt.ylabel('Accuracy', fontsize=12)
+        #plt.text(1, 6.5, 'True cluster accuracy rates (ARI) vs. unsupervised accuracy measures (KTA score)', fontsize=20)
 
-    plt.xlabel('Mixture parameter', fontsize=16)
-    plt.ylabel('Accuracy', fontsize=16)
-    plt.text(1, 6.5, 'True cluster accuracy rates (ARI) vs. unsupervised accuracy measures (KTA score)', fontsize=20)
-    plt.text(0.3, -0.1, '*{0} source and {1} target datapoints, {2} genes*'.format(n_src[0], percs[perc_ind]*n_trg, genes), fontsize=12)
-    legend = accs_desc[accs_indices]
-    plt.legend(legend, fontsize=12, loc=2)
+        legend = accs_desc[accs_indices]
+        plt.legend(legend, fontsize=12, loc=2)
 
-    plt.ylim([0., 1.])
-    plt.xlim([0.3,0.9])
-    plt.xticks(mixes, mixes, fontsize=10)
+        plt.ylim([0., 1.])
+        plt.xlim([0.3,0.9])
+        plt.xticks(mixes, mixes, fontsize=10)
     plt.show()
 
 
-def plot_expression_histogram(data_matrix):
-    pdb.set_trace()
-    plt.hist(data_matrix, bins=100)
+def plot_expression_histogram(data_matrix, num_bins=1000, x_range=(0,800), y_lim=1000000):
+    a_size,b_size = data_matrix.shape
+    X = np.log10(data_matrix.reshape(a_size * b_size, 1)+1.)
+    #X = data_matrix.reshape(a_size * b_size, 1)
+    plt.hist(X, range=x_range,bins=num_bins)
+    plt.ylim(0,y_lim)
+    #plt.xscale('log')
+    plt.title("Histogram of expression values of all {0} genes in all {1} cells (total of {2} values), \n{3} entries equal zero, x- and y-achis are cropped.".format(a_size, b_size, a_size*b_size, np.sum(np.sum(data==0))))
+    plt.xlabel("log10(x_exp +1)")
     plt.show()
 
 
 if __name__ == "__main__":
 
-    # foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_mouse.npz')
-    # methods = foo['methods']
-    # acc_funcs = foo['acc_funcs']
-    # res = foo['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
-    # #res_mixed = foo['res_mixed']
-    # res_opt_mix_ind = foo['res_opt_mix_ind']
-    # res_opt_mix_aris = foo['res_opt_mix_aris']
-    # source_aris = foo['source_aris'] # n_src x genes x common x reps
-    # accs_desc = foo['accs_desc']
-    # print accs_desc
-    # method_desc = foo['method_desc']
-    # percs = foo['percs']
-    # # reps = foo['reps']
-    # genes = foo['genes']
-    # n_src = foo['n_src']
-    # n_trg = foo['n_trg']
-    # mixes = foo['mixes']
-    # print 'n_src x genes x common x acc_funcs x reps x percs x methods'
-    # print 'Result dimensionality: ', res.shape
-    # print 'n_src x genes x common x reps x percs'
-    # print 'Result optimal mixture parameter', res_opt_mix_ind.shape
-    # #  Running
-    #
-    # plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
-    # plot_mixture_all(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
-    # plot_percs_optmix(3,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
-    # plot_percs_new(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
-    # plot_transferability_new(5, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg)
-    # plot_mixtures_vs_rates(6, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
+    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scRNA\main_results_mouse_sc316_labels_10reps_labels_SC3_within_new_settings.npz')
+    methods = foo['methods']
+    acc_funcs = foo['acc_funcs']
+    res = foo['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
+    #res_mixed = foo['res_mixed']
+    res_opt_mix_ind = foo['res_opt_mix_ind']
+    res_opt_mix_aris = foo['res_opt_mix_aris']
+    source_aris = foo['source_aris'] # n_src x genes x common x reps
+    print 'Source ARIs from NMF clustering: ', source_aris
+    accs_desc = foo['accs_desc']
+    print accs_desc
+    method_desc = foo['method_desc']
+    percs = foo['percs']
+    reps = foo['reps']
+    genes = foo['genes']
+    n_src = foo['n_src']
+    n_trg = foo['n_trg']
+    #print n_trg
+    mixes = foo['mixes']
+    print 'n_src x genes x common x acc_funcs x reps x percs x methods'
+    print 'Result dimensionality: ', res.shape
+    print 'n_src x genes x common x reps x percs'
+    print 'Result optimal mixture parameter', res_opt_mix_ind.shape
+    #  Running
+    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
+    plot_mixture_all(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
+    #plot_percs_optmix(3,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
+    #plot_percs_new(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
+    #plot_transferability_new(3, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg)
+    plot_mixtures_vs_rates(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
 
-    fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-    # Careful, this takes too long..
-    data = pd.read_csv(fname_data, sep='\t').values
-    plot_expression_histogram(data)
+    #fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
+    #data = pd.read_csv(fname_data, sep='\t').values
+    #plot_expression_histogram(data, num_bins=200, x_range=(0,5), y_lim=1000000)
+
 
 print('Done')

@@ -17,20 +17,20 @@ print now1.strftime("%Y-%m-%d %H:%M")
 
 # Data location
 fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_primary_grouped'
+#fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_major_sub'
 #fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\scRNA\src_c16.labels.tsv'
-fname_final = 'main_results_mouse_primary_labels_grouped_10reps_new_settings.npz'
+fname_final = 'main_results_mouse_sc316_labels_10reps_labels_SC3_within_new_settings.npz'
 
 # Parameters
 reps = 10   # number of repetitions, 100
 n_src = [1000]  # number of source data points, 1000
-percs_aim = [20, 50, 100, 200, 400, 670]  # [10, 20, 40, 70, 100, 150, 200, 300, 500], target sizes to use. (has to be greater than num_cluster!)
+percs_aim = [20, 50,100, 200, 400, 670]  # [10, 20, 40, 70, 100, 150, 200, 300, 500], target sizes to use. (has to be greater than num_cluster!)
 mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Mixture parameters of transfer learning SC3, 0.3, 0.6, 0.9
 min_cell_cluster = 0
 min_expr_genes = 2000
 non_zero_threshold = 2
 perc_consensus_genes = 0.94
-num_cluster = 18
+num_cluster = 16
 nmf_alpha = 10.0
 nmf_l1 = 0.75
 nmf_max_iter = 4000
@@ -41,49 +41,32 @@ if num_cluster > np.min(percs_aim):
     print "percs_aim need to be greater than num_cluster!"
     sys.exit("error!")
 
-# runtime 1 rep, 100src, 10,20, 0.3,0.6 - 15min
-# runtime 1 rep, 1000src, 10,20, 0.3,0.6 - 14min
-# runtime 10reps, 1000src,  [20, 50, 100, 200, 400], [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] - 1d14h
-# runtime 10reps, 1000src,  [20, 50, 100, 200, 400, 670], [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] - 2d16h
+# runtime 10 reps, 6 percs, 11 mixes: 3d14h50min
+# 3 days, 23:41:34.617000
+# runtime 10 reps, [20, 50,100, 200, 400, 670], [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]: 2d17h45min
+
 
 
 # List of accuracy functions to be used
 acc_funcs = list()
 acc_funcs.append(partial(acc_ari, use_strat=False))
 acc_funcs.append(partial(acc_kta, mode=0))
-acc_funcs.append(acc_transferability)
+# acc_funcs.append(acc_transferability)
 
 # Read data
 #labels = np.genfromtxt(fname_labels)
-labels = np.loadtxt(fname_labels,  delimiter='\t')
-#pdb.set_trace()
+#foo = np.loadtxt(fname_labels,  delimiter='\t')
 #labels = foo[0].astype(int)
 #cell_ids_labels = foo[1].astype(int)
-label_names, label_counts = np.unique(labels, return_counts = True)
-print "Labels: ", label_names
-print "Counts: ", label_counts
+
 data = pd.read_csv(fname_data, sep='\t').values
 #data = data[:, cell_ids_labels]
-
-# Cluster filter
-if min_cell_cluster >0:
-    print "Cluster filter"
-    clusters_to_del = label_counts<min_cell_cluster
-    st = set(label_names[clusters_to_del])
-    cells_to_keep = [i for i, e in enumerate(labels) if e not in st]
-    labels = labels[cells_to_keep]
-    label_names, label_counts = np.unique(labels, return_counts = True)
-    print "New labels: ", label_names
-    print "New counts: ", label_counts
-    data = data[:,cells_to_keep]
-
-print "Data dimensions before preprocessing: genes x cells", data.shape
 
 if preprocessing_first:
     # Cell and gene filter and transformation before the whole procedure
     cell_inds = sc.cell_filter(data, num_expr_genes=min_expr_genes, non_zero_threshold=non_zero_threshold)
     data = data[:,cell_inds]
-    labels = labels[cell_inds]
+    # labels = labels[cell_inds]
     gene_inds = sc.gene_filter(data, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
     data = data[gene_inds, :]
     data = sc.data_transformation_log2(data)
@@ -98,10 +81,35 @@ else:
     gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
     data_transf_fun = sc.data_transformation_log2
 
+# Generating labels from complete dataset
+print "Train complete data"
+complete_nmf = None
+complete_nmf = NmfClustering(data, np.arange(data.shape[0]), num_cluster=num_cluster)
+complete_nmf.add_cell_filter(cell_filter_fun)
+complete_nmf.add_gene_filter(gene_filter_fun)
+complete_nmf.set_data_transformation(data_transf_fun)
+complete_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
+# Get labels
+desc, target_nmf, trg_lbls_pred, mixed_data = method_sc3_filter(complete_nmf, data, [], cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, mix=0.0, metric='euclidean', use_da_dists=False, n_trg_cluster=num_cluster)
+labels = trg_lbls_pred
+label_names, label_counts = np.unique(labels, return_counts = True)
+print "Labels: ", label_names
+print "Counts: ", label_counts
+
+#labels = foo[0].astype(int)
+#cell_ids_labels = foo[1].astype(int)
+
+
+data = data[:, complete_nmf.remain_cell_inds]
+
+
+print "Data dimensions: genes x cells", data.shape
 genes = data.shape[0]  # number of genes
 n_all = data.shape[1]
 n_trg = n_all - n_src[0]    # overall number of target data points
 percs = np.true_divide(np.concatenate(percs_aim, n_trg), n_trg)
+
+
 
 # List of methods to be applied
 methods = list()
