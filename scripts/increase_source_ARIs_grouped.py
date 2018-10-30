@@ -13,17 +13,17 @@ print now1.strftime("%Y-%m-%d %H:%M")
 
 # Data location
 fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-fname_results = 'increase_src_ari_experiment_grouped.npz'
-fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_primary_grouped'
+fname_results = 'increase_src_ari_experiment_grouped_3.npz'
+fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_primary_grouped_3'
 
 # Parameters
 reps = 10   # 10, number of repetitions, 100
 n_src = [1000]  # [20,100, 300, 600, 1000, 1300, 1600, 1670] number of source data points, 1000
 min_expr_genes = 2000
-non_zero_threshold = 2
-perc_consensus_genes = 0.94
-num_cluster = 14 # 18
-nmf_alpha = 10.0
+non_zero_threshold = 1
+perc_consensus_genes = 0.98
+num_cluster = 3 # 18
+nmf_alpha = 1.0
 nmf_l1 = 0.75
 nmf_max_iter = 4000
 nmf_rel_err = 1e-3
@@ -77,7 +77,7 @@ for s in range(len(n_src)):
             src = data
             src_labels = labels
         else:
-            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=1,
+            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=2,
                                                                target_ncells=n_trg,
                                                                source_ncells=n_src[s])
 

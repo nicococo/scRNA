@@ -17,9 +17,9 @@ print now1.strftime("%Y-%m-%d %H:%M")
 
 # Data location
 fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_primary_grouped'
+fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_primary_grouped_5'
 #fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\scRNA\src_c16.labels.tsv'
-fname_final = 'main_results_mouse_primary_labels_grouped_10reps_new_settings.npz'
+fname_final = 'main_results_mouse_primary_labels_grouped_5_10reps.npz'
 
 # Parameters
 reps = 10   # number of repetitions, 100
@@ -28,10 +28,10 @@ percs_aim = [20, 50, 100, 200, 400, 670]  # [10, 20, 40, 70, 100, 150, 200, 300,
 mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Mixture parameters of transfer learning SC3, 0.3, 0.6, 0.9
 min_cell_cluster = 0
 min_expr_genes = 2000
-non_zero_threshold = 2
-perc_consensus_genes = 0.94
-num_cluster = 18
-nmf_alpha = 10.0
+non_zero_threshold = 1
+perc_consensus_genes = 0.98
+num_cluster = 5
+nmf_alpha = 1.0
 nmf_l1 = 0.75
 nmf_max_iter = 4000
 nmf_rel_err = 1e-3
@@ -142,7 +142,7 @@ for s in range(len(n_src)):
     r = 0
     while r < reps:
             # Split data in source and target randomly (mode =1) or randomly stratified (mode = 2)
-            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=1,
+            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=2,
                                                                    target_ncells=n_trg,
                                                                    source_ncells=n_src[s])
 

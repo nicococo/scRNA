@@ -21,16 +21,16 @@ print now1.strftime("%Y-%m-%d %H:%M")
 
 # Data location
 fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-fname_results = 'ari_pre_experiment_full_n_src.npz'
+fname_results = 'ari_pre_experiment_full_n_src_new_settings.npz'
 
 # Parameters
 reps = 10   # 10, number of repetitions, 100
-n_src = [1670]  # [20,100, 300, 600, 1000, 1300, 1600, 1670] number of source data points, 1000
+n_src = [20,100, 300, 600, 1000, 1658]  # [20,100, 300, 600, 1000, 1300, 1600, 1670] number of source data points, 1000
 min_expr_genes = 2000
-non_zero_threshold = 1
-perc_consensus_genes = 0.98
+non_zero_threshold = 2
+perc_consensus_genes = 0.94
 num_cluster = 16 # 16
-nmf_alpha = 1.0
+nmf_alpha = 10.0
 nmf_l1 = 0.75
 nmf_max_iter = 4000
 nmf_rel_err = 1e-3
