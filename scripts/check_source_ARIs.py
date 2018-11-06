@@ -21,7 +21,7 @@ print now1.strftime("%Y-%m-%d %H:%M")
 
 # Data location
 fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-fname_results = 'ari_pre_experiment_full_n_src_new_settings.npz'
+fname_results = 'ari_pre_experiment_full_n_src_final.npz'
 
 # Parameters
 reps = 10   # 10, number of repetitions, 100
@@ -36,7 +36,7 @@ nmf_max_iter = 4000
 nmf_rel_err = 1e-3
 preprocessing_first = True
 
-data = pd.read_csv(fname_data, sep='\t').values
+data = pd.read_csv(fname_data, sep='\t', header=None).values
 print "data dimensions before preprocessing: genes x cells: ", data.shape
 
 # Cell and gene filter and transformation before the whole procedure

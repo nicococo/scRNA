@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 #  generate plot
-foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\\ari_pre_experiment_full_n_src_new_settings.npz')
+foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\\ari_pre_experiment_full_n_src_final.npz')
 source_aris_NMF_NMF = foo['source_aris_NMF_NMF']
 source_aris_NMF_SC3 = foo['source_aris_NMF_SC3']
 source_aris_SC3_NMF = foo['source_aris_SC3_NMF']
@@ -29,7 +29,7 @@ markers, caps, bars = plt.errorbar(n_src, np.mean(source_aris_SC3_SC3, axis=1), 
 [cap.set_alpha(0.3) for cap in caps]
 
 plt.legend(['method NMF, truth NMF', 'method NMF, truth SC3', 'method SC3, truth NMF', 'method SC3, truth SC3'], loc=4)
-plt.xlim([0,1670])
+plt.xlim([0,600])
 plt.ylim([0,1])
 plt.xlabel('Data size (truth from whole dataset of 1670)')
 plt.ylabel('ARI')

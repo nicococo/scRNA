@@ -305,7 +305,7 @@ def plot_expression_histogram(data_matrix, num_bins=1000, x_range=(0,800), y_lim
 
 if __name__ == "__main__":
 
-    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_mouse_primary_labels_grouped_3_10reps.npz')
+    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_mouse_primary_grouped_final.npz')
     methods = foo['methods']
     acc_funcs = foo['acc_funcs']
     res = foo['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     plot_mixture_all(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
     #plot_percs_optmix(3,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
     #plot_percs_new(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
-    plot_transferability_new(3, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg)
+    #plot_transferability_new(3, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg)
     plot_mixtures_vs_rates(4, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
 
     #fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'

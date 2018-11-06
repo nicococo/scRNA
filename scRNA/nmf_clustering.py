@@ -70,17 +70,17 @@ class DaNmfClustering(NmfClustering):
         src_gene_ids = self.src.gene_ids[self.src.remain_gene_inds].copy()
         inds1, inds2 = get_matching_gene_inds(src_gene_ids, trg_gene_ids)
 
-        #print 'MTL source {0} genes -> {1} genes.'.format(src_gene_ids.size, inds2.size)
-        #print 'MTL target {0} genes -> {1} genes.'.format(trg_gene_ids.size, inds1.size)
+        # print 'MTL source {0} genes -> {1} genes.'.format(src_gene_ids.size, inds2.size)
+        # print 'MTL target {0} genes -> {1} genes.'.format(trg_gene_ids.size, inds1.size)
 
         src_gene_ids = src_gene_ids[inds2]
         self.gene_ids = trg_gene_ids[inds1]
         trg_data = trg_data[inds1, :]
 
-        #print('Sorted, filtered gene ids for src/trg. They should coincide!')
+        # print('Sorted, filtered gene ids for src/trg. They should coincide!')
         for i in range(inds1.size):
             #if i < 10 or src_gene_ids[i] != self.gene_ids[i]:
-                #print i, src_gene_ids[i], self.gene_ids[i]
+            #    print i, src_gene_ids[i], self.gene_ids[i]
             assert(src_gene_ids[i] == self.gene_ids[i])
 
         assert(self.src.dictionary is not None)  # source data should always be pre-processed

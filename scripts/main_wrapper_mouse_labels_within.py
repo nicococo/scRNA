@@ -19,18 +19,18 @@ print now1.strftime("%Y-%m-%d %H:%M")
 fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
 #fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_major_sub'
 #fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\scRNA\src_c16.labels.tsv'
-fname_final = 'main_results_mouse_NMF_labels_10reps_higher_alpha.npz'
+fname_final = 'main_results_mouse_NMF_labels_only_3_clusters.npz'
 
 # Parameters
 reps = 10   # number of repetitions, 100
 n_src = [1000]  # number of source data points, 1000
-percs_aim = [20, 50,100, 200, 400, 670]  # [10, 20, 40, 70, 100, 150, 200, 300, 500], target sizes to use. (has to be greater than num_cluster!)
+percs_aim = [20, 50, 100, 200, 400, 650]   # [10, 20, 40, 70, 100, 150, 200, 300, 500], target sizes to use. (has to be greater than num_cluster!)
 mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Mixture parameters of transfer learning SC3, 0.3, 0.6, 0.9
 min_cell_cluster = 0
 min_expr_genes = 2000
 non_zero_threshold = 2
 perc_consensus_genes = 0.94
-num_cluster = 16
+num_cluster = 3
 nmf_alpha = 10.0
 nmf_l1 = 0.75
 nmf_max_iter = 4000
@@ -60,7 +60,7 @@ acc_funcs.append(partial(acc_kta, mode=0))
 #labels = foo[0].astype(int)
 #cell_ids_labels = foo[1].astype(int)
 
-data = pd.read_csv(fname_data, sep='\t').values
+data = pd.read_csv(fname_data, sep='\t', header=None).values
 #data = data[:, cell_ids_labels]
 
 if preprocessing_first:
@@ -179,13 +179,13 @@ for s in range(len(n_src)):
             print 'ITER(', r+1, '): SOURCE KTA = ', source_ktas[s,r]
             print 'ITER(', r+1, '): SOURCE ARI = ', source_aris[s,r]
 
-            #if source_aris[s,r] < 0.94:
-            #    continue
+            if source_aris[s,r] < 0.94:
+                continue
             # 3.d. Target data subsampling loop
             #plot_cnt = 1
             print "Target data subsampling loop"
             for i in range(len(percs)):
-                n_trg_perc = np.int(n_trg * percs[i])
+                n_trg_perc = np.int(n_trg * percs[i]+0.5)
                 p_trg = trg[:, inds[:n_trg_perc]].copy()
                 p_trg_labels = trg_labels[inds[:n_trg_perc]].copy()
                 # 4. MTL/DA mixing parameter loop
@@ -215,6 +215,8 @@ for s in range(len(n_src)):
                             accs[f, r, i, m], accs_descr = acc_funcs[f](target_nmf, mixed_data, p_trg_labels.copy(),
                                                                         trg_lbls_pred.copy())
                         accs_desc.append(accs_descr)
+                        print('Accuracy: {0} ({1})'.format(accs[f, r, i, m], accs_descr))
+
 
                     perc_done = round(np.true_divide(exp_counter, num_exps)*100, 4)
                     print('{0}% of experiments done.'.format(perc_done))
