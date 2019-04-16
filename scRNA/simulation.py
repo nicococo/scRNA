@@ -14,44 +14,37 @@ def recursive_dirichlet(cluster_spec, num_cells,
     cluster_sizes = np.ones(num_clusters)
     
     while min(cluster_sizes) == 1:
-        cluster_sizes = \
-          np.floor(
-            np.random.dirichlet(
-              np.ones(num_clusters) * 
-              dirichlet_parameter_cluster_size, 
-              size=None
-            ) * num_cells
-          )
+        cluster_sizes = np.floor(np.random.dirichlet(np.ones(num_clusters) * dirichlet_parameter_cluster_size, size=None) * num_cells)
 
     #Because of the floor call we always have a little too few cells
     if np.sum(cluster_sizes) != num_cells:
-        cluster_sizes[0] = \
-          cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
-          
+        cluster_sizes[0] = cluster_sizes[0] - (np.sum(cluster_sizes) - num_cells)
+    #if min(cluster_sizes)<=1:
+	#		pdb.set_trace()
     assert min(cluster_sizes) > 1
     assert sum(cluster_sizes) == num_cells
-    
+
     cluster_sizes = cluster_sizes.astype(int).tolist()
     for i, spec in enumerate(cluster_spec):
         if type(spec) is list:
              cluster_sizes[i] = recursive_dirichlet(
-               spec, 
+               spec,
                cluster_sizes[i],
                dirichlet_parameter_cluster_size
              )
-             
+
     return(cluster_sizes)
 
 
 def generate_de_logfc(ngenes, prop_genes_de, de_logfc):
 
     nde_genes = int(np.floor(ngenes * prop_genes_de))
-    up_down = np.sign(np.random.normal(size = nde_genes))    
+    up_down = np.sign(np.random.normal(size = nde_genes))
     logfc = map((lambda x: x * de_logfc), up_down)
-        
+
     logfc = logfc + [0] * (ngenes - nde_genes)
     random.shuffle(logfc)
-    
+
     return(logfc)
 
 
@@ -61,14 +54,14 @@ def recursive_generate_counts(cluster_nums, num_genes, true_means,
                               mean_de_logfc, sd_de_logfc):
 
     cluster_counts = [0] * len(cluster_nums)
-        
+
     for i,num_cells in enumerate(cluster_nums):
 
         #Set DE for this cluster or set of clusters
         prop_genes_de = np.random.uniform(min_prop_genes_de, max_prop_genes_de)
         de_logfc      = np.random.normal(mean_de_logfc, sd_de_logfc)
         logfc = np.add(
-          parent_logfc, 
+          parent_logfc,
           generate_de_logfc(num_genes, prop_genes_de, de_logfc)
         )
 
@@ -84,15 +77,15 @@ def recursive_generate_counts(cluster_nums, num_genes, true_means,
               generate_counts(
                 num_cells, num_genes, true_means, logfc, nb_dispersion
               )
-            
+
     return(np.hstack(cluster_counts))
 
 
 def generate_counts(num_cells, num_genes, true_means, logfc, nb_dispersion):
-    
+
     #Per cell noise
     all_facs = np.power(
-      2, 
+      2,
       np.random.normal(
         loc = 0, scale = 0.5, size = num_cells
       )
@@ -102,18 +95,18 @@ def generate_counts(num_cells, num_genes, true_means, logfc, nb_dispersion):
     effective_means = np.transpose(
       np.multiply(np.transpose(effective_means), np.power(2, logfc))
     )
-    
+
     # Generate data
     sample = np.random.negative_binomial(
       p = (1 / nb_dispersion) / ((1/nb_dispersion) + effective_means),
       n = 1 / nb_dispersion, size = [num_genes, num_cells]
     )
-    
+
     return(sample)
 
 
 def generate_toy_data(
-                      num_genes = 10000, num_cells = 1000, 
+                      num_genes = 10000, num_cells = 1000,
 
                       cluster_spec = None,
                       dirichlet_parameter_cluster_size = 10,
@@ -125,7 +118,7 @@ def generate_toy_data(
                       mean_de_logfc     = 1,
                       sd_de_logfc       = 0.5,
                      ):
-                      
+
     # Toy experiment parameters
     # Data generation parameters
 
@@ -141,7 +134,7 @@ def generate_toy_data(
       num_cells,
       dirichlet_parameter_cluster_size
     )
-    
+
     #Define the 'true' population mean expression levels
     true_means = np.random.gamma(
       gamma_shape, scale=1 / float(gamma_rate), size=num_genes
@@ -158,8 +151,8 @@ def generate_toy_data(
       mean_de_logfc,
       sd_de_logfc
     )
-    
-    def flatten(l): 
+
+    def flatten(l):
         if type(l) is list:
             return flatten(l[0]) + (flatten(l[1:]) if len(l) > 1 else [])
         else:
@@ -269,35 +262,23 @@ def split_source_target(toy_data, true_toy_labels,
     elif mode == 4:
 
         true_toy_labels = np.array(true_toy_labels)
-        cluster_names = np.unique(true_toy_labels)
-
-        # Assign exclusive clusters
-        # To source data set
-        source_cluster = cluster_names[0]
+        cluster_names, counts = np.unique(true_toy_labels,return_counts=True)
+        # Assign cluster that is not in source
+        source_cluster = cluster_names[np.argmax(counts)]
         source_indices = (true_toy_labels != source_cluster)
         toy_data_source_exclusive = toy_data[:, source_indices]
         true_toy_labels_source_exclusive = true_toy_labels[source_indices]
 
-        # To target data set
-        target_cluster = cluster_names[1]
+        # Assign cluster that is not in target
+        counts[np.argmax(counts)]=0
+        target_cluster = cluster_names[np.argmax(counts)]
         target_indices = (true_toy_labels != target_cluster)
         toy_data_target_exclusive = toy_data[:, target_indices]
         true_toy_labels_target_exclusive = true_toy_labels[target_indices]
 
-        toy_data_source, _, true_toy_labels_source, _ = \
-            train_test_split(
-                np.transpose(toy_data_source_exclusive),
-                true_toy_labels_source_exclusive,
-                test_size = target_ncells,
-                stratify = true_toy_labels_source_exclusive
-            )
-        toy_data_target, _, true_toy_labels_target, _ = \
-            train_test_split(
-                np.transpose(toy_data_target_exclusive),
-                true_toy_labels_target_exclusive,
-                test_size = source_ncells,
-                stratify = true_toy_labels_target_exclusive
-            )
+        _, toy_data_source, _, true_toy_labels_source = train_test_split(np.transpose(toy_data_source_exclusive), true_toy_labels_source_exclusive, test_size = source_ncells, stratify = true_toy_labels_source_exclusive)
+
+        _, toy_data_target, _, true_toy_labels_target = train_test_split(np.transpose(toy_data_target_exclusive), true_toy_labels_target_exclusive, test_size = target_ncells, stratify = true_toy_labels_target_exclusive)
 
         toy_data_source = np.transpose(toy_data_source)
         toy_data_target = np.transpose(toy_data_target)
@@ -338,15 +319,12 @@ def split_source_target(toy_data, true_toy_labels,
         true_toy_labels_target = true_toy_labels_arr[target_indices_ind]
 
     elif mode == 6:
-
         assert(source_clusters != None)
 
-        source_cluster_indices = \
-            [i for i, x in enumerate(true_toy_labels) if x in source_clusters]
+        source_cluster_indices = [i for i, x in enumerate(true_toy_labels) if x in source_clusters]
 
         toy_data_source = toy_data[:, source_cluster_indices]
-        true_toy_labels_source = \
-            [true_toy_labels[i] for i in source_cluster_indices]
+        true_toy_labels_source = [true_toy_labels[i] for i in source_cluster_indices]
 
         try:
             assert(source_ncells <= toy_data_source.shape[1])
@@ -404,8 +382,15 @@ def split_source_target(toy_data, true_toy_labels,
             nsrc = len(nclusters) - ntrg + common   # number of clusters in source
             assert(nsrc + ntrg - common <= len(nclusters))
             Cidx = np.random.choice(nclusters,common,False) # Indices of common clusters, chosen at random
-            Sidx = np.random.choice(np.setdiff1d(nclusters,Cidx),nsrc-common,False) # Indices of exclusive source clusters
-            Tidx = np.random.choice(np.setdiff1d(nclusters,np.union1d(Sidx,Cidx)),ntrg-common,False) # Indices of exclusive target clusters
+            if not nsrc-common==0:
+                Sidx = np.random.choice(np.setdiff1d(nclusters,Cidx),nsrc-common,False) # Indices of exclusive source clusters
+                if not ntrg-common==0:
+                    Tidx = np.random.choice(np.setdiff1d(nclusters,np.union1d(Sidx,Cidx)),ntrg-common,False) # Indices of exclusive target clusters
+                else:
+                    Tidx = []
+            else:
+                Sidx = []
+                Tidx = []
             #np.concatenate((np.array(Cidx).copy(),np.random.choice(np.setdiff1d(nclusters,Sidx),ntrg-common)),axis=0)
 
             Cidx = flatten([cluster_spec[c] for c in  Cidx])
@@ -437,6 +422,10 @@ def split_source_target(toy_data, true_toy_labels,
             shared_trg_size = int(target_ncells * float(len(Cidx))/(len(Tidx)+len(Cidx)))
             # shared_src_size = source_ncells - sum(np.in1d(true_toy_labels,Sidx))   #
             shared_src_size = int(source_ncells * float(len(Cidx))/(len(Sidx)+len(Cidx)))
+            if shared_trg_size+shared_src_size >=  sum(shared_idx):
+                to_take_away = np.ceil((shared_trg_size+shared_src_size-sum(shared_idx))/2)+1
+                shared_trg_size=np.int(shared_trg_size-to_take_away)
+                shared_src_size=np.int(shared_src_size-to_take_away)
             if shared_trg_size == 0:
                 data_shared_target, data_shared_source, labels_shared_target, labels_shared_source = [],[],[],[]
             else:
@@ -448,8 +437,7 @@ def split_source_target(toy_data, true_toy_labels,
             if ntrg > common:
                 trg_idx = np.in1d(true_toy_labels, Tidx)
                 add_trg_size = int(target_ncells - shared_trg_size)
-                toy_data_target, _, true_toy_labels_target, _ = train_test_split(toy_data[:, trg_idx].transpose(), np.array(true_toy_labels)[trg_idx],
-                                                                                 train_size=add_trg_size, test_size=0)
+                toy_data_target, _, true_toy_labels_target, _ = train_test_split(toy_data[:, trg_idx].transpose(), np.array(true_toy_labels)[trg_idx],train_size=add_trg_size, test_size=0)
                 if shared_trg_size != 0:
                     toy_data_target = np.concatenate((data_shared_target,toy_data_target))
                     true_toy_labels_target = np.concatenate((labels_shared_target,true_toy_labels_target))
@@ -463,8 +451,7 @@ def split_source_target(toy_data, true_toy_labels,
             if nsrc>common:
                 src_idx = np.in1d(true_toy_labels, Sidx)
                 add_src_size = int(source_ncells - shared_src_size)
-                toy_data_source, _, true_toy_labels_source, _ = train_test_split(toy_data[:, src_idx].transpose(), np.array(true_toy_labels)[src_idx],
-                                                                                 train_size=add_src_size, test_size=0)
+                toy_data_source, _, true_toy_labels_source, _ = train_test_split(toy_data[:, src_idx].transpose(), np.array(true_toy_labels)[src_idx],train_size=add_src_size, test_size=0)
                 if shared_src_size != 0:
                     toy_data_source = np.concatenate((data_shared_source,toy_data_source))
                     true_toy_labels_source = np.concatenate((labels_shared_source,true_toy_labels_source))
