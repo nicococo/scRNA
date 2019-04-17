@@ -2,6 +2,7 @@ import numpy as np
 import scipy.stats as stats
 from sklearn import decomposition as decomp
 import pdb
+import pandas as pd
 
 
 from abstract_clustering import AbstractClustering
@@ -14,7 +15,7 @@ class NmfClustering(AbstractClustering):
     dictionary = None
     data_matrix = None
 
-    def __init__(self, data, gene_ids, num_cluster):
+    def __init__(self, data, gene_ids, num_cluster, labels):
         super(NmfClustering, self).__init__(data, gene_ids=gene_ids)
         self.num_cluster = num_cluster
 
@@ -23,9 +24,9 @@ class NmfClustering(AbstractClustering):
             k = self.num_cluster
         X = self.pre_processing()
 
-        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=100,
+        nmf = decomp.NMF(alpha=alpha, init='nndsvdar', l1_ratio=l1, max_iter=max_iter,
                          n_components=k, random_state=0, shuffle=True, solver='cd',
-                         tol=0.00001, verbose=0)
+                         tol=rel_err, verbose=0)
 
         W = nmf.fit_transform(X)
         H = nmf.components_
@@ -44,8 +45,91 @@ class NmfClustering(AbstractClustering):
 
     def print_reconstruction_error(self, X, W, H):
         print '  Elementwise absolute reconstruction error   : ', np.sum(np.abs(X - W.dot(H))) / np.float(X.size)
-        print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((X - W.dot(H))*(X - W.dot(H)))) \
-                                                                    / np.float(X.size)
+        print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((X - W.dot(H))*(X - W.dot(H)))) / np.float(X.size)
+
+
+class NmfClustering_initW(AbstractClustering):
+    num_cluster = -1
+    dictionary = None
+    data_matrix = None
+
+    def __init__(self, data, gene_ids, num_cluster, labels):
+        super(NmfClustering_initW, self).__init__(data, gene_ids=gene_ids)
+        self.num_cluster = num_cluster
+        self.labels=labels
+
+    def apply(self, k=-1, alpha=1.0, l1=0.75, max_iter=100, rel_err=1e-3):
+        if k == -1:
+            k = self.num_cluster
+        X = self.pre_processing()
+
+        fixed_W = pd.get_dummies(self.labels)
+        fixed_W_t = fixed_W.T  # interpret W as H (transpose), you can only fix H, while optimizing W in the code. So we simply switch those matrices (invert their roles).
+        learned_H_t, fixed_W_t_same, n_iter = decomp.non_negative_factorization(X.astype(np.float), n_components=k, init='custom', random_state=0, update_H=False, H=fixed_W_t.astype(np.float), alpha=alpha, l1_ratio=l1, max_iter=max_iter, shuffle=True, solver='cd',tol=rel_err, verbose=0)
+
+        init_W = fixed_W_t_same.T
+        init_H = learned_H_t.T
+
+        nmf = decomp.NMF(alpha=alpha, init='custom',l1_ratio=l1, max_iter=max_iter, n_components=k, random_state=0, shuffle=True, solver='cd', tol=rel_err, verbose=0)
+        W = nmf.fit_transform(X.T, W=init_W, H = init_H)
+        H = nmf.components_
+        self.cluster_labels = np.argmax(W, axis=1)
+
+        if np.any(np.isnan(H)):
+            raise Exception('H contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+                alpha, k, l1, X.shape[0], X.shape[1]))
+        if np.any(np.isnan(W)):
+            raise Exception('W contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+                alpha, k, l1, X.shape[0], X.shape[1]))
+
+        # self.print_reconstruction_error(X, W, H)
+        self.dictionary = H.T
+        self.data_matrix = W.T
+
+    def print_reconstruction_error(self, X, W, H):
+        print '  Elementwise absolute reconstruction error   : ', np.sum(np.abs(X - W.dot(H))) / np.float(X.size)
+        print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((X - W.dot(H))*(X - W.dot(H)))) / np.float(X.size)
+
+
+class NmfClustering_fixW(AbstractClustering):
+    num_cluster = -1
+    dictionary = None
+    data_matrix = None
+
+    def __init__(self, data, gene_ids, num_cluster,labels):
+        super(NmfClustering_fixW, self).__init__(data, gene_ids=gene_ids)
+        self.num_cluster = num_cluster
+        self.labels=labels
+
+    def apply(self, k=-1, alpha=1.0, l1=0.75, max_iter=100, rel_err=1e-3):
+        if k == -1:
+            k = self.num_cluster
+        X_t = self.pre_processing()
+        X = X_t.T
+
+        fixed_W = pd.get_dummies(self.labels)
+        fixed_W_t = fixed_W.T  # interpret W as H (transpose), you can only fix H, while optimizing W in the code. So we simply switch those matrices (invert their roles).
+        learned_H_t, fixed_W_t_same, n_iter = decomp.non_negative_factorization(X_t.astype(np.float), n_components=k, init='custom', random_state=0, update_H=False, H=fixed_W_t.astype(np.float), alpha=alpha, l1_ratio=l1, max_iter=max_iter, shuffle=True, solver='cd',tol=rel_err, verbose=0)
+
+        assert(np.all(fixed_W_t == fixed_W_t_same))
+        #self.cluster_labels = np.argmax(fixed_W_t_same.T, axis=1)
+
+        # Now take the learned H, fix it and learn W to see how well it worked
+        learned_W, learned_H_fix, n_iter = decomp.non_negative_factorization(X.astype(np.float), n_components=k, init='custom', random_state=0, update_H=False, H=learned_H_t.T, alpha=alpha, l1_ratio=l1, max_iter=max_iter, shuffle=True, solver='cd',tol=rel_err, verbose=0)
+
+        assert(np.all(learned_H_t.T == learned_H_fix))
+        self.cluster_labels = np.argmax(learned_W, axis=1)
+
+        if np.any(np.isnan(learned_H_t)):
+            raise Exception('H contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+                alpha, k, l1, X.shape[0], X.shape[1]))
+        if np.any(np.isnan(fixed_W_t)):
+            raise Exception('W contains NaNs (alpha={0}, k={1}, l1={2}, data={3}x{4}'.format(
+                alpha, k, l1, X.shape[0], X.shape[1]))
+
+        #self.print_reconstruction_error(X, fixed_W_t, learned_H_t)
+        self.dictionary = learned_H_t
+        self.data_matrix = fixed_W_t
 
 
 class DaNmfClustering(NmfClustering):
@@ -59,10 +143,10 @@ class DaNmfClustering(NmfClustering):
     mixed_data = None
 
     def __init__(self, src, trg_data, trg_gene_ids, num_cluster):
-        super(DaNmfClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster)
+        super(DaNmfClustering, self).__init__(trg_data, gene_ids=trg_gene_ids, num_cluster=num_cluster, labels=[])
         self.src = src
 
-    def get_mixed_data(self, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=True, max_iter=100, rel_err=1e-3):
+    def get_mixed_data(self, mix=0.0, reject_ratio=0., use_H2=True, calc_transferability=False, max_iter=100, rel_err=1e-3):
         trg_data = self.pre_processing()
         trg_gene_ids = self.gene_ids[self.remain_gene_inds]
         # print self.src.gene_ids.shape
@@ -122,7 +206,7 @@ class DaNmfClustering(NmfClustering):
             print('Error! Negative values in reconstructed data!')
         return mixed_data, new_trg_data, trg_data
 
-    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=100, rel_err=1e-3, calc_transferability=True):
+    def apply(self, k=-1, mix=0.0, reject_ratio=0., alpha=1.0, l1=0.75, max_iter=100, rel_err=1e-3, calc_transferability=False):
         if k == -1:
             k = self.num_cluster
         mixed_data, new_trg_data, trg_data = self.get_mixed_data(mix=mix,

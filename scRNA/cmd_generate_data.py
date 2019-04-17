@@ -187,7 +187,7 @@ parser.add_argument(
 parser.set_defaults(normalise = False)
 
 args = parser.parse_args(sys.argv[1:])
-print('Command line argumentss:')
+print('Command line arguments:')
 print args
 
 try:

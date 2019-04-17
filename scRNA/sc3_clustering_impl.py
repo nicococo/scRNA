@@ -141,6 +141,7 @@ def transformations(dm, components=5, method='pca'):
     """
     # print('SC3 {1} transformation (components={0}).'.format(components, method.upper()))
     if method == 'spectral':
+        num_cells = dm.shape[0]
         A = np.exp(-dm/np.max(dm))
         D = np.sum(dm, axis=1)
         L = D - A

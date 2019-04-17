@@ -63,7 +63,7 @@ class AbstractClustering(object):
         for c in self.cell_filter_list:
             res = c(data)
             remain_cell_inds = np.intersect1d(remain_cell_inds, res)
-        print('1. Remaining number of cells after filtering: {0}/{1}'.format(remain_cell_inds.size, cells))
+        #print('1. Remaining number of cells after filtering: {0}/{1}'.format(remain_cell_inds.size, cells))
         A = data[:, remain_cell_inds]
 
         # 2. gene filter
@@ -71,7 +71,7 @@ class AbstractClustering(object):
         for g in self.gene_filter_list:
             res = g(data)
             remain_gene_inds = np.intersect1d(remain_gene_inds, res)
-        print('2. Remaining number of transcripts after filtering: {0}/{1}'.format(remain_gene_inds.size, transcripts))
+        #print('2. Remaining number of transcripts after filtering: {0}/{1}'.format(remain_gene_inds.size, transcripts))
 
         # 3. data transformation
         B = A[remain_gene_inds, :]
