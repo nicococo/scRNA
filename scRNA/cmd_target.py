@@ -75,7 +75,7 @@ parser.add_argument("--no-transform",
     help="Disable transform data to log2(x+1)",
     dest="transform",
     action='store_false')
-parser.set_defaults(transform=True)
+parser.set_defaults(transform=False)
 
 parser.add_argument("--tsne",
     help="Enable t-SNE plots.",

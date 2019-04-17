@@ -30,7 +30,7 @@ parser.add_argument("--min_expr_genes", help="(Cell filter) Minimum number of ex
 parser.add_argument("--non_zero_threshold", help="(Cell/gene filter) Threshold for zero expression per gene (default 2.0)", default=2.0, type=float)
 parser.add_argument("--perc_consensus_genes", help="(Gene filter) Filter genes that coincide across a percentage of cells (default 0.94)", default=0.94, type=float)
 
-parser.add_argument("--cluster-range", help="Comma separated list of numbers of clusters (default 7)", dest='cluster_range', default='7', type=str)
+parser.add_argument("--cluster-range", help="Comma separated list of numbers of clusters (default 8)", dest='cluster_range', default='8', type=str)
 
 parser.add_argument("--nmf_alpha", help="(NMF) Regularization strength (default 10.0)", default=10.0, type = float)
 parser.add_argument("--nmf_l1", help="(NMF) L1 regularization impact [0,1] (default 0.75)", default=0.75, type = float)
@@ -71,7 +71,7 @@ parser.add_argument(
     help = "Disable transform data to log2(x+1)",
     dest = "transform",
     action = 'store_false')
-parser.set_defaults(transform = True)
+parser.set_defaults(transform = False)
 
 parser.add_argument(
     "--tsne",

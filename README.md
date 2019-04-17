@@ -2,7 +2,8 @@ scRNA
 =====
 Python framework for single-cell RNA-seq clustering with special 
 focus on transfer learning. This package contains methods for 
-generating artifical data, clustering, and blending datasets (domain adaptation).
+generating artificial data, clustering, and transfering knowledge
+from a source to a target datasets.
 
 This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex Gutteridge. 
 
@@ -51,11 +52,11 @@ available for **MacOS and Linux only**:
 
 
 
-**Step 3**: Create directory /foo. Go to directory /foo. Generate some artifical data
+**Step 3**: Create directory /foo. Go to directory /foo. Generate some artificial data
 by simply calling the _scRNA-generate-data.sh_ (using only default parameters).
 
 
-![Generate artifical data](doc/screen_install_generate.png)
+![Generate artificial data](doc/screen_install_generate.png)
 
 
 This will result in a number of files:
@@ -65,8 +66,10 @@ This will result in a number of files:
 
 
 
-**Step 4**: Cluster the source data using the provided gene ids and source data. Ie. we want
+**Step 4**: NMF of source data using the provided gene ids and source data. Ie. we want
  to turn off the cell- and gene-filter as well as the log transformation.
+ You can provide source labels to be used as a starting point for NMF. If not those labels
+ will be generated via NMF Clustering.
 Potential problems:
 * If a ''Intel MKL FATAL ERROR: Cannot load libmkl_avx.so or libmkl_def.so.''
 occurs and Anaconda open data science platform is used, then use _conda install mkl_ first.
@@ -79,14 +82,15 @@ occurs and Anaconda open data science platform is used, then use _conda install 
 
 This will result in a number of files:
 * t-SNE plots (.png) for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
-* Output cluster labels (and corresponding cell id) in .tsv format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
 * Output source model in .npz format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
 * A summarizing .png figure
+* True cluster labels - either as provided from user or as generated via NMF Clustering - (and corresponding cell id) in .tsv format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
+* Model cluster labels after NMF (and corresponding cell id) in .tsv format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
 
 
 
 
-**Step 5**: Now, it is time to cluster the target data. Therefore, we need to
+**Step 5**: Now, it is time to cluster the target data and transfer knowledge from the source model to our target data. Therefore, we need to
 choose a source data model which was generated in **Step 4**. In this example, we will 
 pick the model with 8 cluster (*src_c8.npz*).
 
@@ -96,10 +100,15 @@ time. However, you can  speed up the process by tuning off the t-SNE plots using
 
 ![Cluster the target data](doc/screen_install_target.png)
 
-Which results in a number of files (for each mixture and cluster range).
+Which results in a number of files (for each value in the cluster range).
+* Predicted cluster labels after transfer learning (and corresponding cell id) in .tsv format for every number of cluster as specified in the --cluster-range argument (default 6,7,8)
+* t-SNE plots with predicted labels (.png)
+* Data and gene ids in .tsv files
+
+In addition there is a summarizing .png figure of all accs and a t-SNE plot with the real target labels, if they were provided.
 
 ![Cluster the target data](doc/screen_install_result.png)
 
 Command line output shows a number of results: unsupervised and supervised (if no ground truth labels 
-are given this will remain 0.) accuracy measures and i.e. transferability score.
+are given this will remain 0.) accuracy measures.
 
