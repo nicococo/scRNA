@@ -184,14 +184,14 @@ for i in range(len(num_cluster)):
     # Use perfect number of latent states for nmf and sc3
     src_labels = np.array(labels, dtype=np.int)
     src_lbl_set = np.unique(src_labels)
-    k = src_lbl_set.size
+    k_now = src_lbl_set.size
 
     nmf = None
-    nmf = NmfClustering_initW(data, gene_ids, labels=labels, num_cluster=k)
+    nmf = NmfClustering_initW(data, gene_ids, labels=labels, num_cluster=k_now)
     nmf.add_cell_filter(cell_filter_fun)
     nmf.add_gene_filter(gene_filter_fun)
     nmf.set_data_transformation(data_transf_fun)
-    nmf.apply(k=k, alpha=arguments.nmf_alpha, l1=arguments.nmf_l1, max_iter=arguments.nmf_max_iter, rel_err=arguments.nmf_rel_err)
+    nmf.apply(k=k_now, alpha=arguments.nmf_alpha, l1=arguments.nmf_l1, max_iter=arguments.nmf_max_iter, rel_err=arguments.nmf_rel_err)
 
     # --------------------------------------------------
     # 3.2. EVALUATE CLUSTER ASSIGNMENT

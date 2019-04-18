@@ -16,7 +16,7 @@ from utils import *
 # PARSE COMMAND LINE ARGUMENTS
 # --------------------------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument("--src-fname", help="Source *.npz result filename", dest='src_fname', type=str, default='src_c7.npz')
+parser.add_argument("--src-fname", help="Source *.npz result filename", dest='src_fname', type=str, default='src_c8.npz')
 parser.add_argument("--fname", help="Source data (TSV file)", type=str, default='fout_source_data_T1_100_S1_1000.tsv')
 # parser.add_argument("--fname", help="Source data (TSV file)", type=str, default='C:\Users\Bettina\PycharmProjects2\scRNA_new\data\Usoskin\usoskin_m_fltd_mat.tsv')
 parser.add_argument("--fname-trg", help="Target data (TSV file)", type=str, default='fout_target_data_T1_100_S1_1000.tsv')
