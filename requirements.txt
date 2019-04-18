@@ -4,3 +4,4 @@ numba
 matplotlib
 cvxopt
 scikit-learn
+pandas
