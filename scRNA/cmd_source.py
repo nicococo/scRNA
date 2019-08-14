@@ -209,7 +209,7 @@ for i in range(len(num_cluster)):
     nmf.gene_filter_list = None
     nmf.data_transf = None
     print(('\nSaving data structures and results to file with prefix \'{0}_c{1}\'.'.format(arguments.fout, k)))
-    np.savez('{0}_c{1}.npz'.format(arguments.fout, k), src=nmf, args=arguments)
+    np.savez('{0}_c{1}.npz'.format(arguments.fout, k), src=nmf, args=arguments, allow_pickle=True)
     np.savetxt('{0}_c{1}.labels.tsv'.format(arguments.fout, k),
                (nmf.cluster_labels, nmf.remain_cell_inds), fmt='%u', delimiter='\t')
     np.savetxt('{0}_c{1}.true_labels.tsv'.format(arguments.fout, k),
