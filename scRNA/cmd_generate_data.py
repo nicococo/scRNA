@@ -1,9 +1,9 @@
 import argparse
-import sys
 import ast
+import sys
 
-from .simulation import generate_toy_data, split_source_target
-from .utils import *
+from scRNA.simulation import generate_toy_data, split_source_target
+from scRNA.utils import *
 
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()

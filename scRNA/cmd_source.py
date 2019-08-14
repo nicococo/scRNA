@@ -1,14 +1,13 @@
 import matplotlib as mpl
 mpl.use('Agg')
 
-import matplotlib.pyplot as plt
 import argparse, sys
 
 from functools import partial
 from sklearn.manifold import TSNE
 
-from .nmf_clustering import NmfClustering_initW, NmfClustering
-from .utils import *
+from scRNA.nmf_clustering import NmfClustering_initW, NmfClustering
+from scRNA.utils import *
 
 # --------------------------------------------------
 # PARSE COMMAND LINE ARGUMENTS

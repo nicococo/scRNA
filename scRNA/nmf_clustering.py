@@ -1,13 +1,11 @@
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 from sklearn import decomposition as decomp
-import pdb
-import pandas as pd
 
-
-from .abstract_clustering import AbstractClustering
-from .utils import center_kernel, normalize_kernel, kta_align_binary, \
-                    get_matching_gene_inds, get_transferred_data_matrix, get_transferability_score
+from scRNA.abstract_clustering import AbstractClustering
+from scRNA.utils import center_kernel, normalize_kernel, kta_align_binary, \
+    get_matching_gene_inds, get_transferred_data_matrix, get_transferability_score
 
 
 class NmfClustering(AbstractClustering):

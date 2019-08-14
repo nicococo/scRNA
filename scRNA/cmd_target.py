@@ -1,15 +1,14 @@
 import matplotlib as mpl
 mpl.use('Agg')
 
-import matplotlib.pyplot as plt
 import argparse, sys
 
 from functools import partial
 from sklearn.manifold import TSNE
 
-from .sc3_clustering import SC3Clustering
-from .nmf_clustering import DaNmfClustering, NmfClustering
-from .utils import *
+from scRNA.sc3_clustering import SC3Clustering
+from scRNA.nmf_clustering import DaNmfClustering
+from scRNA.utils import *
 
 
 # --------------------------------------------------
@@ -362,11 +361,11 @@ for i in range(len(num_cluster)):
 
 plt.figure(0)
 n = accs.shape[0]
-fig, axes = plt.subplots(nrows=4, ncols=n / 2)
+fig, axes = plt.subplots(nrows=4, ncols=np.int(n / 2))
 fig.suptitle("Mixture (y-axis) vs Clusters (x-axis)", fontsize=6)
 fig.tight_layout(h_pad=2.08, pad=2.2) # Or equivalently,  "plt.tight_layout()"
 for i in range(n):
-    plt.subplot(2, n/2, i+1)
+    plt.subplot(2, np.int(n/2), i+1)
     plt.title(accs_names[i], fontsize=8)
     plt.pcolor(accs[i, :, :].T, cmap=plt.get_cmap('Blues'))
     # plt.xlabel('Cluster', fontsize=12)

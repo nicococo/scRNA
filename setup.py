@@ -21,7 +21,6 @@ config = {
                     'Operating System :: POSIX',
                     'Operating System :: Unix',
                     'Operating System :: MacOS',
-                    'Programming Language :: Python :: 2',
                     'Programming Language :: Python :: 3']
 }
 
