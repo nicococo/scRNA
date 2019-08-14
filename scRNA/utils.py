@@ -15,7 +15,7 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
 
     #print('Loading TSV data file from {0}.'.format(fname))
     data = np.loadtxt(fname, delimiter='\t')
-    print data.shape
+    #print data.shape
 
     gene_ids = np.arange(0, data.shape[0]).astype(np.str)
     # Some scripts expect the gene ids (esp. for multitask learning of two or
@@ -41,7 +41,7 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
         unique_ind = np.arange(start=0, stop=labels_2_ids.shape[0])
         labels = np.zeros((data.shape[1]), dtype=np.int)
         #print('Found {0} unique labels:'.format(labels_2_ids.size))
-        print labels_2_ids
+        #print labels_2_ids
         for i in range(unique_ind.size):
             inds = np.where(label_ids == labels_2_ids[i])[0]
             labels[inds] = unique_ind[i]
@@ -119,7 +119,7 @@ def get_kernel(X, Y, type='linear', param=1.0):
         Dy = (np.ones((Xn, 1)) * np.diag(Y.T.dot(Y)).reshape(1, Yn))
         kernel = Dx - 2.* np.array(X.T.dot(Y)) + Dy
         kernel = np.exp(-kernel / param)
-        print kernel.shape
+        #print kernel.shape
     return kernel
 
 

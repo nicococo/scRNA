@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
+import pdb
 
 
 class AbstractClustering(object):
@@ -58,6 +59,7 @@ class AbstractClustering(object):
         transcripts, cells = data.shape
         # 1. cell filter
         remain_cell_inds = np.arange(0, cells)
+
         for c in self.cell_filter_list:
             res = c(data)
             remain_cell_inds = np.intersect1d(remain_cell_inds, res)

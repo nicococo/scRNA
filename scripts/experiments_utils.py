@@ -10,6 +10,11 @@ from scRNA.sc3_clustering import SC3Clustering
 from scRNA.simulation import generate_toy_data, split_source_target
 from scRNA.utils import *
 
+import numpy.linalg
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import pdist, squareform
+from sklearn.metrics.pairwise import linear_kernel
+
 
 def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=None):
     aris = np.zeros(len(method_list))
@@ -17,7 +22,7 @@ def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=N
     trg_nmfs = list()
     trg_lbls = np.zeros((len(method_list), trg_labels.size), dtype=np.int)
     for i in range(len(method_list)):
-        desc, trg_nmf, trg_lbls[i, :] = method_list[i](src_nmf, trg, trg_labels, n_trg_cluster)
+        desc, trg_nmf, trg_lbls[i, :], mixed_data = method_list[i](src_nmf, trg, trg_labels, n_trg_cluster)
         trg_nmfs.append(trg_nmf)
         aris[i] = metrics.adjusted_rand_score(trg_labels, trg_lbls[i, :])
     ind = func(aris)
@@ -29,7 +34,7 @@ def method_hub(src_nmf, trg, trg_labels, n_trg_cluster, method_list=None, func=N
         trg_lbls_out = trg_lbls[ind, :]
     desc['hub'] = func
     desc['stats'] = (np.max(aris), np.min(aris), np.mean(aris))
-    return desc, trg_nmfs_out, trg_lbls_out
+    return desc, trg_nmfs_out, trg_lbls_out, mixed_data
 
 
 def method_random(src_nmf, trg, trg_labels, n_trg_cluster):
@@ -45,6 +50,7 @@ def method_sc3_combined(src_nmf, trg, trg_labels, n_trg_cluster, consensus_mode=
     max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
     min_pca_comp = np.floor(num_cells * 0.04).astype(np.int)
     #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
+    # plot_eigenvalue_distribution(np.hstack([trg, src_nmf.data]))
     cp = SC3Clustering(np.hstack([trg, src_nmf.data]), pc_range=[min_pca_comp, max_pca_comp],
                        consensus_mode=consensus_mode, sub_sample=True)
     cp.add_distance_calculation(partial(sc.distances, metric=metric))
@@ -56,6 +62,30 @@ def method_sc3_combined(src_nmf, trg, trg_labels, n_trg_cluster, consensus_mode=
     return {'method': 'SC3-comb', 'metric': metric}, \
            DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster), \
            cp.cluster_labels[:trg_labels.size]
+
+
+def method_sc3_combined_filter(src_nmf, trg, trg_labels, n_trg_cluster, cell_filter, gene_filter, transformation, consensus_mode=0, metric='euclidean'):
+    lbls = np.hstack([trg_labels, src_nmf.cluster_labels])
+    #n_cluster = np.unique(lbls).size
+    num_cells = trg.shape[1] + src_nmf.data.shape[1]
+    max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
+    min_pca_comp = np.floor(num_cells * 0.04).astype(np.int)
+    #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
+    # plot_eigenvalue_distribution(np.hstack([trg, src_nmf.data]))
+    cp = SC3Clustering(np.hstack([trg, src_nmf.data]), pc_range=[min_pca_comp, max_pca_comp],
+                       consensus_mode=consensus_mode, sub_sample=True)
+    cp.add_cell_filter(cell_filter)
+    cp.add_gene_filter(gene_filter)
+    cp.set_data_transformation(transformation)
+    cp.add_distance_calculation(partial(sc.distances, metric=metric))
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
+    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_trg_cluster))
+    cp.set_build_consensus_matrix(sc.build_consensus_matrix)
+    cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_trg_cluster))
+    cp.apply()
+    return {'method': 'SC3-comb', 'metric': metric}, \
+           DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster), \
+           cp.cluster_labels[:trg_labels.size], None
 
 
 def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
@@ -73,7 +103,7 @@ def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
 
     trg_nmf = DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
     mixed_data, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
-
+    # plot_eigenvalue_distribution(mixed_data)
     # use mixed data are mixed distances
     cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],
                        consensus_mode=consensus_mode, sub_sample=True)
@@ -92,6 +122,52 @@ def method_sc3(src_nmf, trg, trg_labels, n_trg_cluster,
     cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_trg_cluster))
     cp.apply()
     return {'method': 'SC3', 'metric': metric, 'mix': mix, 'use_da_dists': use_da_dists}, trg_nmf, cp.cluster_labels
+
+
+def method_sc3_filter(src_nmf, trg, trg_labels, n_trg_cluster,cell_filter, gene_filter, transformation,
+               limit_pc_range=-1, metric='euclidean', consensus_mode=0,
+               mix=0.5, use_da_dists=False, calc_transferability=True):
+    #print [mix, 'Mixture Parameter']
+    num_cells = trg.shape[1]
+    #print num_cells
+    if num_cells > limit_pc_range > 0:
+        #print('Limit PC range to :'.format(limit_pc_range))
+        num_cells = limit_pc_range
+    max_pca_comp = np.ceil(num_cells * 0.07).astype(np.int)
+    min_pca_comp = np.max([1,np.floor(num_cells * 0.04).astype(np.int)])
+    #print 'Min and max PCA components: ', min_pca_comp, max_pca_comp
+
+    trg_nmf = DaNmfClustering(src_nmf, trg, np.arange(trg.shape[0]), num_cluster=n_trg_cluster)
+    trg_nmf.add_cell_filter(cell_filter)
+    trg_nmf.add_gene_filter(gene_filter)
+    trg_nmf.set_data_transformation(transformation)
+    mixed_data, _, _ = trg_nmf.get_mixed_data(mix=mix, calc_transferability=calc_transferability)
+    # plot_eigenvalue_distribution(mixed_data)
+    # use mixed data are mixed distances
+    #cp = SC3Clustering(trg, pc_range=[min_pca_comp, max_pca_comp],
+    #                   consensus_mode=consensus_mode, sub_sample=True)
+    #cp.add_cell_filter(cell_filter)
+    #cp.add_gene_filter(gene_filter)
+    #cp.set_data_transformation(transformation)
+    #if not use_da_dists:
+
+    cp = SC3Clustering(mixed_data, pc_range=[min_pca_comp, max_pca_comp], consensus_mode=consensus_mode, sub_sample=True)
+    cp.add_distance_calculation(partial(sc.distances, metric=metric))
+
+    #cp.add_cell_filter(lambda x: np.arange(x.shape[1]).tolist())
+    #cp.add_gene_filter(lambda x: np.arange(x.shape[0]).tolist())
+    #cp.set_data_transformation(lambda x: x)
+    #else:
+    #    cp.add_distance_calculation(partial(sc.da_nmf_distances,
+    #                                        da_model=trg_nmf.intermediate_model,
+    #                                        metric=metric, mixture=mix, reject_ratio=0.))
+
+    cp.add_dimred_calculation(partial(sc.transformations, components=max_pca_comp, method='pca'))
+    cp.add_intermediate_clustering(partial(sc.intermediate_kmeans_clustering, k=n_trg_cluster))
+    cp.set_build_consensus_matrix(sc.build_consensus_matrix)
+    cp.set_consensus_clustering(partial(sc.consensus_clustering, n_components=n_trg_cluster))
+    cp.apply()
+    return {'method': 'SC3', 'metric': metric, 'mix': mix, 'use_da_dists': use_da_dists}, trg_nmf, cp.cluster_labels, mixed_data
 
 
 def acc_transferability(trg_nmf, X_trg, trg_labels, lbls_pred):
@@ -273,3 +349,25 @@ def experiment_loop(fname, methods, acc_funcs,
              num_strat=num_strat, cluster_mode=cluster_mode, source_aris=source_aris)
     print('Done.')
     return source_aris, accs, accs_desc, res_desc
+
+
+def plot_eigenvalue_distribution(data):
+    #dist_matrix_condensed = pdist(np.transpose(data), 'euclidean')
+    #dist_matrix = squareform(dist_matrix_condensed)
+    lin_kern = linear_kernel(np.transpose(data))
+    #e = numpy.linalg.eigvals(dist_matrix)
+    e = numpy.linalg.eigvals(lin_kern)
+    print("Largest eigenvalue:", max(e))
+    print("Smallest eigenvalue:", min(e))
+    #print("smallest d range:", )
+    #print("largest d range:")
+    #plt.hist(e, bins=100)  # histogram with 100 bins
+    #plt.show()
+    #idx = np.argsort(e)
+    #e = e[idx]
+    plt.bar(np.arange(len(e)), np.sort(e)[::-1])
+    plt.xlim(0,len(e))  # eigenvalues between 0 and 2
+    plt.xlabel('ordered evs, overall {0} evs'.format(len(e)))
+    plt.axvline(x=np.true_divide(len(e), 100)*4, color='r')
+    plt.axvline(x=np.true_divide(len(e), 100)*7, color='r')
+    #plt.show()

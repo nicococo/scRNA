@@ -34,7 +34,7 @@ def cell_filter(data, num_expr_genes=2000, non_zero_threshold=2):
     :param data: transcripts x cells data matrix
     :return: indices of valid cells
     """
-    # print('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold))
+    #print('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold))
     ai, bi = np.where(np.isnan(data))
     data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
@@ -47,7 +47,7 @@ def gene_filter(data, perc_consensus_genes=0.94, non_zero_threshold=2):
     :param data: transcripts x cells data matrix
     :return: indices of valid transcripts
     """
-    # print('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold))
+    #print('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold))
     ai, bi = np.where(np.isnan(data))
     data[ai, bi] = 0
     num_transcripts, num_cells = data.shape
@@ -65,6 +65,15 @@ def data_transformation_log2(data):
     """
     # print('SC3 log2 data transformation.')
     return np.log2(data + 1.)
+
+
+def no_data_transformation(data):
+    """
+    :param data: transcripts x cells data matrix
+    :return: identical data
+    """
+    # print('SC3 log2 data transformation.')
+    return data
 
 
 def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidean', mixture=0.5, use_H2=True):
@@ -132,6 +141,7 @@ def transformations(dm, components=5, method='pca'):
     """
     # print('SC3 {1} transformation (components={0}).'.format(components, method.upper()))
     if method == 'spectral':
+        num_cells = dm.shape[0]
         A = np.exp(-dm/np.max(dm))
         D = np.sum(dm, axis=1)
         L = D - A
@@ -179,10 +189,16 @@ def transformations(dm, components=5, method='pca'):
         inds = np.arange(components)
         # print inds
 
-    # inds = range(vals.size-components, vals.size)
-    # inds = range(components)
-    # print inds
-    # print vals.size, vals
+    ## inds = range(vals.size-components, vals.size)
+    ## inds = range(components)
+    ## print inds
+    ## print vals.size, vals
+    #plt.bar(np.arange(len(vals)), np.sort(vals)[::-1])
+    ##print '# of zero eigenvalues: ', sum(vals==0)
+    #plt.xlim(0,int(len(vals)/3))  # eigenvalues between 0 and 2
+    #plt.axvline(x=np.true_divide(len(vals), 100)*4, color='r')
+    #plt.axvline(x=np.true_divide(len(vals), 100)*7, color='r')
+
     D = np.diag(vals[inds])
     return vecs[:, inds].dot(D.dot(vecs[:, inds].T)), vecs[:, inds]
 

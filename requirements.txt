@@ -5,3 +5,4 @@ nose
 matplotlib
 cvxopt
 scikit-learn
+pandas

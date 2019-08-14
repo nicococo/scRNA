@@ -46,8 +46,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "--num_cells",
-    help = "Number of cells (default 1000)",
-    default = 1000,
+    help = "Number of cells (default 1100)",
+    default = 2000,
     type = int
 )
 
@@ -109,14 +109,14 @@ parser.add_argument(
 
 parser.add_argument(
     "--target_ncells",
-    help = "How much of data will be target data (default 200)",
+    help = "How much of data will be target data (default 100)",
     default = 100,
     type = int
 )
 parser.add_argument(
     "--source_ncells",
-    help = "How much of data will be source data (default 800)",
-    default = 200,
+    help = "How much of data will be source data (default 1000)",
+    default = 1000,
     type = int
 )
 parser.add_argument(
@@ -144,6 +144,7 @@ parser.add_argument(
     action = 'store_false'
 )
 parser.set_defaults(noise_target = False)
+
 parser.add_argument(
     "--noise_sd",
     help = "Standard deviation of target noise",
@@ -153,14 +154,21 @@ parser.add_argument(
 
 parser.add_argument(
     "--splitting_mode",
-    help = "Splitting mode:\n\t- 1 = split randomly\n\t- 2 = split randomly, but stratified\n\t- 3 = Split randomly but antistratified\n\t- 4 = Have some overlapping and some exclusive clusters\n\t- 5 = Have only exclusive clusters\n\t- 6 = Have some defined clusters as the source\n\t(default 2)",
-    default = 5,
+    help = "Splitting mode:\n\t- 1 = split randomly\n\t- 2 = split randomly, but stratified\n\t- 3 = Split randomly but antistratified\n\t- 4 = Have some overlapping and some exclusive clusters\n\t- 5 = Have only exclusive clusters\n\t- 6 = Have some defined clusters as the source\n\t- 7 = Define a range of number of overlapping clusters using variable: common\n\t(default 4)",
+    default = 4,
     type = int
 )
 parser.add_argument(
     "--source_clusters",
     help = "Clusters to use as source when splitting by mode 6. Define as Python list",
     default = "[",
+    type = str
+)
+
+parser.add_argument(
+    "--common",
+    help = "Range of number of overlapping clusters when splitting by mode 7. Define as Python list",
+    default = "[0,3,5]",
     type = str
 )
 
@@ -179,7 +187,7 @@ parser.add_argument(
 parser.set_defaults(normalise = False)
 
 args = parser.parse_args(sys.argv[1:])
-print('Command line argumentss:')
+print('Command line arguments:')
 print args
 
 try:
@@ -251,7 +259,8 @@ for sidx, source_ncells in enumerate(source_ncells_range):
                 source_clusters = source_clusters,
                 noise_target = args.noise_target,
                 noise_sd = args.noise_sd,
-                mode = args.splitting_mode
+                mode = args.splitting_mode,
+                common = args.common
             )
         print 'Target data dimension: ', data_target.shape
         print 'Source data dimension: ', data_source.shape
