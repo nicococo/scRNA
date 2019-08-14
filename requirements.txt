@@ -1,6 +1,7 @@
 scipy
 numpy
 numba
+nose
 matplotlib
 cvxopt
 scikit-learn

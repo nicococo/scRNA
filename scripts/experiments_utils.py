@@ -152,8 +152,8 @@ def acc_silhouette(trg_nmf, X_trg, trg_labels, lbls_pred, metric='euclidean'):
     return metrics.silhouette_score(dists, lbls_pred, metric='precomputed'), 'Silhouette ({0})'.format(metric)
 
 
-def acc_kta(target_nmf, X_trg, trg_labels, trg_lbls_pred, kernel='linear', param=1.0, center=True, normalize=True,
-            mode=0):
+def acc_kta(target_nmf, X_trg, trg_labels, trg_lbls_pred, kernel='linear', param=1.0,
+            center=True, normalize=True, mode=0):
     Ky = np.zeros((trg_lbls_pred.size, np.max(trg_lbls_pred) + 1))
     for i in range(len(trg_lbls_pred)):
         Ky[i, trg_lbls_pred[i]] = 1.
