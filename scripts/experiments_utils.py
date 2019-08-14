@@ -287,8 +287,8 @@ def experiment_loop(fname, methods, acc_funcs,
     res_desc = []
     r = 0
     while r < reps:
-        print 'running experiment: r, fname'
-        print r, fname
+        print('running experiment: r, fname')
+        print(r, fname)
         # 1. Generate scRNA data
         data, labels = generate_toy_data(num_genes=n_genes, num_cells=10. * (n_trg + n_src), cluster_spec=cluster_spec) # num_cells is so high to make sure we have enough points in every cluster to choose from when splitting in source and target
         # 2. Split source and target according to specified mode/setting
@@ -357,8 +357,8 @@ def plot_eigenvalue_distribution(data):
     lin_kern = linear_kernel(np.transpose(data))
     #e = numpy.linalg.eigvals(dist_matrix)
     e = numpy.linalg.eigvals(lin_kern)
-    print("Largest eigenvalue:", max(e))
-    print("Smallest eigenvalue:", min(e))
+    print(("Largest eigenvalue:", max(e)))
+    print(("Smallest eigenvalue:", min(e)))
     #print("smallest d range:", )
     #print("largest d range:")
     #plt.hist(e, bins=100)  # histogram with 100 bins

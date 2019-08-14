@@ -5,9 +5,9 @@ import numpy as np
 def load_excel_description(fname):
     frame = pd.read_excel(fname)
     table = frame.as_matrix()
-    print '-------------------'
-    print frame.columns.values
-    print table[0, :]
+    print('-------------------')
+    print(frame.columns.values)
+    print(table[0, :])
     return table, frame.columns.values
 
 
@@ -19,12 +19,12 @@ def load_counts(fname):
     transcripts = table[:, :6]
     data = np.array(table[:, 6:], dtype=np.int)
 
-    print '-----------------------------'
-    print 'Transcript header: ', transcripts_header
-    print 'Transcript sample: ', transcripts[2, :]
-    print 'Data shape       : ', data.shape
-    print 'Data sample      : ', data[0, :]
-    print '-----------------------------'
+    print('-----------------------------')
+    print('Transcript header: ', transcripts_header)
+    print('Transcript sample: ', transcripts[2, :])
+    print('Data shape       : ', data.shape)
+    print('Data sample      : ', data[0, :])
+    print('-----------------------------')
     return data, transcripts, transcripts_header
 
 
@@ -32,9 +32,9 @@ def filter_low_coverage_cells(X, threshold=100000):
     # Assume X \in N^{Transcripts x Cells}
     transcripts, cells = X.shape
     inds = np.where(np.sum(X, axis=0) > threshold)[0]
-    print 'Filtered {0}/{1} cells.'.format(cells-inds.size, cells)
+    print('Filtered {0}/{1} cells.'.format(cells-inds.size, cells))
 
-    print '#Reads per cell (sorted): ', np.sort(np.sum(X, axis=0))
+    print('#Reads per cell (sorted): ', np.sort(np.sum(X, axis=0)))
 
     return inds
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     filtered_inds = filter_low_coverage_cells(data)
     rpm_data = readcounts_to_rpm(data)
-    print rpm_data[:4,:8]
+    print(rpm_data[:4,:8])
 
     np.savez_compressed('pfizer_data.npz', filtered_inds=filtered_inds, data=data, rpm_data=rpm_data,
                         transcripts=transcripts, transcripts_header=transcripts_header,

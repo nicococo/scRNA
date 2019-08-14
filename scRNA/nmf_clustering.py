@@ -5,8 +5,8 @@ import pdb
 import pandas as pd
 
 
-from abstract_clustering import AbstractClustering
-from utils import center_kernel, normalize_kernel, kta_align_binary, \
+from .abstract_clustering import AbstractClustering
+from .utils import center_kernel, normalize_kernel, kta_align_binary, \
                     get_matching_gene_inds, get_transferred_data_matrix, get_transferability_score
 
 
@@ -44,8 +44,8 @@ class NmfClustering(AbstractClustering):
         self.data_matrix = H
 
     def print_reconstruction_error(self, X, W, H):
-        print '  Elementwise absolute reconstruction error   : ', np.sum(np.abs(X - W.dot(H))) / np.float(X.size)
-        print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((X - W.dot(H))*(X - W.dot(H)))) / np.float(X.size)
+        print(('  Elementwise absolute reconstruction error   : ', np.sum(np.abs(X - W.dot(H))) / np.float(X.size)))
+        print(('  Fro-norm reconstruction error               : ', np.sqrt(np.sum((X - W.dot(H))*(X - W.dot(H)))) / np.float(X.size)))
 
 
 class NmfClustering_initW(AbstractClustering):
@@ -87,8 +87,8 @@ class NmfClustering_initW(AbstractClustering):
         self.data_matrix = W.T
 
     def print_reconstruction_error(self, X, W, H):
-        print '  Elementwise absolute reconstruction error   : ', np.sum(np.abs(X - W.dot(H))) / np.float(X.size)
-        print '  Fro-norm reconstruction error               : ', np.sqrt(np.sum((X - W.dot(H))*(X - W.dot(H)))) / np.float(X.size)
+        print(('  Elementwise absolute reconstruction error   : ', np.sum(np.abs(X - W.dot(H))) / np.float(X.size)))
+        print(('  Fro-norm reconstruction error               : ', np.sqrt(np.sum((X - W.dot(H))*(X - W.dot(H)))) / np.float(X.size)))
 
 
 class NmfClustering_fixW(AbstractClustering):

@@ -5,13 +5,13 @@ import sklearn.decomposition as decomp
 import pdb
 import matplotlib.pyplot as plt
 
-import sc3_clustering_impl as sc
+from . import sc3_clustering_impl as sc
 
 
 def load_dataset_tsv(fname, fgenes=None, flabels=None):
     # check data filename
     if not os.path.exists(fname):
-        raise StandardError('File \'{0}\' not found.'.format(fname))
+        raise Exception('File \'{0}\' not found.'.format(fname))
 
     #print('Loading TSV data file from {0}.'.format(fname))
     data = np.loadtxt(fname, delimiter='\t')
@@ -26,8 +26,8 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
         gene_ids = np.loadtxt(fgenes, delimiter='\t', dtype=np.str)
         #print('Gene ids loaded for {0} genes.'.format(gene_ids.shape[0]))
         if not np.unique(gene_ids).shape[0] == gene_ids.shape[0]:
-            print('Warning! Gene ids are supposed to be unique. '
-                  'Only {0} of {1}  entries are unique.'.format(np.unique(gene_ids).shape[0], gene_ids.shape[0]))
+            print(('Warning! Gene ids are supposed to be unique. '
+                  'Only {0} of {1}  entries are unique.'.format(np.unique(gene_ids).shape[0], gene_ids.shape[0])))
 
     labels = None
     labels_2_ids = None
@@ -52,7 +52,7 @@ def load_dataset_tsv(fname, fgenes=None, flabels=None):
 
 def load_dataset(fname):
     if not os.path.exists(fname):
-        raise StandardError('File \'{0}\' not found.'.format(fname))
+        raise Exception('File \'{0}\' not found.'.format(fname))
     foo = np.load(fname)
     data  = foo['data']
     gene_ids = foo['transcripts']
@@ -68,7 +68,7 @@ def normalize_kernel(K):
     N = K.shape[0]
     a = np.sqrt(np.diag(K)).reshape((N, 1))
     if any(np.isnan(a)) or any(np.isinf(a)) or any(np.abs(a)<=1e-16):
-        print 'Numerical instabilities.'
+        print('Numerical instabilities.')
         C = np.eye(N)
     else:
         b = 1. / a
@@ -233,13 +233,13 @@ def get_transferred_data_matrix(W, trg_data, normalize_H2=False, max_iter=100, r
 def get_matching_gene_inds(src_gene_ids, trg_gene_ids):
     if not np.unique(src_gene_ids).size == src_gene_ids.size:
         # raise Exception('(MTL) Gene ids are supposed to be unique.')
-        print('\nWarning! (MTL gene ids) Gene ids are supposed to be unique. '
-              'Only {0} of {1}  entries are unique.'.format(np.unique(src_gene_ids).shape[0], src_gene_ids.shape[0]))
+        print(('\nWarning! (MTL gene ids) Gene ids are supposed to be unique. '
+              'Only {0} of {1}  entries are unique.'.format(np.unique(src_gene_ids).shape[0], src_gene_ids.shape[0])))
         print('Only first occurance will be used.\n')
     if not np.unique(trg_gene_ids).size == trg_gene_ids.size:
         # raise Exception('(Target) Gene ids are supposed to be unique.')
-        print('\nWarning! (Target gene ids) Gene ids are supposed to be unique. '
-              'Only {0} of {1}  entries are unique.'.format(np.unique(trg_gene_ids).shape[0], trg_gene_ids.shape[0]))
+        print(('\nWarning! (Target gene ids) Gene ids are supposed to be unique. '
+              'Only {0} of {1}  entries are unique.'.format(np.unique(trg_gene_ids).shape[0], trg_gene_ids.shape[0])))
         print('Only first occurance will be used.\n')
 
     # common_ids = np.intersect1d(trg_gene_ids, src_gene_ids)

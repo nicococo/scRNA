@@ -10,8 +10,10 @@ This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex 
 ![Travis-CI](https://travis-ci.org/nicococo/scRNA.svg?branch=master)
 
 #### News
-* (3.4.17) Added Travis-CI
-* (3.4.17) Added string label support
+* (2019.08) Added Python 3 support (scRNA is no longer tested with Python 2)
+* (2019.08) Finalized version
+* (2017.02) Added Travis-CI
+* (2017.02) Added string label support
 * Simple example [available](#example)
 * [Website](http://nicococo.github.io/scRNA/) is up and running
 * [Wiki](https://github.com/nicococo/scRNA/wiki) with detailed information (e.g. command line arguments)
@@ -26,10 +28,10 @@ Getting started
 ---------------
 
 ### Installation
-We assume that Python >2.7 is installed and the _pip_ command is
+We assume that Python is installed and the _pip_ command is
 callable from the command line. If starting from scratch, we recommend installing 
 the [Anaconda](https://www.continuum.io/downloads) open data science 
-platform (w/ Python 2.7) which comes with a bunch of most useful packages
+platform (w/ Python >2.7) which comes with a bunch of most useful packages
 for scientific computing.
 
 The *scRNA* software package can be installed using the _pip install git+https://github.com/nicococo/scRNA.git_

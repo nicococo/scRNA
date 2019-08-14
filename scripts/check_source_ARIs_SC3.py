@@ -1,6 +1,6 @@
 import logging
 from functools import partial
-from experiments_utils import (method_sc3_filter, method_hub, method_sc3_combined_filter,
+from .experiments_utils import (method_sc3_filter, method_hub, method_sc3_combined_filter,
                                acc_ari, acc_kta, acc_transferability)
 from nmf_clustering import NmfClustering
 from utils import *
@@ -12,11 +12,11 @@ import sys
 
 logging.basicConfig()
 now1 = datetime.datetime.now()
-print "Current date and time:"
-print now1.strftime("%Y-%m-%d %H:%M")
+print("Current date and time:")
+print(now1.strftime("%Y-%m-%d %H:%M"))
 
 # Data location
-fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
+fname_data = 'C:\\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
 
 # Parameters
 reps = 10   # number of repetitions, 100
@@ -32,7 +32,7 @@ nmf_rel_err = 1e-3
 preprocessing_first = True
 
 data = pd.read_csv(fname_data, sep='\t').values
-print "data dimensions before preprocessing: genes x cells: ", data.shape
+print("data dimensions before preprocessing: genes x cells: ", data.shape)
 
 # Cell and gene filter and transformation before the whole procedure
 cell_inds = sc.cell_filter(data, num_expr_genes=min_expr_genes, non_zero_threshold=non_zero_threshold)
@@ -44,11 +44,11 @@ data = sc.data_transformation_log2(data)
 cell_filter_fun = partial(sc.cell_filter, num_expr_genes=0, non_zero_threshold=-1)
 gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=1, non_zero_threshold=-1)
 data_transf_fun = sc.no_data_transformation
-print "data dimensions after preprocessing: genes x cells: ", data.shape
+print("data dimensions after preprocessing: genes x cells: ", data.shape)
 
 
 # Generating labels from complete dataset
-print "Train complete data"
+print("Train complete data")
 complete_nmf = None
 complete_nmf = NmfClustering(data, np.arange(data.shape[0]), num_cluster=num_cluster)
 complete_nmf.add_cell_filter(cell_filter_fun)
@@ -59,12 +59,12 @@ complete_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_i
 desc, target_nmf, trg_lbls_pred, mixed_data = method_sc3_filter(complete_nmf, data, [], cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, mix=0.0, metric='euclidean', use_da_dists=False, n_trg_cluster=num_cluster)
 labels = trg_lbls_pred
 label_names, label_counts = np.unique(labels, return_counts = True)
-print "Labels: ", label_names
-print "Counts: ", label_counts
+print("Labels: ", label_names)
+print("Counts: ", label_counts)
 
 data = data[:, complete_nmf.remain_cell_inds]
 
-print "Data dimensions after complete training: ", data.shape
+print("Data dimensions after complete training: ", data.shape)
 genes = data.shape[0]  # number of genes
 n_all = data.shape[1]
 n_trg = n_all - n_src[0]    # overall number of target data points
@@ -98,7 +98,7 @@ while r < reps:
     n_src_cluster = src_lbl_set.size
 
     # 3.c. train source once per repetition
-    print "Train source data of rep {0}".format(r+1)
+    print("Train source data of rep {0}".format(r+1))
     source_nmf = None
     source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=num_cluster)
     source_nmf.add_cell_filter(cell_filter_fun)
@@ -108,15 +108,15 @@ while r < reps:
 
     # Calculate ARIs and KTAs
     source_aris[r] = metrics.adjusted_rand_score(src_labels[source_nmf.remain_cell_inds], source_nmf.cluster_labels)
-    print 'SOURCE ARI = ', source_aris[r]
+    print('SOURCE ARI = ', source_aris[r])
 
     r += 1
 
-print source_aris
+print(source_aris)
 
 now2 = datetime.datetime.now()
-print "Current date and time:"
-print now2.strftime("%Y-%m-%d %H:%M")
-print "Time passed:"
-print now2-now1
+print("Current date and time:")
+print(now2.strftime("%Y-%m-%d %H:%M"))
+print("Time passed:")
+print(now2-now1)
 print('Done.')

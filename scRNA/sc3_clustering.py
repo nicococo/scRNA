@@ -1,6 +1,6 @@
 import numpy as np
 
-from abstract_clustering import AbstractClustering
+from .abstract_clustering import AbstractClustering
 import pdb
 
 
@@ -79,7 +79,7 @@ class SC3Clustering(AbstractClustering):
 
         # 6. intermediate  clustering and consensus matrix generation
         #print '6. Intermediate clustering and consensus matrix generation.'
-        range_inds = range(self.pc_range[0], self.pc_range[1]+1)
+        range_inds = list(range(self.pc_range[0], self.pc_range[1]+1))
         if self.sub_sample and len(range_inds) > 15:
             # subsample 15 inds from this range
             range_inds = np.random.permutation(range_inds)[:15]

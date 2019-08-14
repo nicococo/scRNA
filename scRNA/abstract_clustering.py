@@ -4,9 +4,7 @@ import numpy as np
 import pdb
 
 
-class AbstractClustering(object):
-    __metaclass__ = ABCMeta
-
+class AbstractClustering(object, metaclass=ABCMeta):
     cell_filter_list = None
     gene_filter_list = None
     data_transf = None

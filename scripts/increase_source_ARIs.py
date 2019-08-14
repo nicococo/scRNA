@@ -8,11 +8,11 @@ import pandas as pd
 
 logging.basicConfig()
 now1 = datetime.datetime.now()
-print "Current date and time:"
-print now1.strftime("%Y-%m-%d %H:%M")
+print("Current date and time:")
+print(now1.strftime("%Y-%m-%d %H:%M"))
 
 # Data location
-fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
+fname_data = 'C:\\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
 fname_results = 'increase_src_ari_experiment.npz'
 
 # Parameters
@@ -29,7 +29,7 @@ nmf_rel_err = 1e-3
 preprocessing_first = True
 
 data = pd.read_csv(fname_data, sep='\t', header=None).values
-print "data dimensions before preprocessing: genes x cells: ", data.shape
+print("data dimensions before preprocessing: genes x cells: ", data.shape)
 
 # Cell and gene filter and transformation before the whole procedure
 cell_inds = sc.cell_filter(data, num_expr_genes=min_expr_genes, non_zero_threshold=non_zero_threshold)
@@ -41,10 +41,10 @@ data = sc.data_transformation_log2(data)
 cell_filter_fun = partial(sc.cell_filter, num_expr_genes=0, non_zero_threshold=-1)
 gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=1, non_zero_threshold=-1)
 data_transf_fun = sc.no_data_transformation
-print "data dimensions after preprocessing: genes x cells: ", data.shape
+print("data dimensions after preprocessing: genes x cells: ", data.shape)
 
 # Generating labels from complete dataset
-print "Train complete data"
+print("Train complete data")
 complete_nmf = None
 complete_nmf = NmfClustering(data, np.arange(data.shape[0]), num_cluster=num_cluster)
 complete_nmf.add_cell_filter(cell_filter_fun)
@@ -55,8 +55,8 @@ complete_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_i
 # Get NMF labels
 labels_NMF = complete_nmf.cluster_labels
 label_names, label_counts = np.unique(labels_NMF, return_counts = True)
-print "Labels NMF: ", label_names
-print "Counts NMF: ", label_counts
+print("Labels NMF: ", label_names)
+print("Counts NMF: ", label_counts)
 
 ## Get SC3 labels
 #desc, target_nmf, trg_lbls_pred, mixed_data = method_sc3_filter(complete_nmf, data, [], cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, mix=0.0, metric='euclidean', use_da_dists=False, n_trg_cluster=num_cluster)
@@ -67,12 +67,12 @@ print "Counts NMF: ", label_counts
 
 data = data[:, complete_nmf.remain_cell_inds]
 
-print "Data dimensions after complete training: ", data.shape
+print("Data dimensions after complete training: ", data.shape)
 genes = data.shape[0]  # number of genes
 n_all = data.shape[1]
 n_trg = n_all - np.max(n_src)    # overall number of target data points
 if data.shape[1] < np.max(n_src) | num_cluster > np.min(n_src) | n_trg < num_cluster:
-    print "Not enough cells left!"
+    print("Not enough cells left!")
 
 # Create results matrix
 source_aris_NMF_NMF = np.zeros((len(n_src), reps))
@@ -104,7 +104,7 @@ for s in range(len(n_src)):
         #src_labels_SC3 = np.array(src_labels_SC3, dtype=np.int)
 
         # 3.c. train source once per repetition
-        print "Train source data of rep {0}".format(r+1)
+        print("Train source data of rep {0}".format(r+1))
         source_nmf = None
         source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=num_cluster)
         source_nmf.add_cell_filter(cell_filter_fun)
@@ -120,7 +120,7 @@ for s in range(len(n_src)):
         #source_aris_SC3_NMF[s,r] = metrics.adjusted_rand_score(src_labels_SC3[source_nmf.remain_cell_inds], source_nmf.cluster_labels)
         #source_aris_SC3_SC3[s,r] = metrics.adjusted_rand_score(src_labels_SC3[source_nmf.remain_cell_inds], source_labels_SC3)
 
-        print 'SOURCE ARI Labels NMF, Method NMF = ', source_aris_NMF_NMF[s, r]
+        print('SOURCE ARI Labels NMF, Method NMF = ', source_aris_NMF_NMF[s, r])
         #print 'SOURCE ARI Labels NMF, Method SC3 = ', source_aris_NMF_SC3[s, r]
         #print 'SOURCE ARI Labels SC3, Method NMF = ', source_aris_SC3_NMF[s, r]
         #print 'SOURCE ARI Labels SC3, Method SC3 = ', source_aris_SC3_SC3[s, r]
@@ -132,17 +132,17 @@ for s in range(len(n_src)):
         #         nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err,
         #         reps=reps, genes=genes, n_src=n_src, n_trg=n_trg)
 
-print 'Mean ARIs', np.mean(source_aris_NMF_NMF)
+print('Mean ARIs', np.mean(source_aris_NMF_NMF))
 np.savez(fname_results, source_aris_NMF_NMF=source_aris_NMF_NMF, min_expr_genes=min_expr_genes,
          non_zero_threshold=non_zero_threshold, perc_consensus_genes=perc_consensus_genes, num_cluster=num_cluster,
          nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err,
          reps=reps, genes=genes, n_src=n_src, n_trg=n_trg)
 
 now2 = datetime.datetime.now()
-print "Current date and time:"
-print now2.strftime("%Y-%m-%d %H:%M")
-print "Time passed:"
-print now2-now1
+print("Current date and time:")
+print(now2.strftime("%Y-%m-%d %H:%M"))
+print("Time passed:")
+print(now2-now1)
 
 print('Done.')
 

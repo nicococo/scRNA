@@ -653,7 +653,7 @@ def plot_src_accs(fig_num, res, genes, n_src, n_trg, common):
     for c in range(len(common)):
         ind_common = c
         aris = np.mean(res[:, :, ind_common, :], axis=2)
-        print aris
+        print(aris)
         plt.subplot(1, len(common), fcnt)
         plt.pcolor(aris, cmap=plt.get_cmap('Reds'), vmin=0.95, vmax=1.)
         plt.title('{0}'.format(common[c]), fontsize=16)
@@ -673,9 +673,9 @@ def plot_src_accs(fig_num, res, genes, n_src, n_trg, common):
 def plot_transferability(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, common):
     plt.figure(fig_num)
 
-    print res.shape
+    print(res.shape)
     aris = np.mean(res[1, :, :, -1, :, -1, 0], axis=2).T
-    print aris, aris.shape
+    print(aris, aris.shape)
 
     plt.subplot(1, 3, 1)
     plt.pcolor(aris, cmap=plt.get_cmap('Blues'), vmin=0., vmax=1.)
@@ -733,7 +733,7 @@ def plot_cluster_acc_measures(fig_num, res, accs_desc, m_desc, percs, genes, n_s
     names = ['ARI', 'Euclidean','Pearson','Spearman','KTA']
     for c in range(len(inds)):
         aris = np.mean(res[0, 0, :, inds[c], :, :, 1], axis=1)
-        print np.mean(res[0, 0, :, inds[c], :, :, 1], axis=1)
+        print(np.mean(res[0, 0, :, inds[c], :, :, 1], axis=1))
 
         plt.subplot(1, len(inds), fcnt)
         plt.pcolor(aris, cmap=plt.get_cmap('Purples'), vmin=0., vmax=1.)
@@ -752,9 +752,9 @@ def plot_unsupervised_measures_percs(fig_num, res, accs_desc, m_desc, percs, gen
     ind_genes = 0
     ind_src = 1
     ind_common = 0
-    print '#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src]
-    print '#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes]
-    print '#Common ', common, ' ind/# = ', ind_common, '/', common[ind_common]
+    print('#Src   ', n_src, ' ind/# = ', ind_src, '/', n_src[ind_src])
+    print('#Genes ', genes, ' ind/# = ', ind_genes, '/', genes[ind_genes])
+    print('#Common ', common, ' ind/# = ', ind_common, '/', common[ind_common])
 
     plt.figure(fig_num)
     accs = [0, 1, 2, 3, 4, 5]
@@ -917,7 +917,7 @@ def plot_sc3_only(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, c
     # ari overall
     ari_1_baseline = np.mean(res[ind_src, ind_genes, -1, 0, :, :, 0], axis=0)
     ari_2_baseline = np.mean(res[ind_src, ind_genes, -1, 0, :, :, 1], axis=0)
-    print ari_1_baseline, ari_2_baseline
+    print(ari_1_baseline, ari_2_baseline)
 
     # Standard errors
     ste_ari_1_baseline = stats.sem(res[ind_src, ind_genes, -1, 0, :, :, 0], axis=0, ddof=0)
@@ -949,7 +949,7 @@ def plot_sc3_only(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, c
 if __name__ == "__main__":
 
     # For Part 1, Figures 1-3
-    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_part1_opt_mixparam_100reps.npz')
+    foo = np.load('C:\\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_part1_opt_mixparam_100reps.npz')
     # For Part 2, Figures 4
     #foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\\results\main_results\main_results_part2_100reps_100trg.npz')
 
@@ -966,7 +966,7 @@ if __name__ == "__main__":
     res_opt_mix_aris = foo['res_opt_mix_aris']
     source_aris = foo['source_aris'] # n_src x genes x common x reps
     accs_desc = foo['accs_desc']
-    print accs_desc
+    print(accs_desc)
     method_desc = foo['method_desc']
     percs = foo['percs']
     # reps = foo['reps']
@@ -975,10 +975,10 @@ if __name__ == "__main__":
     n_trg = foo['n_trg']
     common = foo['common']
     mixes = foo['mixes']
-    print 'n_src x genes x common x acc_funcs x reps x percs x methods'
-    print 'Result dimensionality: ', res.shape
-    print 'n_src x genes x common x reps x percs'
-    print 'Result optimal mixture parameter', res_opt_mix_ind.shape
+    print('n_src x genes x common x acc_funcs x reps x percs x methods')
+    print('Result dimensionality: ', res.shape)
+    print('n_src x genes x common x reps x percs')
+    print('Result optimal mixture parameter', res_opt_mix_ind.shape)
     #  Running
 
     plot_main_opt_mix(1, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, common, mixes)

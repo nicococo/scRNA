@@ -2,7 +2,7 @@ from functools import partial
 
 import matplotlib.pyplot as plt
 from clustermap import process_jobs, Job
-from experiments_utils import (method_sc3, method_sc3_combined, method_hub,
+from .experiments_utils import (method_sc3, method_sc3_combined, method_hub,
                                acc_ari, acc_reject_ari, acc_reject_auc,
                                acc_kta, acc_silhouette, acc_transferability, experiment_loop)
 from scRNA.sc3_clustering import *
@@ -18,7 +18,7 @@ def plot_results(fname):
     percs = foo['percs']
     n_trg = foo['n_trg']
     n_src = foo['n_src']
-    print accs
+    print(accs)
 
     num_methods = np.int(np.floor((len(methods) - 1) / 2.))
     num_measures = accs.shape[3]

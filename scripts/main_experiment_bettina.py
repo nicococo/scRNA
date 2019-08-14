@@ -4,7 +4,7 @@ import logging
 logging.basicConfig()
 from functools import partial
 from clustermap import process_jobs, Job
-from experiments_utils import (method_sc3, method_hub, method_sc3_combined, acc_classification,
+from .experiments_utils import (method_sc3, method_hub, method_sc3_combined, acc_classification,
                                acc_ari, acc_kta, acc_silhouette, acc_transferability, experiment_loop)
 from sc3_clustering import *
 import pdb
@@ -33,7 +33,7 @@ def check_intermediate_results(fname, n_src, genes, common):
                 params.append((s, g, c))
                 if not os.path.isfile(out_fname):
                     missing_files.append(out_fname)
-                    print out_fname
+                    print(out_fname)
     return missing_files, all_files, params
 
 
@@ -47,11 +47,11 @@ def combine_intermediate_results(fname, n_src, genes, common):
         if all_files[i] not in missing_files:
             foo = np.load(all_files[i])
             s, g, c = params[i]
-            print foo['accs'].shape
+            print(foo['accs'].shape)
             res[s, g, c, :, :, :, :] = foo['accs']
             cnt += 1
-    print res.shape, res.size, cnt
-    print cnt, '/', cnt_all
+    print(res.shape, res.size, cnt)
+    print(cnt, '/', cnt_all)
     return res
 
 
@@ -187,7 +187,7 @@ if __name__ == "__main__":
             for c in range(len(common)):
                 out_fname = '{0}_{1}_{2}_{3}.npz'.format(fname, n_src[s], genes[g], common[c])
                 if not os.path.isfile(out_fname):
-                    print 'Added job for experiment: ', out_fname
+                    print('Added job for experiment: ', out_fname)
                     job = Job(experiment, [out_fname, methods, acc_funcs, 7,
                             reps, genes[g], common[c], cluster_spec, percs, n_src[s], n_trg],
                             mem_max='16G', mem_free='8G', name='Da2-{0}-{1}-{2}'.format(n_src[s],genes[g], common[c]))
@@ -199,9 +199,9 @@ if __name__ == "__main__":
 
     processedJobs = process_jobs(jobs, temp_dir='/home/bmieth/tmp/', local=False, max_processes=10)
     # results = []
-    print "ret fields AFTER execution on local machine"
+    print("ret fields AFTER execution on local machine")
     for (i, result) in enumerate(processedJobs):
-        print "Job #", i
+        print("Job #", i)
         src_aris, accs, accs_desc, m_desc = result
         s, g, c = params[i]
         # res[s, g, c, :, :, :, :] = accs

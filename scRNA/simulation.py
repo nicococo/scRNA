@@ -40,7 +40,7 @@ def generate_de_logfc(ngenes, prop_genes_de, de_logfc):
 
     nde_genes = int(np.floor(ngenes * prop_genes_de))
     up_down = np.sign(np.random.normal(size = nde_genes))
-    logfc = map((lambda x: x * de_logfc), up_down)
+    logfc = list(map((lambda x: x * de_logfc), up_down))
 
     logfc = logfc + [0] * (ngenes - nde_genes)
     random.shuffle(logfc)
@@ -253,7 +253,7 @@ def split_source_target(toy_data, true_toy_labels,
 
 
     elif mode == 3:
-        print "Mode 3 not implemented!"
+        print("Mode 3 not implemented!")
         toy_data_source=[]
         toy_data_target=[]
         true_toy_labels_source=[]
@@ -463,7 +463,7 @@ def split_source_target(toy_data, true_toy_labels,
             toy_data_target = toy_data_target.transpose()
 
     else:
-        print "Unknown mode!"
+        print("Unknown mode!")
         toy_data_source=[]
         toy_data_target=[]
         true_toy_labels_source=[]
@@ -534,7 +534,7 @@ def split_source_target_2labels(toy_data, true_toy_labels_1, true_toy_labels_2,
         toy_data_target = np.transpose(toy_data_target)
 
     else:
-        print "Unknown mode!"
+        print("Unknown mode!")
         toy_data_source = []
         toy_data_target = []
         true_toy_labels_source_1 = []

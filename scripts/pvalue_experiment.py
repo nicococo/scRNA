@@ -21,7 +21,7 @@ def cell_filter(data, num_expr_genes=500, non_zero_threshold=0):
     :param data: transcripts x cells data matrix
     :return: indices of valid cells
     """
-    print('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold))
+    print(('SC3 cell filter with num_expr_genes={0} and non_zero_threshold={1}'.format(num_expr_genes, non_zero_threshold)))
     ai, bi = np.where(np.isnan(data))
     data[ai, bi] = 0
     res = np.sum(data > non_zero_threshold, axis=0)
@@ -34,7 +34,7 @@ def gene_filter(data, perc_consensus_genes=0.99, non_zero_threshold=0):
     :param data: transcripts x cells data matrix
     :return: indices of valid transcripts
     """
-    print('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold))
+    print(('SC3 gene filter with perc_consensus_genes={0} and non_zero_threshold={1}'.format(perc_consensus_genes, non_zero_threshold)))
     ai, bi = np.where(np.isnan(data))
     data[ai, bi] = 0
     _, num_cells = data.shape

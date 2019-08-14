@@ -6,19 +6,19 @@ def intersect(a, b):
     return list(set(a) & set(b))
 
 # Load Pfizer data
-data_pfizer = np.load('C:\Users\Bettina\ml\scRNAseq\Data\Pfizer data\pfizer_data.npz')
+data_pfizer = np.load('C:\\Users\Bettina\ml\scRNAseq\Data\Pfizer data\pfizer_data.npz')
 cell_names_pfizer = data_pfizer['filtered_inds']
 gene_IDs_pfizer = tuple(x[0] for x in data_pfizer['transcripts'])
 data_array_pfizer_raw = data_pfizer['rpm_data']
 pdb.set_trace()
 # Load Usoskin data
-data_uso = np.load('C:\Users\Bettina\ml\scRNAseq\data\Usoskin.npz')
+data_uso = np.load('C:\\Users\Bettina\ml\scRNAseq\data\\Usoskin.npz')
 cell_names_uso = data_uso['cells']
 transcript_names_uso = data_uso['transcripts']
 data_array_uso = data_uso['data']
 
 # Convert gene IDs to gene names
-raw_gene_names = pd.read_table('C:\Users\Bettina\ml\scRNAseq\Data\Pfizer data\gene_names.txt')
+raw_gene_names = pd.read_table('C:\\Users\Bettina\ml\scRNAseq\Data\Pfizer data\gene_names.txt')
 gene_names = raw_gene_names.as_matrix()
 gene_IDs_ensembl_order = tuple(x[1] for x in gene_names)
 
@@ -50,19 +50,19 @@ transcript_names_pfizer_uso = np.asarray(common_genes)
 
 # Save data
 # Pfizer
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\Pfizer data\data_pfizer.txt", data_array_pfizer, delimiter=" ", fmt="%10.5f")
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\Pfizer data\cell_names_pfizer.txt", cell_names_pfizer, delimiter=" ", fmt="%s")
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\Pfizer data\\transcript_names_pfizer.txt", transcript_names_pfizer, delimiter=" ", fmt="%s")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\Pfizer data\data_pfizer.txt", data_array_pfizer, delimiter=" ", fmt="%10.5f")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\Pfizer data\cell_names_pfizer.txt", cell_names_pfizer, delimiter=" ", fmt="%s")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\Pfizer data\\transcript_names_pfizer.txt", transcript_names_pfizer, delimiter=" ", fmt="%s")
 
 # Pfizer + Usoskin
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\Pfizer data\data_pfizer_uso.txt", data_array_pfizer_uso, delimiter=" ", fmt="%10.5f")
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\Pfizer data\cell_names_pfizer_uso.txt", cell_names_pfizer_uso, delimiter=" ", fmt="%s")
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\Pfizer data\\transcript_names_pfizer_uso.txt", transcript_names_pfizer_uso, delimiter=" ", fmt="%s")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\Pfizer data\data_pfizer_uso.txt", data_array_pfizer_uso, delimiter=" ", fmt="%10.5f")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\Pfizer data\cell_names_pfizer_uso.txt", cell_names_pfizer_uso, delimiter=" ", fmt="%s")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\Pfizer data\\transcript_names_pfizer_uso.txt", transcript_names_pfizer_uso, delimiter=" ", fmt="%s")
 
 # Usoskin
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\data_uso.txt", data_array_uso, delimiter=" ", fmt="%10.5f")
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\cell_names_uso.txt", cell_names_uso, delimiter=" ", fmt="%s")
-np.savetxt("C:\Users\Bettina\ml\scRNAseq\data\\transcript_names_uso.txt", transcript_names_uso, delimiter=" ", fmt="%s")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\data_uso.txt", data_array_uso, delimiter=" ", fmt="%10.5f")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\cell_names_uso.txt", cell_names_uso, delimiter=" ", fmt="%s")
+np.savetxt("C:\\Users\Bettina\ml\scRNAseq\data\\transcript_names_uso.txt", transcript_names_uso, delimiter=" ", fmt="%s")
 
 
 # Ting

@@ -1,7 +1,7 @@
 import logging
 logging.basicConfig()
 from functools import partial
-from experiments_utils import (method_sc3, method_hub, method_sc3_combined,
+from .experiments_utils import (method_sc3, method_hub, method_sc3_combined,
                                acc_ari, acc_kta, acc_silhouette, acc_transferability)
 
 from nmf_clustering import NmfClustering
@@ -17,8 +17,8 @@ import datetime
 #           - 10 reps with KTA on mixed data - 18h38min for 1,3,5 overlap bwz. 24h for 0,1,3,5 overlap
 #           - 100 reps with KTA on mixed with choosing mix automatically, final run - 8d15h20min, 10percs, 4commons, 11mixes
 now1 = datetime.datetime.now()
-print "Current date and time:"
-print now1.strftime("%Y-%m-%d %H:%M")
+print("Current date and time:")
+print(now1.strftime("%Y-%m-%d %H:%M"))
 
 fname_final = 'main_results_part1_opt_mixparam_100reps.npz'
 reps = 100  # number of repetitions, 100
@@ -107,7 +107,7 @@ for s in range(len(n_src)):
                 source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=n_src_cluster)
                 source_nmf.apply(k=n_src_cluster, max_iter=4000, rel_err=1e-3)
                 source_aris[s,g,c,r] = metrics.adjusted_rand_score(src_labels, source_nmf.cluster_labels)
-                print 'ITER(', r, '): SOURCE ARI = ', source_aris[s,g,c,r]
+                print('ITER(', r, '): SOURCE ARI = ', source_aris[s,g,c,r])
                 if source_aris[s,g,c,r] < 0.94:
                     continue
                 # 3.d. Target data subsampling loop
@@ -119,8 +119,8 @@ for s in range(len(n_src)):
                     # 4. MTL/DA mixing parameter loop
                     res_desc = list()
                     for m in range(len(methods)):
-                        print('Running experiment {0} of {1}: repetition {2} - {3} source cells, {4} genes, {5} common clusters, '
-                               '{6} target cells and the {7}th method'.format(exp_counter, num_exps, r+1, n_src[s], genes[g], common[c],n_trg_perc, m+1))
+                        print(('Running experiment {0} of {1}: repetition {2} - {3} source cells, {4} genes, {5} common clusters, '
+                               '{6} target cells and the {7}th method'.format(exp_counter, num_exps, r+1, n_src[s], genes[g], common[c],n_trg_perc, m+1)))
                         #plt.subplot(len(percs), len(methods), plot_cnt)
                         desc, target_nmf, trg_lbls_pred = methods[m](source_nmf, p_trg.copy(), p_trg_labels.copy(),
                                                                      n_trg_cluster=n_trg_cluster)
@@ -143,7 +143,7 @@ for s in range(len(n_src)):
                             accs_desc.append(accs_descr)
 
                         perc_done = round(np.true_divide(exp_counter,num_exps)*100, 4)
-                        print('{0}% of experiments done.'.format(perc_done))
+                        print(('{0}% of experiments done.'.format(perc_done)))
                         exp_counter += 1
                         #plot_cnt+=1
                         #plt.ylim(0,6)
@@ -178,8 +178,8 @@ np.savez(fname_final, methods=methods, acc_funcs=acc_funcs, res=res, accs_desc=a
 #         method_desc=res_desc, source_aris=source_aris,
 #         percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, common=common, mixes=mixes)
 now2 = datetime.datetime.now()
-print "Current date and time:"
-print now2.strftime("%Y-%m-%d %H:%M")
-print "Time passed:"
-print now2-now1
+print("Current date and time:")
+print(now2.strftime("%Y-%m-%d %H:%M"))
+print("Time passed:")
+print(now2-now1)
 print('Done.')

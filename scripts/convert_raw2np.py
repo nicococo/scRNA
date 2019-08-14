@@ -5,7 +5,7 @@ import numpy as np
 def load_Zeisel(path):
     frame = pd.read_table(PATH + 'GSE60361_C1-3005-Expression.txt')
     table = frame.as_matrix()
-    print table[:3,:10]
+    print(table[:3,:10])
 
     name = 'Zeisel'
     encoding = 'Read Counts'
@@ -13,13 +13,13 @@ def load_Zeisel(path):
     cells = frame.columns.values[1:]
     data = np.array(table[:, 1:], dtype=np.float64)
 
-    print '----------- Summary ------------'
-    print 'General: ', name, encoding, data.shape, cells.shape
-    print 'Statistics: ', np.min(data), np.mean(data), np.max(data)
-    print 'Transcripts: ', transcripts.shape, transcripts[:4]
-    print 'Cells: ', cells.shape, cells[:4]
-    print 'Data:', data.shape, data[:4,:4]
-    print '--------------------------------'
+    print('----------- Summary ------------')
+    print('General: ', name, encoding, data.shape, cells.shape)
+    print('Statistics: ', np.min(data), np.mean(data), np.max(data))
+    print('Transcripts: ', transcripts.shape, transcripts[:4])
+    print('Cells: ', cells.shape, cells[:4])
+    print('Data:', data.shape, data[:4,:4])
+    print('--------------------------------')
     return name, encoding, transcripts, cells, data
 
 
@@ -33,13 +33,13 @@ def load_Ting(path):
     cells = frame.columns.values[6:]
     data = np.array(table[:, 6:], dtype=np.float64)
 
-    print '----------- Summary ------------'
-    print 'General: ', name, encoding, data.shape, cells.shape
-    print 'Statistics: ', np.min(data), np.mean(data), np.max(data)
-    print 'Transcripts: ', transcripts.shape, transcripts[:4]
-    print 'Cells: ', cells.shape, cells[:4]
-    print 'Data:', data.shape, data[:4,:4]
-    print '--------------------------------'
+    print('----------- Summary ------------')
+    print('General: ', name, encoding, data.shape, cells.shape)
+    print('Statistics: ', np.min(data), np.mean(data), np.max(data))
+    print('Transcripts: ', transcripts.shape, transcripts[:4])
+    print('Cells: ', cells.shape, cells[:4])
+    print('Data:', data.shape, data[:4,:4])
+    print('--------------------------------')
     return name, encoding, transcripts, cells, data
 
 
@@ -53,13 +53,13 @@ def load_Usoskin(path):
     cells = frame.columns.values[1:]
     data = np.array(table[4:, 1:], dtype=np.float64)
 
-    print '----------- Summary ------------'
-    print 'General: ', name, encoding, data.shape, cells.shape
-    print 'Statistics: ', np.min(data), np.mean(data), np.max(data)
-    print 'Transcripts: ', transcripts.shape, transcripts[:4]
-    print 'Cells: ', cells.shape, cells[:4]
-    print 'Data:', data.shape, data[:4,:4]
-    print '--------------------------------'
+    print('----------- Summary ------------')
+    print('General: ', name, encoding, data.shape, cells.shape)
+    print('Statistics: ', np.min(data), np.mean(data), np.max(data))
+    print('Transcripts: ', transcripts.shape, transcripts[:4])
+    print('Cells: ', cells.shape, cells[:4])
+    print('Data:', data.shape, data[:4,:4])
+    print('--------------------------------')
     return name, encoding, transcripts, cells, data
 
 
@@ -75,10 +75,10 @@ if __name__ == "__main__":
 
     PATH = '/Users/nicococo/Downloads/mouse_vis_cortex/'
     data = np.loadtxt(PATH + 'gene_names', dtype=np.str)
-    print data.shape
-    print data[:5]
+    print(data.shape)
+    print(data[:5])
     ids = data[:].reshape(data.shape[0])
-    print ids.size, np.unique(ids).size
+    print(ids.size, np.unique(ids).size)
 
     # datasets = ['Ting', 'Zeisel', 'Usoskin']
     # props = []

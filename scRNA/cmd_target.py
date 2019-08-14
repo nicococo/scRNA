@@ -7,9 +7,9 @@ import argparse, sys
 from functools import partial
 from sklearn.manifold import TSNE
 
-from sc3_clustering import SC3Clustering
-from nmf_clustering import DaNmfClustering, NmfClustering
-from utils import *
+from .sc3_clustering import SC3Clustering
+from .nmf_clustering import DaNmfClustering, NmfClustering
+from .utils import *
 
 
 # --------------------------------------------------
@@ -89,20 +89,20 @@ parser.set_defaults(tsne=True)
 
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
-print arguments
+print(arguments)
 
 # --------------------------------------------------
 # 1. LOAD DATA
 # --------------------------------------------------
-print("\nLoading target dataset (data={0} and gene_ids={1}).".format(arguments.fname_trg, arguments.fgene_ids_trg))
+print(("\nLoading target dataset (data={0} and gene_ids={1}).".format(arguments.fname_trg, arguments.fgene_ids_trg)))
 data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname_trg, arguments.fgene_ids_trg, flabels=arguments.flabels_trg)
 
 # labels can be empty
 if labels is not None:
     #print np.histogram(labels, bins=np.unique(labels).size)
-    print('Target data {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
+    print(('Target data {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1])))
     print('Cell types of real labels:')
-    print np.unique(labels)
+    print((np.unique(labels)))
     np.savetxt('{0}.labels2ids.tsv'.format(arguments.fout), (np.arange(labels_2_ids.size), labels_2_ids), fmt='%s', delimiter='\t')
 
 #print('Number of genes/transcripts in data and gene-ids must coincide.')
@@ -112,7 +112,7 @@ assert(data.shape[0] == gene_ids.shape[0]), 'Number of genes/transcripts in data
 # 2. CELL and GENE FILTER
 # --------------------------------------------------
 # Preprocessing Target Data
-print "Target data dimensions before preprocessing: genes x cells", data.shape
+print(("Target data dimensions before preprocessing: genes x cells", data.shape))
 # Cell and gene filter and transformation before the whole procedure
 if arguments.use_cell_filter:
     cell_inds = sc.cell_filter(data, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold)
@@ -121,7 +121,7 @@ if arguments.use_cell_filter:
         labels = labels[cell_inds]
         labels_2_ids = labels_2_ids[cell_inds]
 else:
-    cell_inds = range(data.shape[1])
+    cell_inds = list(range(data.shape[1]))
 if arguments.use_gene_filter:
     gene_inds = sc.gene_filter(data, perc_consensus_genes=arguments.perc_consensus_genes, non_zero_threshold=arguments.non_zero_threshold)
     data = data[gene_inds, :]
@@ -131,7 +131,7 @@ if arguments.transform:
 cell_filter_fun = partial(sc.cell_filter, num_expr_genes=0, non_zero_threshold=-1)
 gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=1, non_zero_threshold=-1)
 data_transf_fun = sc.no_data_transformation
-print "Target data dimensions after preprocessing: genes x cells: ", data.shape
+print(("Target data dimensions after preprocessing: genes x cells: ", data.shape))
 
 # --------------------------------------------------
 # Gene subset between source and target
@@ -139,7 +139,7 @@ print "Target data dimensions after preprocessing: genes x cells: ", data.shape
 data_src, gene_ids_src, _, _ = load_dataset_tsv(arguments.fname, arguments.fgene_ids)
 
 # Preprocessing Source Data
-print "Source data dimensions before preprocessing: genes x cells", data_src.shape
+print(("Source data dimensions before preprocessing: genes x cells", data_src.shape))
 # Cell and gene filter and transformation before the whole procedure
 if arguments.use_cell_filter:
     cell_inds_src = sc.cell_filter(data_src, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold)
@@ -149,7 +149,7 @@ if arguments.use_gene_filter:
     data_src = data_src[gene_inds, :]
     gene_ids_src = gene_ids_src[gene_inds]
 
-print "Source data dimensions after preprocessing: genes x cells: ", data_src.shape
+print(("Source data dimensions after preprocessing: genes x cells: ", data_src.shape))
 
 # print('Genes/transcripts in source and target data must coincide.')
 # Find gene subset
@@ -160,13 +160,13 @@ assert (gene_intersection is not None), 'Genes/transcripts in source and target 
 data_target_indices = list(list(gene_ids).index(x) for x in gene_intersection)
 data = data[data_target_indices,]
 
-print "Target data dimensions after taking target intersection: genes x cells: ", data.shape
+print(("Target data dimensions after taking target intersection: genes x cells: ", data.shape))
 
 # --------------------------------------------------
 # 3. CLUSTERING
 # --------------------------------------------------
-num_cluster = map(np.int, arguments.cluster_range.split(","))
-mixtures = map(np.float, arguments.mixtures.split(","))
+num_cluster = list(map(np.int, arguments.cluster_range.split(",")))
+mixtures = list(map(np.float, arguments.mixtures.split(",")))
 
 accs_names = ['KTA', 'ARI']
 accs = np.zeros((len(accs_names), len(num_cluster),len(mixtures)))
@@ -181,7 +181,7 @@ for i in range(len(num_cluster)):
     for j in range(len(mixtures)):
         k = num_cluster[i]
         mix = mixtures[j]
-        print('\n Iteration k={0} mix={1}'.format(k, mix))
+        print(('\n Iteration k={0} mix={1}'.format(k, mix)))
 
         # --------------------------------------------------
         # 3.1. MIX TARGET & SOURCE DATE
@@ -255,32 +255,30 @@ for i in range(len(num_cluster)):
         accs[0, i, j] = unsupervised_acc_kta(mixed_data.copy(), sc3_mix.cluster_labels.copy(), kernel='linear')
         if labels is not None:
             accs[1, i, j] = metrics.adjusted_rand_score(labels[da_nmf.remain_cell_inds], sc3_mix.cluster_labels)
-        print accs[:, i, j]
+        print((accs[:, i, j]))
 
     # pdb.set_trace()
     opt_mix_ind[i] = np.argmax(accs[0, i, :])
-    print '\n optimal mixture parameter (via KTA score selection):'
-    print mixtures[int(opt_mix_ind[i])]
+    print('\n optimal mixture parameter (via KTA score selection):')
+    print((mixtures[int(opt_mix_ind[i])]))
 
     opt_mix_ktas[i] = accs[0, i, int(opt_mix_ind[i])]
-    print '\n KTA score of optimal mixture parameter (via KTA score selection):'
-    print opt_mix_ktas[i]
+    print('\n KTA score of optimal mixture parameter (via KTA score selection):')
+    print((opt_mix_ktas[i]))
 
     opt_mix_aris[i] = accs[1, i, int(opt_mix_ind[i])]
-    print '\n ARI of optimal mixture parameter (via KTA score selection):'
-    print opt_mix_aris[i]
+    print('\n ARI of optimal mixture parameter (via KTA score selection):')
+    print((opt_mix_aris[i]))
 
-    trg_labels_pred = trg_labels[:,i,int(opt_mix_ind[i])]
+    trg_labels_pred = trg_labels[:, i, int(opt_mix_ind[i])]
 
     # --------------------------------------------------
     # 3.4. SAVE RESULTS
     # --------------------------------------------------
-    print('\nSaving data structures and results to file with prefix \'{0}_c{1}\'.'.format(arguments.fout, k))
+    print(('\nSaving data structures and results to file with prefix \'{0}_c{1}\'.'.format(arguments.fout, k)))
     np.savetxt('{0}_c{1}.labels.transfercluster.tsv'.format(arguments.fout, k),(trg_labels_pred.astype(np.int64), cell_inds), fmt='%u', delimiter='\t')
-    np.savetxt('{0}_c{1}.data.tsv'.format(arguments.fout, k),
-               data, fmt='%u', delimiter='\t')
-    np.savetxt('{0}_c{1}.geneids.tsv'.format(arguments.fout, k),
-               gene_ids, fmt='%s', delimiter='\t')
+    np.savetxt('{0}_c{1}.data.tsv'.format(arguments.fout, k), data, fmt='%u', delimiter='\t')
+    np.savetxt('{0}_c{1}.geneids.tsv'.format(arguments.fout, k), gene_ids, fmt='%s', delimiter='\t')
 
     # --------------------------------------------------
     # 3.5. T-SNE PLOT with predicted labels
@@ -326,40 +324,40 @@ if arguments.tsne & (labels is not None):
 np.set_printoptions(precision=3)
 np.set_printoptions(suppress=True)
 
-print '\n\n\n'
-print '================================================================================'
-print '\n\n\n'
-print 'SUMMARY'
-print '\n\n\n'
-print 'Parameters'
-print '-------------'
-print ' - Output prefix: ', arguments.fout
-print ' - Source file name: ', arguments.src_fname
-print ' - Mixtures:', mixtures
-print ' - Cluster:', num_cluster
+print('\n\n\n')
+print('================================================================================')
+print('\n\n\n')
+print('SUMMARY')
+print('\n\n\n')
+print('Parameters')
+print('-------------')
+print((' - Output prefix: ', arguments.fout))
+print((' - Source file name: ', arguments.src_fname))
+print((' - Mixtures:', mixtures))
+print((' - Cluster:', num_cluster))
 if labels is not None:
-    print ' - Class 2 label conversion (class {0:1d}-{1:1d}): '.format(
-        np.int(np.min(labels)), np.int(np.max(labels))), labels_2_ids
-print ''
+    print((' - Class 2 label conversion (class {0:1d}-{1:1d}): '.format(
+        np.int(np.min(labels)), np.int(np.max(labels))), labels_2_ids))
+print('')
 
-print 'Results'
-print '-------------'
-print ' - Accuracies: ', accs_names
+print('Results')
+print('-------------')
+print((' - Accuracies: ', accs_names))
 for i in range(accs.shape[0]):
-    print('\n{0} (mixtures({1}) x cluster({2})):'.format(
-        accs_names[i], len(mixtures), len(num_cluster)))
+    print(('\n{0} (mixtures({1}) x cluster({2})):'.format(
+        accs_names[i], len(mixtures), len(num_cluster))))
     for m in range(accs.shape[1]):
-        print accs[i, m, :]
+        print((accs[i, m, :]))
 
 for i in range(len(num_cluster)):
-    print '\n Optimal mixture parameters (via KTA score selection) for k = {0}'.format(num_cluster[i])
-    print mixtures[int(opt_mix_ind[i])]
+    print(('\n Optimal mixture parameters (via KTA score selection) for k = {0}'.format(num_cluster[i])))
+    print((mixtures[int(opt_mix_ind[i])]))
 
-    print '\n KTA scores of optimal mixture parameter (via KTA score selection) for k = {0}'.format(num_cluster[i])
-    print opt_mix_ktas[i]
+    print(('\n KTA scores of optimal mixture parameter (via KTA score selection) for k = {0}'.format(num_cluster[i])))
+    print((opt_mix_ktas[i]))
 
-    print '\n ARI of optimal mixture parameter (via KTA score selection)for k = {0}'.format(num_cluster[i])
-    print opt_mix_aris[i]
+    print(('\n ARI of optimal mixture parameter (via KTA score selection)for k = {0}'.format(num_cluster[i])))
+    print((opt_mix_aris[i]))
 
 
 plt.figure(0)
@@ -374,8 +372,8 @@ for i in range(n):
     # plt.xlabel('Cluster', fontsize=12)
     if i == 0:
         plt.ylabel('SC3-mix results', fontsize=10)
-    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
-    plt.yticks(np.array(range(len(mixtures)), dtype=np.float)+0.5, mixtures, fontsize=8)
+    plt.xticks(np.array(list(range(len(num_cluster))), dtype=np.float)+0.5, num_cluster, fontsize=8)
+    plt.yticks(np.array(list(range(len(mixtures))), dtype=np.float)+0.5, mixtures, fontsize=8)
     cbar = plt.colorbar()
     cbar.ax.tick_params(labelsize=5)
     # plt.clim(0.,+1.)

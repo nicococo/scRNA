@@ -31,7 +31,7 @@ def plot_results(fname):
     for n in range(len(n_target)):
 
         ari_mean = np.mean(trg[0, :, n, : ].reshape(reps, len(n_mix)), axis=0)
-        measures = range(1, 5)
+        measures = list(range(1, 5))
         for a in measures:
             plt.subplot(len(n_target), len(measures), n*len(measures)+a)
             res_mean = np.mean(trg[a, :, n, : ].reshape(reps, len(n_mix)), axis=0)
@@ -86,9 +86,9 @@ def plot_results(fname):
         plt.pcolor(res_mean)
         plt.colorbar()
 
-        plt.xticks(range(len(n_mix)), n_mix, rotation=30)
+        plt.xticks(list(range(len(n_mix))), n_mix, rotation=30)
         plt.xlim([0, len(n_mix)])
-        plt.yticks(range(len(n_target)), n_target)
+        plt.yticks(list(range(len(n_target))), n_target)
         plt.xlabel('Mixture levels')
         plt.ylabel('# Target data')
 
@@ -102,9 +102,9 @@ def plot_results(fname):
         plt.pcolor(res_mean)
         plt.colorbar()
 
-        plt.xticks(range(len(n_mix)), n_mix, rotation=30)
+        plt.xticks(list(range(len(n_mix))), n_mix, rotation=30)
         plt.xlim([0, 21])
-        plt.yticks(range(len(n_target)), n_target)
+        plt.yticks(list(range(len(n_target))), n_target)
         plt.xlabel('Mixture levels')
         plt.ylabel('# Target data')
 
@@ -113,7 +113,7 @@ def plot_results(fname):
 
 def get_classifier_scores(pred_labels, mixed_data, target_nmf_pp_data, target_data, use_lasso=True, n_nonzeros=10):
     aris = np.zeros(5)
-    active_genes = range(mixed_data.shape[0])
+    active_genes = list(range(mixed_data.shape[0]))
     include_inds = []
     pred_lbls = np.unique(pred_labels)
     for p in pred_lbls:
@@ -130,8 +130,8 @@ def get_classifier_scores(pred_labels, mixed_data, target_nmf_pp_data, target_da
             for e in range(len(cls.estimators_)):
                 active_genes.extend(cls.estimators_[e].active_)
             active_genes = np.unique(active_genes)
-            print active_genes
-            print active_genes.shape
+            print(active_genes)
+            print(active_genes.shape)
         else:
             cls = OneVsRestClassifier(LinearRegression(fit_intercept=True, normalize=False, copy_X=True, n_jobs=1)).fit(
                 mixed_data[:, include_inds].T.copy(), pred_labels[include_inds].copy())
@@ -171,8 +171,8 @@ if __name__ == "__main__":
     data = data['src'][()]
     gene_ids = data.gene_ids[data.remain_gene_inds]
 
-    print data
-    print np.unique(data.cluster_labels)
+    print(data)
+    print(np.unique(data.cluster_labels))
 
     source_ari = np.zeros(reps)
     target_ari = np.zeros((7, reps, len(n_target), len(n_mix)))
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         source_perc = n_source / float(data.cluster_labels.size)
         sss = StratifiedShuffleSplit(n_splits=2, test_size=source_perc)
         for split_1, split_2 in sss.split(data.pp_data.T, data.cluster_labels):
-            print split_1.size, split_2.size
+            print(split_1.size, split_2.size)
 
         source_data = data.pp_data[:, split_2]
         source_labels = data.cluster_labels[split_2]
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         source_nmf = NmfClustering(source_data, gene_ids, num_cluster=n_source_cluster)
         source_nmf.apply(k=n_source_cluster, max_iter=4000, rel_err=1e-3)
         source_ari[n] = metrics.adjusted_rand_score(source_labels, source_nmf.cluster_labels)
-        print 'ITER(', n,'): SOURCE ARI = ', source_ari[n]
+        print('ITER(', n,'): SOURCE ARI = ', source_ari[n])
         if source_ari[n] < 0.94:
             continue
 
@@ -198,7 +198,7 @@ if __name__ == "__main__":
             target_perc = n_target[i] / float(split_1.size)
             ttt = StratifiedShuffleSplit(n_splits=2, test_size=target_perc)
             for split_11, split_22 in ttt.split(data.pp_data[:, split_1].T, data.cluster_labels[split_1]):
-                print split_11.size, split_22.size
+                print(split_11.size, split_22.size)
 
             # shuffle the gene ids for testing
             perm_inds = np.random.permutation(data.pp_data.shape[0])
@@ -242,8 +242,8 @@ if __name__ == "__main__":
                 # target_ari[6, n, i, m] = np.sum(np.sum(mixed_data - target_data)) / float(mixed_data.size)
         n += 1
 
-    print source_ari
-    print target_ari
+    print(source_ari)
+    print(target_ari)
 
     np.savez(fname, source_ari=source_ari, target_ari=target_ari, n_mix=n_mix,
              n_source=n_source, n_target=n_target, n_source_cluster=n_source_cluster, n_target_cluster=n_target_cluster)

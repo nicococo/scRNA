@@ -2,8 +2,8 @@ import argparse
 import sys
 import ast
 
-from simulation import generate_toy_data, split_source_target
-from utils import *
+from .simulation import generate_toy_data, split_source_target
+from .utils import *
 
 # 0. PARSE ARGUMENTS
 parser = argparse.ArgumentParser()
@@ -188,7 +188,7 @@ parser.set_defaults(normalise = False)
 
 args = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
-print args
+print(args)
 
 try:
     cluster_spec = ast.literal_eval(args.cluster_spec)
@@ -223,7 +223,7 @@ data, labels = generate_toy_data(
     mean_de_logfc                    = args.mean_de_logfc,
     sd_de_logfc                      = args.sd_de_logfc
 )
-print 'Data dimension: ', data.shape
+print(('Data dimension: ', data.shape))
 
 output_fmt = "%u"
 
@@ -262,14 +262,14 @@ for sidx, source_ncells in enumerate(source_ncells_range):
                 mode = args.splitting_mode,
                 common = args.common
             )
-        print 'Target data dimension: ', data_target.shape
-        print 'Source data dimension: ', data_source.shape
+        print(('Target data dimension: ', data_target.shape))
+        print(('Source data dimension: ', data_source.shape))
 
         # 3. GENERATE GENE AND CELL NAMES
         gene_ids = np.arange(args.num_genes)
 
         # 4. SAVE RESULTS
-        print('Saving target data to \'{0}\'.'.format(args.fout_target_data))
+        print(('Saving target data to \'{0}\'.'.format(args.fout_target_data)))
         np.savetxt(
             os.path.splitext(args.fout_target_data)[0] + 
             "_T" + str(tidx+1) + "_" + str(target_ncells) + 
@@ -295,7 +295,7 @@ for sidx, source_ncells in enumerate(source_ncells_range):
             delimiter = '\t'
         )
 
-        print('Saving source data to \'{0}\'.'.format(args.fout_source_data))
+        print(('Saving source data to \'{0}\'.'.format(args.fout_source_data)))
         np.savetxt(
             os.path.splitext(args.fout_source_data)[0] + 
             "_T" + str(tidx+1) + "_" + str(target_ncells) + 

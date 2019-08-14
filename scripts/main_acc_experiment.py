@@ -15,7 +15,7 @@ def plot_results(fname):
     percs = foo['percs']
     n_trg = foo['n_trg']
     n_src = foo['n_src']
-    print accs
+    print(accs)
 
     m_accs = list()
     m_names = list()
@@ -25,13 +25,13 @@ def plot_results(fname):
         m_accs.append(accs[i, :, :, 0])
 
     if len(m_names) > 0:
-        print accs.shape
+        print(accs.shape)
         racc = np.array(m_accs)
-        print racc.shape
+        print(racc.shape)
         racc = np.swapaxes(racc, 0, 1)
-        print racc.shape
+        print(racc.shape)
         racc = np.swapaxes(racc, 2, 1)
-        print racc.shape
+        print(racc.shape)
         plot_single(i+1, 'Accuracy Measures', racc, percs, n_src, n_trg, m_names)
 
     plt.show()
@@ -73,7 +73,7 @@ def plot_single(fig_num, title, aris, percs, n_src, n_trg, desc):
     #plt.xlim([4e-2, 1.3])
     plt.ylim([-1., 1.])
     plt.legend(desc, loc=4)
-    print corr
+    print(corr)
 
 
 if __name__ == "__main__":

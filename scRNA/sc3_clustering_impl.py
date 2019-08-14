@@ -4,7 +4,7 @@ import scipy.stats as stats
 import scipy.linalg as sl
 import sklearn.cluster as cluster
 
-from utils import *
+from .utils import *
 
 # These are the SC3 labels for Ting with 7 clusters, PCA, Euclidean distances
 SC3_Ting7_results = [
@@ -96,7 +96,7 @@ def da_nmf_distances(data, gene_ids, da_model, reject_ratio=0., metric='euclidea
             raise Exception('Distances are all close to zero and mixture=1.0. '
                             'Seems that source and target data do not go well together.')
         else:
-            print 'Warning! Max distance is close to zero.'
+            print('Warning! Max distance is close to zero.')
     else:
         # print 'Max dists before normalization: ', np.max(dist1), np.max(dist2)
         dist2 *= np.max(dist1) / np.max(dist2)
@@ -152,7 +152,7 @@ def transformations(dm, components=5, method='pca'):
         #  L := D - A
         # symmetric normalized laplacian:
         #  L_sym := D^-0.5 L D^-0.5
-        inds = range(components)
+        inds = list(range(components))
     else:
         # column-wise scaling and normalizing
         num_cells = dm.shape[0]
@@ -168,7 +168,7 @@ def transformations(dm, components=5, method='pca'):
         #print "Percentage of zero-entries in std", 100*sum(np.nanstd(dm, axis=0) == 0)/len(np.nanstd(dm, axis=0)), "%"
 
         if sum(np.nanstd(dm, axis=0) == 0) == len(np.nanstd(dm, axis=0)):
-            print "All values are Zero!"
+            print("All values are Zero!")
         else:
             dm = dm / np.repeat(np.nanstd(dm, axis=0).reshape((1, num_cells)), num_cells, axis=0)
 

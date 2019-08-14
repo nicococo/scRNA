@@ -15,7 +15,7 @@ def plot_results(fname):
     percs = foo['percs']
     n_trg = foo['n_trg']
     n_src = foo['n_src']
-    print accs
+    print(accs)
 
     for i in range(accs.shape[0]):
         title, _ = accs_desc[i]

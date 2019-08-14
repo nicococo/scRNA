@@ -7,8 +7,8 @@ import argparse, sys
 from functools import partial
 from sklearn.manifold import TSNE
 
-from nmf_clustering import NmfClustering_initW, NmfClustering
-from utils import *
+from .nmf_clustering import NmfClustering_initW, NmfClustering
+from .utils import *
 
 # --------------------------------------------------
 # PARSE COMMAND LINE ARGUMENTS
@@ -87,21 +87,21 @@ parser.set_defaults(tsne=True)
 
 arguments = parser.parse_args(sys.argv[1:])
 print('Command line arguments:')
-print arguments
+print(arguments)
 
 
 # --------------------------------------------------
 # 1. LOAD DATA
 # --------------------------------------------------
-print("\nLoading  dataset (data={0} and gene_ids={1}).".format(arguments.fname, arguments.fgene_ids))
+print(("\nLoading  dataset (data={0} and gene_ids={1}).".format(arguments.fname, arguments.fgene_ids)))
 data, gene_ids, labels, labels_2_ids = load_dataset_tsv(arguments.fname, arguments.fgene_ids, flabels=arguments.flabels)
-print('Data:  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1]))
+print(('Data:  {1} cells and {0} genes/transcripts.'.format(data.shape[0], data.shape[1])))
 if labels is not None:
-    print "Source labels provided: "
-    print np.unique(labels)
+    print("Source labels provided: ")
+    print((np.unique(labels)))
     np.savetxt('{0}.labels2ids.tsv'.format(arguments.fout), (np.arange(labels_2_ids.size), labels_2_ids), fmt='%s', delimiter='\t')
 else:
-    print "No source labels provided, they will be generated via NMF Clustering!"
+    print("No source labels provided, they will be generated via NMF Clustering!")
 
 print('Number of genes/transcripts in data and gene-ids must coincide.')
 assert(data.shape[0] == gene_ids.shape[0])
@@ -110,7 +110,7 @@ assert(data.shape[0] == gene_ids.shape[0])
 # 2. CELL and GENE FILTER
 # --------------------------------------------------
 # Preprocessing Source Data
-print "Source data dimensions before preprocessing: genes x cells", data.shape
+print(("Source data dimensions before preprocessing: genes x cells", data.shape))
 # Cell and gene filter and transformation before the whole procedure
 if arguments.use_cell_filter:
     cell_inds = sc.cell_filter(data, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold)
@@ -127,7 +127,7 @@ if arguments.transform:
 cell_filter_fun = partial(sc.cell_filter, num_expr_genes=0, non_zero_threshold=-1)
 gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=1, non_zero_threshold=-1)
 data_transf_fun = sc.no_data_transformation
-print "source data dimensions after preprocessing: genes x cells: ", data.shape
+print(("source data dimensions after preprocessing: genes x cells: ", data.shape))
 
 # --------------------------------------------------
 # Gene subset between source and target
@@ -135,7 +135,7 @@ print "source data dimensions after preprocessing: genes x cells: ", data.shape
 data_trg, gene_ids_trg, _, _ = load_dataset_tsv(arguments.fname_trg, arguments.fgene_ids_trg)
 
 # Preprocessing Target Data
-print "Target data dimensions before preprocessing: genes x cells", data_trg.shape
+print(("Target data dimensions before preprocessing: genes x cells", data_trg.shape))
 # Cell and gene filter and transformation before the whole procedure
 if arguments.use_cell_filter:
     cell_inds = sc.cell_filter(data_trg, num_expr_genes=arguments.min_expr_genes, non_zero_threshold=arguments.non_zero_threshold)
@@ -145,7 +145,7 @@ if arguments.use_gene_filter:
     data_trg = data_trg[gene_inds, :]
     gene_ids_trg = gene_ids_trg[gene_inds]
 
-print "Target data dimensions after preprocessing: genes x cells: ", data_trg.shape
+print(("Target data dimensions after preprocessing: genes x cells: ", data_trg.shape))
 
 print('Genes/transcripts in source and target data must coincide.')
 # Find gene subset
@@ -155,19 +155,19 @@ gene_intersection = list(set(x for x in gene_ids_trg).intersection(set(x for x i
 data_source_indices = list(list(gene_ids).index(x) for x in gene_intersection)
 data = data[data_source_indices,]
 
-print "source data dimensions after taking target intersection: genes x cells: ", data.shape
+print(("source data dimensions after taking target intersection: genes x cells: ", data.shape))
 
 # --------------------------------------------------
 # 3. CLUSTERING
 # --------------------------------------------------
-num_cluster = map(np.int, arguments.cluster_range.split(","))
+num_cluster = list(map(np.int, arguments.cluster_range.split(",")))
 
 accs_names = ['KTA (linear)',  'ARI']
 accs = np.zeros((2, len(num_cluster)))
 
 for i in range(len(num_cluster)):
     k = num_cluster[i]
-    print('Iteration {0}, num-cluster={1}'.format(i, k))
+    print(('Iteration {0}, num-cluster={1}'.format(i, k)))
     # --------------------------------------------------
     # 3.1. SETUP SOURCE DATA NMF CLUSTERING
     # --------------------------------------------------
@@ -198,10 +198,10 @@ for i in range(len(num_cluster)):
     # --------------------------------------------------
     print('\nUnsupervised evaluation:')
     accs[0, i] = unsupervised_acc_kta(nmf.pp_data, nmf.cluster_labels, kernel='linear')
-    print '  -KTA (linear)     : ', accs[0, i]
+    print(('  -KTA (linear)     : ', accs[0, i]))
     print('\nSupervised evaluation:')
     accs[1, i] = metrics.adjusted_rand_score(labels[nmf.remain_cell_inds], nmf.cluster_labels)
-    print '  -ARI: ', accs[1, i]
+    print(('  -ARI: ', accs[1, i]))
 
     # --------------------------------------------------
     # 3.3. SAVE RESULTS
@@ -209,7 +209,7 @@ for i in range(len(num_cluster)):
     nmf.cell_filter_list = None
     nmf.gene_filter_list = None
     nmf.data_transf = None
-    print('\nSaving data structures and results to file with prefix \'{0}_c{1}\'.'.format(arguments.fout, k))
+    print(('\nSaving data structures and results to file with prefix \'{0}_c{1}\'.'.format(arguments.fout, k)))
     np.savez('{0}_c{1}.npz'.format(arguments.fout, k), src=nmf, args=arguments)
     np.savetxt('{0}_c{1}.labels.tsv'.format(arguments.fout, k),
                (nmf.cluster_labels, nmf.remain_cell_inds), fmt='%u', delimiter='\t')
@@ -233,36 +233,36 @@ for i in range(len(num_cluster)):
 # --------------------------------------------------
 # 6. SUMMARIZE RESULTS
 # --------------------------------------------------
-print '\n------------------------------ Summary:'
-print 'Cluster:', num_cluster
-print 'Accuracy measures: ', accs_names
-print 'Accuracies:'
-print accs
+print('\n------------------------------ Summary:')
+print(('Cluster:', num_cluster))
+print(('Accuracy measures: ', accs_names))
+print('Accuracies:')
+print(accs)
 
 np.set_printoptions(precision=3)
 np.set_printoptions(suppress=True)
 
-print '\n\n\n'
-print '================================================================================'
-print '\n\n\n'
-print 'SUMMARY'
-print '\n\n\n'
-print 'Parameters'
-print '-------------'
-print ' - Output prefix: ', arguments.fout
-print ' - Source file name: ', arguments.fname
-print ' - Cluster:', num_cluster
+print('\n\n\n')
+print('================================================================================')
+print('\n\n\n')
+print('SUMMARY')
+print('\n\n\n')
+print('Parameters')
+print('-------------')
+print((' - Output prefix: ', arguments.fout))
+print((' - Source file name: ', arguments.fname))
+print((' - Cluster:', num_cluster))
 if labels is not None:
-    print ' - Class 2 label conversion (class {0:1d}-{1:1d}): '.format(
-        np.int(np.min(labels)), np.int(np.max(labels))), labels_2_ids
-print ''
+    print((' - Class 2 label conversion (class {0:1d}-{1:1d}): '.format(
+        np.int(np.min(labels)), np.int(np.max(labels))), labels_2_ids))
+print('')
 
-print 'Results'
-print '-------------'
-print ' - Accuracies: ', accs_names
+print('Results')
+print('-------------')
+print((' - Accuracies: ', accs_names))
 for i in range(accs.shape[0]):
-    print('\n{0} (cluster({1})):'.format(accs_names[i], len(num_cluster)))
-    print accs[i, :]
+    print(('\n{0} (cluster({1})):'.format(accs_names[i], len(num_cluster))))
+    print((accs[i, :]))
 
 plt.figure(0, figsize=(20,5), dpi=100)
 fig, axes = plt.subplots(nrows=1, ncols=accs.shape[0])
@@ -276,16 +276,16 @@ for i in range(accs.shape[0]):
         plt.title('\n' + accs_names[i], fontsize=12, fontweight='bold')
 
     if i == accs.shape[0]-1:
-        plt.bar(range(len(num_cluster)), accs[i, :], color='red')
+        plt.bar(list(range(len(num_cluster))), accs[i, :], color='red')
     else:
-        plt.bar(range(len(num_cluster)), accs[i, :])
+        plt.bar(list(range(len(num_cluster))), accs[i, :])
 
     if i == 0:
         plt.xlabel('Cluster', fontsize=12)
         plt.ylabel('Accuracy', fontsize=12)
 
     plt.yticks(fontsize=8)
-    plt.xticks(np.array(range(len(num_cluster)), dtype=np.float)+0.5, num_cluster, fontsize=8)
+    plt.xticks(np.array(list(range(len(num_cluster))), dtype=np.float)+0.5, num_cluster, fontsize=8)
     plt.grid('on')
 
 plt.savefig('{0}.accs.png'.format(arguments.fout), format='png',

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 #  generate plot
-foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\\ari_pre_experiment_full_n_src_final.npz')
+foo = np.load('C:\\Users\Bettina\PycharmProjects2\scRNA_new\scripts\\ari_pre_experiment_full_n_src_final.npz')
 source_aris_NMF_NMF = foo['source_aris_NMF_NMF']
 source_aris_NMF_SC3 = foo['source_aris_NMF_SC3']
 source_aris_SC3_NMF = foo['source_aris_SC3_NMF']

@@ -263,7 +263,7 @@ def plot_transferability_new(fig_num, res, res_opt_mix_ind,res_opt_mix_aris,accs
 def plot_mixtures_vs_rates(fig_num, res, accs_desc, m_desc, percs, genes, n_src, n_trg, mixes):
     plt.figure(fig_num)
     accs_indices = [0,1]
-    perc_inds = range(len(percs))
+    perc_inds = list(range(len(percs)))
     cmap = plt.cm.get_cmap('hsv', len(accs_indices) + 1)
 
     for perc_ind in perc_inds:
@@ -305,7 +305,7 @@ def plot_expression_histogram(data_matrix, num_bins=1000, x_range=(0,800), y_lim
 
 if __name__ == "__main__":
 
-    foo = np.load('C:\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_mouse_primary_grouped_final.npz')
+    foo = np.load('C:\\Users\Bettina\PycharmProjects2\scRNA_new\scripts\main_results_mouse_primary_grouped_final.npz')
     methods = foo['methods']
     acc_funcs = foo['acc_funcs']
     res = foo['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
@@ -313,9 +313,9 @@ if __name__ == "__main__":
     res_opt_mix_ind = foo['res_opt_mix_ind']
     res_opt_mix_aris = foo['res_opt_mix_aris']
     source_aris = foo['source_aris'] # n_src x genes x common x reps
-    print 'Source ARIs from NMF clustering: ', source_aris
+    print('Source ARIs from NMF clustering: ', source_aris)
     accs_desc = foo['accs_desc']
-    print accs_desc
+    print(accs_desc)
     method_desc = foo['method_desc']
     percs = foo['percs']
     reps = foo['reps']
@@ -324,10 +324,10 @@ if __name__ == "__main__":
     n_trg = foo['n_trg']
     #print n_trg
     mixes = foo['mixes']
-    print 'n_src x genes x common x acc_funcs x reps x percs x methods'
-    print 'Result dimensionality: ', res.shape
-    print 'n_src x genes x common x reps x percs'
-    print 'Result optimal mixture parameter', res_opt_mix_ind.shape
+    print('n_src x genes x common x acc_funcs x reps x percs x methods')
+    print('Result dimensionality: ', res.shape)
+    print('n_src x genes x common x reps x percs')
+    print('Result optimal mixture parameter', res_opt_mix_ind.shape)
     #  Running
     plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)
     plot_mixture_all(2, res, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes)

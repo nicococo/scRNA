@@ -1,6 +1,6 @@
 import logging
 from functools import partial
-from experiments_utils import (method_sc3_filter, method_hub, method_sc3_combined_filter,
+from .experiments_utils import (method_sc3_filter, method_hub, method_sc3_combined_filter,
                                acc_ari, acc_kta, acc_transferability)
 from nmf_clustering import NmfClustering
 from utils import *
@@ -12,11 +12,11 @@ import sys
 
 logging.basicConfig()
 now1 = datetime.datetime.now()
-print "Current date and time:"
-print now1.strftime("%Y-%m-%d %H:%M")
+print("Current date and time:")
+print((now1.strftime("%Y-%m-%d %H:%M")))
 
 # Data location
-fname_data = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
+fname_data = 'C:\\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
 #fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_major_sub'
 #fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\scRNA\src_c16.labels.tsv'
 fname_final = 'main_results_mouse_NMF_labels_only_3_clusters.npz'
@@ -38,7 +38,7 @@ nmf_rel_err = 1e-3
 preprocessing_first = True
 
 if num_cluster > np.min(percs_aim):
-    print "percs_aim need to be greater than num_cluster!"
+    print("percs_aim need to be greater than num_cluster!")
     sys.exit("error!")
 
 # runtime 1 rep, 100src, 10,20, 0.3,0.6 - 15min
@@ -74,8 +74,8 @@ if preprocessing_first:
     cell_filter_fun = partial(sc.cell_filter, num_expr_genes=0, non_zero_threshold=-1)
     gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=1, non_zero_threshold=-1)
     data_transf_fun = sc.no_data_transformation
-    print "data dimensions after preprocessing: genes x cells: ", data.shape
-    print data.shape
+    print(("data dimensions after preprocessing: genes x cells: ", data.shape))
+    print((data.shape))
 else:
     # Cell and gene filter and transformation within the procedure
     cell_filter_fun = partial(sc.cell_filter, num_expr_genes=min_expr_genes, non_zero_threshold=non_zero_threshold)
@@ -83,7 +83,7 @@ else:
     data_transf_fun = sc.data_transformation_log2
 
 # Generating labels from complete dataset
-print "Train complete data"
+print("Train complete data")
 complete_nmf = None
 complete_nmf = NmfClustering(data, np.arange(data.shape[0]), num_cluster=num_cluster)
 complete_nmf.add_cell_filter(cell_filter_fun)
@@ -94,15 +94,15 @@ complete_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_i
 # Get labels
 labels = complete_nmf.cluster_labels
 label_names, label_counts = np.unique(labels, return_counts = True)
-print "Labels: ", label_names
-print "Counts: ", label_counts
+print(("Labels: ", label_names))
+print(("Counts: ", label_counts))
 
 #labels = foo[0].astype(int)
 #cell_ids_labels = foo[1].astype(int)
 
 data = data[:, complete_nmf.remain_cell_inds]
 
-print "Data dimensions: genes x cells", data.shape
+print(("Data dimensions: genes x cells", data.shape))
 genes = data.shape[0]  # number of genes
 n_all = data.shape[1]
 n_trg = n_all - n_src[0]    # overall number of target data points
@@ -164,7 +164,7 @@ for s in range(len(n_src)):
             n_src_cluster = src_lbl_set.size
 
             # 3.c. train source once per repetition
-            print "Train source data of rep {0}".format(r+1)
+            print(("Train source data of rep {0}".format(r+1)))
             source_nmf = None
             source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=num_cluster)
             source_nmf.add_cell_filter(cell_filter_fun)
@@ -173,17 +173,17 @@ for s in range(len(n_src)):
             source_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
 
             # Calculate ARIs and KTAs
-            print "Evaluation of source results"
+            print("Evaluation of source results")
             source_ktas[s, r] = unsupervised_acc_kta(source_nmf.pp_data, source_nmf.cluster_labels, kernel='linear')
             source_aris[s, r] = metrics.adjusted_rand_score(src_labels[source_nmf.remain_cell_inds], source_nmf.cluster_labels)
-            print 'ITER(', r+1, '): SOURCE KTA = ', source_ktas[s,r]
-            print 'ITER(', r+1, '): SOURCE ARI = ', source_aris[s,r]
+            print(('ITER(', r+1, '): SOURCE KTA = ', source_ktas[s,r]))
+            print(('ITER(', r+1, '): SOURCE ARI = ', source_aris[s,r]))
 
             if source_aris[s,r] < 0.94:
                 continue
             # 3.d. Target data subsampling loop
             #plot_cnt = 1
-            print "Target data subsampling loop"
+            print("Target data subsampling loop")
             for i in range(len(percs)):
                 n_trg_perc = np.int(n_trg * percs[i]+0.5)
                 p_trg = trg[:, inds[:n_trg_perc]].copy()
@@ -191,8 +191,8 @@ for s in range(len(n_src)):
                 # 4. MTL/DA mixing parameter loop
                 res_desc = list()
                 for m in range(len(methods)):
-                    print('Running experiment {0} of {1}: Train target data of repetition {2} - {3} source cells, {4} genes, '
-                           '{5} target cells and the {6}th method'.format(exp_counter, num_exps, r+1, n_src[s], genes, n_trg_perc, m+1))
+                    print(('Running experiment {0} of {1}: Train target data of repetition {2} - {3} source cells, {4} genes, '
+                           '{5} target cells and the {6}th method'.format(exp_counter, num_exps, r+1, n_src[s], genes, n_trg_perc, m+1)))
                     #plt.subplot(len(percs), len(methods), plot_cnt)
                     source_nmf.cell_filter_list = list()
                     source_nmf.gene_filter_list = list()
@@ -203,7 +203,7 @@ for s in range(len(n_src)):
                     desc, target_nmf, trg_lbls_pred, mixed_data = methods[m](source_nmf, p_trg.copy(), p_trg_labels.copy(), n_trg_cluster=num_cluster)
                     res_desc.append(desc)
 
-                    print "Evaluation of target results"
+                    print("Evaluation of target results")
                     accs_desc = list()
                     #if m >=2:
                     #    mixed_data, _, _ = target_nmf.get_mixed_data(mix=mixes[m-2])
@@ -215,11 +215,11 @@ for s in range(len(n_src)):
                             accs[f, r, i, m], accs_descr = acc_funcs[f](target_nmf, mixed_data, p_trg_labels.copy(),
                                                                         trg_lbls_pred.copy())
                         accs_desc.append(accs_descr)
-                        print('Accuracy: {0} ({1})'.format(accs[f, r, i, m], accs_descr))
+                        print(('Accuracy: {0} ({1})'.format(accs[f, r, i, m], accs_descr)))
 
 
                     perc_done = round(np.true_divide(exp_counter, num_exps)*100, 4)
-                    print('{0}% of experiments done.'.format(perc_done))
+                    print(('{0}% of experiments done.'.format(perc_done)))
                     exp_counter += 1
                     #plot_cnt+=1
                     #plt.ylim(0,6)
@@ -254,10 +254,10 @@ np.savez(fname_final, methods=methods, acc_funcs=acc_funcs, res=res, accs_desc=a
 
 
 now2 = datetime.datetime.now()
-print "Current date and time:"
-print now2.strftime("%Y-%m-%d %H:%M")
-print "Time passed:"
-print now2-now1
+print("Current date and time:")
+print((now2.strftime("%Y-%m-%d %H:%M")))
+print("Time passed:")
+print((now2-now1))
 print('Done.')
 
 
