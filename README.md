@@ -5,7 +5,7 @@ focus on transfer learning. This package contains methods for
 generating artificial data, clustering, and transfering knowledge
 from a source to a target datasets.
 
-This software was written by Nico Goernitz, Bettina Mieth, Marina Vidovic, Alex Gutteridge. 
+This software package is developed by Nico Goernitz, Bettina Mieth, Marina Vidovic, and Alex Gutteridge. 
 
 ![Travis-CI](https://travis-ci.org/nicococo/scRNA.svg?branch=master)
 
