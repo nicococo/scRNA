@@ -1,82 +1,74 @@
+import sys
+sys.path.append('/home/bmieth/scRNAseq/implementations')
 import logging
+logging.basicConfig()
 from functools import partial
-from .experiments_utils import (method_sc3_filter, method_hub, method_sc3_combined_filter,
-                               acc_ari, acc_kta, acc_transferability)
-from nmf_clustering import NmfClustering
+from experiments_utils import (method_sc3_ours, method_sc3_combined_ours, method_transfer_ours, acc_ari, acc_kta)
+from nmf_clustering import NmfClustering, NmfClustering_initW
 from utils import *
 import datetime
 from simulation import split_source_target
 import pandas as pd
 import sys
+import numpy as np
 
-
-logging.basicConfig()
 now1 = datetime.datetime.now()
 print("Current date and time:")
-print((now1.strftime("%Y-%m-%d %H:%M")))
+print(now1.strftime("%Y-%m-%d %H:%M"))
 
 # Data location
-fname_data = 'C:\\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-#fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_major_sub'
-#fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\scRNA\src_c16.labels.tsv'
-fname_final = 'main_results_mouse_NMF_labels_only_3_clusters.npz'
+fname_data = '/home/bmieth/scRNAseq/data/matrix'
+fname_final = '/home/bmieth/scRNAseq/results/mouse_data_NMF_final/main_results_mouse_NMFlabels_18cluster_completeoverlap_initW_10reps_reducedmix.npz'
 
 # Parameters
 reps = 10   # number of repetitions, 100
 n_src = [1000]  # number of source data points, 1000
-percs_aim = [20, 50, 100, 200, 400, 650]   # [10, 20, 40, 70, 100, 150, 200, 300, 500], target sizes to use. (has to be greater than num_cluster!)
-mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Mixture parameters of transfer learning SC3, 0.3, 0.6, 0.9
-min_cell_cluster = 0
+percs_aim = [25, 50, 100, 200, 400, 650]  # [10, 20, 40, 70, 100, 150, 200, 300, 500], target sizes to use. (has to be greater than num_cluster!)
+mixes = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]  # [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]  # Mixture parameters of transfer learning SC3, don't inlcude 1.0, it doesn't make sense!
 min_expr_genes = 2000
 non_zero_threshold = 2
 perc_consensus_genes = 0.94
-num_cluster = 3
+
+num_cluster = 18
+
+splitting_mode = 2 # Split data in source and target randomly (mode = 1) or randomly stratified (mode = 2), one exclusive cluster for both target and source (the biggest ones) (mode = 4)
+
 nmf_alpha = 10.0
 nmf_l1 = 0.75
 nmf_max_iter = 4000
 nmf_rel_err = 1e-3
-preprocessing_first = True
+preprocessing_first = True # Careful, for now this only supports True, within-filtering is not implemented
+
+ari_cutoff = 0.94 # 0.94 for 3,18 and 0.8 for 49
 
 if num_cluster > np.min(percs_aim):
     print("percs_aim need to be greater than num_cluster!")
     sys.exit("error!")
 
-# runtime 1 rep, 100src, 10,20, 0.3,0.6 - 15min
-# runtime 1 rep, 1000src, 10,20, 0.3,0.6 - 14min
-# runtime 10reps, 1000src,  [20, 50, 100, 200, 400], [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] - 1d14h
-# runtime 10reps, 1000src,  [20, 50, 100, 200, 400, 670], [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] - 2d15h
-
-
-
 # List of accuracy functions to be used
 acc_funcs = list()
 acc_funcs.append(partial(acc_ari, use_strat=False))
 acc_funcs.append(partial(acc_kta, mode=0))
-# acc_funcs.append(acc_transferability)
+#acc_funcs.append(acc_transferability)
 
 # Read data
-#labels = np.genfromtxt(fname_labels)
-#foo = np.loadtxt(fname_labels,  delimiter='\t')
-#labels = foo[0].astype(int)
-#cell_ids_labels = foo[1].astype(int)
-
 data = pd.read_csv(fname_data, sep='\t', header=None).values
-#data = data[:, cell_ids_labels]
+print("Data dimensions before preprocessing: genes x cells", data.shape)
 
 if preprocessing_first:
     # Cell and gene filter and transformation before the whole procedure
     cell_inds = sc.cell_filter(data, num_expr_genes=min_expr_genes, non_zero_threshold=non_zero_threshold)
     data = data[:,cell_inds]
-    # labels = labels[cell_inds]
     gene_inds = sc.gene_filter(data, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
     data = data[gene_inds, :]
     data = sc.data_transformation_log2(data)
     cell_filter_fun = partial(sc.cell_filter, num_expr_genes=0, non_zero_threshold=-1)
     gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=1, non_zero_threshold=-1)
     data_transf_fun = sc.no_data_transformation
-    print(("data dimensions after preprocessing: genes x cells: ", data.shape))
-    print((data.shape))
+    print("data dimensions after preprocessing: genes x cells: ", data.shape)
+    print(data.shape)
 else:
+    raise Warning("Within-Filtering is not implemented for R SC3")
     # Cell and gene filter and transformation within the procedure
     cell_filter_fun = partial(sc.cell_filter, num_expr_genes=min_expr_genes, non_zero_threshold=non_zero_threshold)
     gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
@@ -85,7 +77,7 @@ else:
 # Generating labels from complete dataset
 print("Train complete data")
 complete_nmf = None
-complete_nmf = NmfClustering(data, np.arange(data.shape[0]), num_cluster=num_cluster)
+complete_nmf = NmfClustering(data, np.arange(data.shape[0]), num_cluster=num_cluster, labels=[])
 complete_nmf.add_cell_filter(cell_filter_fun)
 complete_nmf.add_gene_filter(gene_filter_fun)
 complete_nmf.set_data_transformation(data_transf_fun)
@@ -94,34 +86,26 @@ complete_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_i
 # Get labels
 labels = complete_nmf.cluster_labels
 label_names, label_counts = np.unique(labels, return_counts = True)
-print(("Labels: ", label_names))
-print(("Counts: ", label_counts))
+print("Labels: ", label_names)
+print("Counts: ", label_counts)
 
-#labels = foo[0].astype(int)
-#cell_ids_labels = foo[1].astype(int)
+data = data[:, complete_nmf.remain_cell_inds]		
 
-data = data[:, complete_nmf.remain_cell_inds]
-
-print(("Data dimensions: genes x cells", data.shape))
 genes = data.shape[0]  # number of genes
 n_all = data.shape[1]
 n_trg = n_all - n_src[0]    # overall number of target data points
 percs = np.true_divide(np.concatenate(percs_aim, n_trg), n_trg)
 
-
 # List of methods to be applied
 methods = list()
 # original SC3 (SC3 on target data)
-methods.append(partial(method_sc3_filter, cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, mix=0.0, metric='euclidean', use_da_dists=False))
+methods.append(partial(method_sc3_ours))
 # combined baseline SC3 (SC3 on combined source and target data)
-methods.append(partial(method_sc3_combined_filter, cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, metric='euclidean'))
+methods.append(partial(method_sc3_combined_ours))
 # transfer via mixing (Transfer learning via mixing source and target before SC3)
 # Experiment for all mixture_parameters
 for m in mixes:
-    mixed_list = list()
-    mixed_list.append(partial(method_sc3_filter, cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
-    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
-
+    methods.append(partial(method_transfer_ours, mix=m, calc_transferability=False))	
 
 # Create results matrix
 res = np.zeros((len(n_src), len(acc_funcs), reps, len(percs), len(methods)))
@@ -148,9 +132,7 @@ for s in range(len(n_src)):
     r = 0
     while r < reps:
             # Split data in source and target randomly (mode =1) or randomly stratified (mode = 2)
-            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=1,
-                                                                   target_ncells=n_trg,
-                                                                   source_ncells=n_src[s])
+            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=splitting_mode, target_ncells=n_trg, source_ncells=n_src[s])
 
             trg_labels = np.array(trg_labels, dtype=np.int)
             src_labels = np.array(src_labels, dtype=np.int)
@@ -162,25 +144,28 @@ for s in range(len(n_src)):
             src_lbl_set = np.unique(src_labels)
             n_trg_cluster = np.unique(trg_labels).size
             n_src_cluster = src_lbl_set.size
+            ## 3.c. train source once per repetition
+            source_nmf = NmfClustering_initW(src, np.arange(src.shape[0]), num_cluster=n_src_cluster, labels=src_labels)
+            source_nmf.apply(k=n_src_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
+            ## 3.c. train source once per repetition
+            #print "Train source data of rep {0}".format(r+1)
+            #source_nmf = None
+            #source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=num_cluster)
+            #source_nmf.add_cell_filter(cell_filter_fun)
+            #source_nmf.add_gene_filter(gene_filter_fun)
+            #source_nmf.set_data_transformation(data_transf_fun)
+            #source_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
 
-            # 3.c. train source once per repetition
-            print(("Train source data of rep {0}".format(r+1)))
-            source_nmf = None
-            source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=num_cluster)
-            source_nmf.add_cell_filter(cell_filter_fun)
-            source_nmf.add_gene_filter(gene_filter_fun)
-            source_nmf.set_data_transformation(data_transf_fun)
-            source_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
-
-            # Calculate ARIs and KTAs
-            print("Evaluation of source results")
-            source_ktas[s, r] = unsupervised_acc_kta(source_nmf.pp_data, source_nmf.cluster_labels, kernel='linear')
+            ## Calculate ARIs and KTAs
+            #print "Evaluation of source results"
+            #source_ktas[s, r] = unsupervised_acc_kta(source_nmf.pp_data, source_nmf.cluster_labels, kernel='linear')
             source_aris[s, r] = metrics.adjusted_rand_score(src_labels[source_nmf.remain_cell_inds], source_nmf.cluster_labels)
-            print(('ITER(', r+1, '): SOURCE KTA = ', source_ktas[s,r]))
-            print(('ITER(', r+1, '): SOURCE ARI = ', source_aris[s,r]))
+            #print 'ITER(', r+1, '): SOURCE KTA = ', source_ktas[s,r]
+            print('ITER(', r+1, '): SOURCE ARI = ', source_aris[s,r])
 
-            if source_aris[s,r] < 0.94:
+            if source_aris[s,r] < ari_cutoff:
                 continue
+
             # 3.d. Target data subsampling loop
             #plot_cnt = 1
             print("Target data subsampling loop")
@@ -200,24 +185,21 @@ for s in range(len(n_src)):
                     source_nmf.add_cell_filter(lambda x: np.arange(x.shape[1]).tolist())
                     source_nmf.add_gene_filter(lambda x: np.arange(x.shape[0]).tolist())
                     source_nmf.set_data_transformation(lambda x: x)
-                    desc, target_nmf, trg_lbls_pred, mixed_data = methods[m](source_nmf, p_trg.copy(), p_trg_labels.copy(), n_trg_cluster=num_cluster)
+                    #desc, target_nmf, trg_lbls_pred, mixed_data = methods[m](source_nmf, p_trg.copy(), p_trg_labels.copy(), n_trg_cluster=num_cluster)
+                    desc, target_nmf, data_for_SC3,trg_lbls_pred = methods[m](source_nmf, p_trg.copy(), num_cluster=n_trg_cluster)
                     res_desc.append(desc)
 
                     print("Evaluation of target results")
                     accs_desc = list()
-                    #if m >=2:
-                    #    mixed_data, _, _ = target_nmf.get_mixed_data(mix=mixes[m-2])
+                    if m >=2:
+                        mixed_data, _, _ = target_nmf.get_mixed_data(mix=mixes[m-2], calc_transferability=False)
                     for f in range(len(acc_funcs)):
                         if f != 1 or m <= 1:
-                            accs[f, r, i, m], accs_descr = acc_funcs[f](target_nmf, p_trg.copy(), p_trg_labels.copy(),
-                                                                        trg_lbls_pred.copy())
+                            accs[f, r, i, m], accs_descr = acc_funcs[f]([], p_trg.copy(), p_trg_labels.copy(), trg_lbls_pred.copy())
                         else:
-                            accs[f, r, i, m], accs_descr = acc_funcs[f](target_nmf, mixed_data, p_trg_labels.copy(),
-                                                                        trg_lbls_pred.copy())
+                            accs[f, r, i, m], accs_descr = acc_funcs[f]([], mixed_data, p_trg_labels.copy(), trg_lbls_pred.copy())
                         accs_desc.append(accs_descr)
                         print(('Accuracy: {0} ({1})'.format(accs[f, r, i, m], accs_descr)))
-
-
                     perc_done = round(np.true_divide(exp_counter, num_exps)*100, 4)
                     print(('{0}% of experiments done.'.format(perc_done)))
                     exp_counter += 1
@@ -237,7 +219,7 @@ for s in range(len(n_src)):
                     #if i == 2:
                     #    plt.xlabel('ordered eigenvalues')
                     opt_mix_ind[r, i] = np.argmax(accs[1, r, i, 2:])
-                    opt_mix_aris[r, i] = accs[0, r, i, opt_mix_ind[r, i]+2]
+                    opt_mix_aris[r, i] = accs[0, r, i, int(opt_mix_ind[r, i]+2)]
 
             #plt.show()
             r += 1
@@ -247,17 +229,14 @@ for s in range(len(n_src)):
     res_opt_mix_aris[s,:,:] = opt_mix_aris
 
 np.savez(fname_final, methods=methods, acc_funcs=acc_funcs, res=res, accs_desc=accs_desc,
-         method_desc=res_desc, source_aris=source_aris, min_cell_cluster=min_cell_cluster, min_expr_genes=min_expr_genes,
-         non_zero_threshold=non_zero_threshold, perc_consensus_genes=perc_consensus_genes, num_cluster=num_cluster,
-         nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err,
-         percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, mixes=mixes, res_opt_mix_ind=res_opt_mix_ind, res_opt_mix_aris=res_opt_mix_aris)
-
+         method_desc=res_desc, source_aris=source_aris, min_expr_genes=min_expr_genes,
+         non_zero_threshold=non_zero_threshold, perc_consensus_genes=perc_consensus_genes, num_cluster=num_cluster, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err, percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, mixes=mixes, res_opt_mix_ind=res_opt_mix_ind, res_opt_mix_aris=res_opt_mix_aris)
 
 now2 = datetime.datetime.now()
 print("Current date and time:")
-print((now2.strftime("%Y-%m-%d %H:%M")))
+print(now2.strftime("%Y-%m-%d %H:%M"))
 print("Time passed:")
-print((now2-now1))
+print(now2-now1)
 print('Done.')
 
 

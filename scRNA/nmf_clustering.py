@@ -94,7 +94,7 @@ class NmfClustering_fixW(AbstractClustering):
     dictionary = None
     data_matrix = None
 
-    def __init__(self, data, gene_ids, num_cluster,labels):
+    def __init__(self, data, gene_ids, num_cluster, labels):
         super(NmfClustering_fixW, self).__init__(data, gene_ids=gene_ids)
         self.num_cluster = num_cluster
         self.labels=labels

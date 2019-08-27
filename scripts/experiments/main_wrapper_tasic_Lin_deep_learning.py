@@ -1,57 +1,64 @@
+import sys
+sys.path.append('/home/bmieth/scRNAseq/implementations')
+sys.path.append('/home/bmieth/scRNAseq/NN_code_release')
 import logging
+logging.basicConfig()
 from functools import partial
-from .experiments_utils import (method_sc3_filter, method_hub, method_sc3_combined_filter,
-                               acc_ari, acc_kta, acc_transferability)
-from nmf_clustering import NmfClustering
+from experiments_utils import (method_sc3_ours, method_sc3_combined_ours, method_NN_Lin, method_transfer_ours, acc_ari, acc_kta)
+from nmf_clustering import NmfClustering_initW
 from utils import *
 import datetime
 from simulation import split_source_target
 import pandas as pd
 import sys
+import numpy as np
 
+#  qlogin -l cuda=1
+# source /home/space/bettina/anaconda2/bin/activate
 
-logging.basicConfig()
 now1 = datetime.datetime.now()
 print("Current date and time:")
-print((now1.strftime("%Y-%m-%d %H:%M")))
+print(now1.strftime("%Y-%m-%d %H:%M"))
 
 # Data location
-fname_data = 'C:\\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\matrix'
-fname_labels = 'C:\\Users\Bettina\PycharmProjects2\scRNA_new\data\mouse\mouse_vis_cortex\cell_labels_primary_grouped'
-#fname_labels = 'C:\Users\Bettina\PycharmProjects2\scRNA_new\scRNA\src_c16.labels.tsv'
-fname_final = 'main_results_mouse_primary_grouped_final.npz'
+fname_data = '/home/bmieth/scRNAseq/data/matrix'
+fname_labels = '/home/bmieth/scRNAseq/data/cell_labels_primary_grouped'
+fname_final = '/home/bmieth/scRNAseq/results/mouse_data_NN/mouse_nooverlap_new_complete.npz'
 
 # Parameters
-reps = 10   # number of repetitions, 100
+reps = 100  # number of repetitions, 100
 n_src = [1000]  # number of source data points, 1000
-percs_aim = [20, 50, 100, 200, 400, 650]  # [10, 20, 40, 70, 100, 150, 200, 300, 500], target sizes to use. (has to be greater than num_cluster!)
-mixes = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Mixture parameters of transfer learning SC3, 0.3, 0.6, 0.9
-min_cell_cluster = 0
+percs_aim = [25, 50, 100, 200, 400, 650]  # [25, 50, 100, 200, 400, 650], target sizes to use. (has to be greater than num_cluster!)
+mixes = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]    # [0.0,0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # Mixture parameters of transfer learning SC3
 min_expr_genes = 2000
-non_zero_threshold = 2
+non_zero_threshold = 2 # loose filtering 2 and 0.94, stringent filtering 1 and 0.98
 perc_consensus_genes = 0.94
-num_cluster = 18
-nmf_alpha = 10.0
-nmf_l1 = 0.75
+
+#num_cluster = 18
+
+splitting_mode = 7 # Split data in source and target randomly (mode = 1) or randomly stratified (mode = 2), one exclusive cluster for both target and source (the biggest ones) (mode = 4), no overlap = 7
+
+nmf_alpha = 15.0 # low regularization 0.1 and 0.0, medium regularization 1.0 and 0.5, high regularization 10.0 and 0.75, very high regularization 10.0 and 1.0
+nmf_l1 = 0.9
 nmf_max_iter = 4000
 nmf_rel_err = 1e-3
-preprocessing_first = True
+preprocessing_first = True # Careful, for now this only supports True, within-filtering is not implemented
 
-if num_cluster > np.min(percs_aim):
-    print("percs_aim need to be greater than num_cluster!")
-    sys.exit("error!")
+# Parameters for NN
+hidden_layer_size = 100
+SGD_learning_rate = 0.01
 
-# runtime 1 rep, 100src, 10,20, 0.3,0.6 - 15min
-# runtime 1 rep, 1000src, 10,20, 0.3,0.6 - 14min
-# runtime 10reps, 1000src,  [20, 50, 100, 200, 400], [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] - 1d14h
-# runtime 10reps, 1000src,  [20, 50, 100, 200, 400, 670], [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] - 2d16h
-
+ari_cutoff = 0.0 # 0.94 for 3, 0.80 for 18, 0.58 for 49 for filter 1 und 0.98, split2
 
 # List of accuracy functions to be used
 acc_funcs = list()
 acc_funcs.append(partial(acc_ari, use_strat=False))
 acc_funcs.append(partial(acc_kta, mode=0))
-#acc_funcs.append(acc_transferability)
+##acc_funcs.append(acc_transferability)
+#acc_funcs.append(partial(acc_silhouette, metric='euclidean'))
+#acc_funcs.append(partial(acc_silhouette, metric='pearson'))
+#acc_funcs.append(partial(acc_silhouette, metric='spearman'))
+#acc_funcs.append(acc_classification)
 
 # Read data
 #labels = np.genfromtxt(fname_labels)
@@ -64,18 +71,6 @@ print("Labels: ", label_names)
 print("Counts: ", label_counts)
 data = pd.read_csv(fname_data, sep='\t', header=None).values
 #data = data[:, cell_ids_labels]
-
-# Cluster filter
-if min_cell_cluster >0:
-    print("Cluster filter")
-    clusters_to_del = label_counts<min_cell_cluster
-    st = set(label_names[clusters_to_del])
-    cells_to_keep = [i for i, e in enumerate(labels) if e not in st]
-    labels = labels[cells_to_keep]
-    label_names, label_counts = np.unique(labels, return_counts = True)
-    print("New labels: ", label_names)
-    print("New counts: ", label_counts)
-    data = data[:,cells_to_keep]
 
 print("Data dimensions before preprocessing: genes x cells", data.shape)
 
@@ -93,10 +88,15 @@ if preprocessing_first:
     print("data dimensions after preprocessing: genes x cells: ", data.shape)
     print(data.shape)
 else:
+    raise Warning("Within-Filtering is not implemented for R SC3")
     # Cell and gene filter and transformation within the procedure
     cell_filter_fun = partial(sc.cell_filter, num_expr_genes=min_expr_genes, non_zero_threshold=non_zero_threshold)
     gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=perc_consensus_genes, non_zero_threshold=non_zero_threshold)
     data_transf_fun = sc.data_transformation_log2
+
+if len(np.unique(labels)) > np.min(percs_aim):
+    print("percs_aim need to be greater than num_cluster!")
+    sys.exit("error!")	
 
 genes = data.shape[0]  # number of genes
 n_all = data.shape[1]
@@ -106,20 +106,23 @@ percs = np.true_divide(np.concatenate(percs_aim, n_trg), n_trg)
 # List of methods to be applied
 methods = list()
 # original SC3 (SC3 on target data)
-methods.append(partial(method_sc3_filter, cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, mix=0.0, metric='euclidean', use_da_dists=False))
+methods.append(partial(method_sc3_ours))
 # combined baseline SC3 (SC3 on combined source and target data)
-methods.append(partial(method_sc3_combined_filter, cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, metric='euclidean'))
+methods.append(partial(method_sc3_combined_ours))
+# NN Lin method
+methods.append(partial(method_NN_Lin, hidden_layer_size=hidden_layer_size, SGD_learning_rate = SGD_learning_rate))
 # transfer via mixing (Transfer learning via mixing source and target before SC3)
 # Experiment for all mixture_parameters
 for m in mixes:
-    mixed_list = list()
-    mixed_list.append(partial(method_sc3_filter, cell_filter=cell_filter_fun, gene_filter=gene_filter_fun, transformation=data_transf_fun, mix=m, metric='euclidean', calc_transferability=False, use_da_dists=False))
-    methods.append(partial(method_hub, method_list=mixed_list, func=np.argmax))
-
+    methods.append(partial(method_transfer_ours, mix=m, calc_transferability=False))	
 
 # Create results matrix
 res = np.zeros((len(n_src), len(acc_funcs), reps, len(percs), len(methods)))
 res_opt_mix_ind = np.zeros((len(n_src), reps, len(percs)))
+training_acc = np.zeros((len(n_src), reps, len(percs)))
+training_loss = np.zeros((len(n_src), reps, len(percs)))
+validation_acc = np.zeros((len(n_src), reps, len(percs)))
+validation_loss = np.zeros((len(n_src), reps, len(percs)))
 res_opt_mix_aris = np.zeros((len(n_src),  reps, len(percs)))
 source_aris = np.zeros((len(n_src), reps))
 source_ktas = np.zeros((len(n_src), reps))
@@ -142,9 +145,7 @@ for s in range(len(n_src)):
     r = 0
     while r < reps:
             # Split data in source and target randomly (mode =1) or randomly stratified (mode = 2)
-            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=1,
-                                                                   target_ncells=n_trg,
-                                                                   source_ncells=n_src[s])
+            src, trg, src_labels, trg_labels = split_source_target(data, labels, mode=splitting_mode, target_ncells=n_trg, source_ncells=n_src[s])
 
             trg_labels = np.array(trg_labels, dtype=np.int)
             src_labels = np.array(src_labels, dtype=np.int)
@@ -156,24 +157,26 @@ for s in range(len(n_src)):
             src_lbl_set = np.unique(src_labels)
             n_trg_cluster = np.unique(trg_labels).size
             n_src_cluster = src_lbl_set.size
+            ## 3.c. train source once per repetition
+            source_nmf = NmfClustering_initW(src, np.arange(src.shape[0]), num_cluster=n_src_cluster, labels=src_labels)
+            source_nmf.apply(k=n_src_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
+            ## 3.c. train source once per repetition
+            #print "Train source data of rep {0}".format(r+1)
+            #source_nmf = None
+            #source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=num_cluster)
+            #source_nmf.add_cell_filter(cell_filter_fun)
+            #source_nmf.add_gene_filter(gene_filter_fun)
+            #source_nmf.set_data_transformation(data_transf_fun)
+            #source_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
 
-            # 3.c. train source once per repetition
-            print("Train source data of rep {0}".format(r+1))
-            source_nmf = None
-            source_nmf = NmfClustering(src, np.arange(src.shape[0]), num_cluster=num_cluster)
-            source_nmf.add_cell_filter(cell_filter_fun)
-            source_nmf.add_gene_filter(gene_filter_fun)
-            source_nmf.set_data_transformation(data_transf_fun)
-            source_nmf.apply(k=num_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
-
-            # Calculate ARIs and KTAs
-            print("Evaluation of source results")
-            source_ktas[s, r] = unsupervised_acc_kta(source_nmf.pp_data, source_nmf.cluster_labels, kernel='linear')
+            ## Calculate ARIs and KTAs
+            #print "Evaluation of source results"
+            #source_ktas[s, r] = unsupervised_acc_kta(source_nmf.pp_data, source_nmf.cluster_labels, kernel='linear')
             source_aris[s, r] = metrics.adjusted_rand_score(src_labels[source_nmf.remain_cell_inds], source_nmf.cluster_labels)
-            print('ITER(', r+1, '): SOURCE KTA = ', source_ktas[s,r])
+            #print 'ITER(', r+1, '): SOURCE KTA = ', source_ktas[s,r]
             print('ITER(', r+1, '): SOURCE ARI = ', source_aris[s,r])
 
-            if source_aris[s,r] < 0.75:
+            if source_aris[s,r] < ari_cutoff:
                 continue
 
             # 3.d. Target data subsampling loop
@@ -186,8 +189,7 @@ for s in range(len(n_src)):
                 # 4. MTL/DA mixing parameter loop
                 res_desc = list()
                 for m in range(len(methods)):
-                    print(('Running experiment {0} of {1}: Train target data of repetition {2} - {3} source cells, {4} genes, '
-                           '{5} target cells and the {6}th method'.format(exp_counter, num_exps, r+1, n_src[s], genes, n_trg_perc, m+1)))
+                    print(('Running experiment {0} of {1}: Train target data of repetition {2} - {3} source cells, {4} genes, {5} target cells and the {6}th method'.format(exp_counter, num_exps, r+1, n_src[s], genes, n_trg_perc, m+1)))
                     #plt.subplot(len(percs), len(methods), plot_cnt)
                     source_nmf.cell_filter_list = list()
                     source_nmf.gene_filter_list = list()
@@ -195,20 +197,29 @@ for s in range(len(n_src)):
                     source_nmf.add_cell_filter(lambda x: np.arange(x.shape[1]).tolist())
                     source_nmf.add_gene_filter(lambda x: np.arange(x.shape[0]).tolist())
                     source_nmf.set_data_transformation(lambda x: x)
-                    desc, target_nmf, trg_lbls_pred, mixed_data = methods[m](source_nmf, p_trg.copy(), p_trg_labels.copy(), n_trg_cluster=num_cluster)
+                    #desc, target_nmf, trg_lbls_pred, mixed_data = methods[m](source_nmf, p_trg.copy(), p_trg_labels.copy(), n_trg_cluster=num_cluster)
+                    desc,target_nmf, data_for_SC3,trg_lbls_pred = methods[m](source_nmf, p_trg.copy(), num_cluster=n_trg_cluster)
+                    
+                    # Save accuracies and losses of NN
+                    if m == 2:
+                        NN_history = target_nmf.history
+                        training_acc[s,r,i] =  NN_history['acc'][-1]
+                        validation_acc[s,r,i] =  NN_history['val_acc'][-1]
+                        training_loss[s,r,i] =  NN_history['loss'][-1]
+                        validation_loss[s,r,i] =  NN_history['val_loss'][-1]
                     res_desc.append(desc)
 
                     print("Evaluation of target results")
                     accs_desc = list()
-                    #if m >=2:
-                    #    mixed_data, _, _ = target_nmf.get_mixed_data(mix=mixes[m-2])
+                    if m >=3:
+                        mixed_data, _, _ = target_nmf.get_mixed_data(mix=mixes[m-3], calc_transferability=False)
                     for f in range(len(acc_funcs)):
-                        if f != 1 or m <= 1:
-                            accs[f, r, i, m], accs_descr = acc_funcs[f](target_nmf, p_trg.copy(), p_trg_labels.copy(),
-                                                                        trg_lbls_pred.copy())
+                        if f==0:
+                            accs[f, r, i, m], accs_descr = acc_funcs[f]([], p_trg.copy(), p_trg_labels.copy(), trg_lbls_pred.copy())
+                        elif m>=3:
+                            accs[f, r, i, m], accs_descr = acc_funcs[f](target_nmf, data_for_SC3, p_trg_labels.copy(), trg_lbls_pred.copy())
                         else:
-                            accs[f, r, i, m], accs_descr = acc_funcs[f](target_nmf, mixed_data, p_trg_labels.copy(),
-                                                                        trg_lbls_pred.copy())
+                            accs_descr='score not computed for baslines'
                         accs_desc.append(accs_descr)
                         print(('Accuracy: {0} ({1})'.format(accs[f, r, i, m], accs_descr)))
                     perc_done = round(np.true_divide(exp_counter, num_exps)*100, 4)
@@ -229,8 +240,8 @@ for s in range(len(n_src)):
                     #        plt.title('SC3 Mix with mix={0}'.format(mixes[m - 2]))
                     #if i == 2:
                     #    plt.xlabel('ordered eigenvalues')
-                    opt_mix_ind[r, i] = np.argmax(accs[1, r, i, 2:])
-                    opt_mix_aris[r, i] = accs[0, r, i, opt_mix_ind[r, i]+2]
+                    opt_mix_ind[r, i] = np.argmax(accs[1, r, i, 3:])
+                    opt_mix_aris[r, i] = accs[0, r, i, int(opt_mix_ind[r, i]+3)]
 
             #plt.show()
             r += 1
@@ -240,11 +251,8 @@ for s in range(len(n_src)):
     res_opt_mix_aris[s,:,:] = opt_mix_aris
 
 np.savez(fname_final, methods=methods, acc_funcs=acc_funcs, res=res, accs_desc=accs_desc,
-         method_desc=res_desc, source_aris=source_aris, min_cell_cluster=min_cell_cluster, min_expr_genes=min_expr_genes,
-         non_zero_threshold=non_zero_threshold, perc_consensus_genes=perc_consensus_genes, num_cluster=num_cluster,
-         nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err,
-         percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, mixes=mixes, res_opt_mix_ind=res_opt_mix_ind, res_opt_mix_aris=res_opt_mix_aris)
-
+         method_desc=res_desc, source_aris=source_aris, min_expr_genes=min_expr_genes,
+         non_zero_threshold=non_zero_threshold, perc_consensus_genes=perc_consensus_genes, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err, percs=percs, reps=reps, genes=genes, n_src=n_src, n_trg=n_trg, mixes=mixes, res_opt_mix_ind=res_opt_mix_ind, res_opt_mix_aris=res_opt_mix_aris, splitting_mode=splitting_mode, SGD_learning_rate= SGD_learning_rate, training_acc=training_acc, training_loss=training_loss, validation_acc=validation_acc, validation_loss=validation_loss)
 
 now2 = datetime.datetime.now()
 print("Current date and time:")
