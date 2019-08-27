@@ -117,5 +117,7 @@ are given this will remain 0.) accuracy measures.
 Example Application
 ---------------
 
-A minimal working example can be accessed under notebooks/example.ipynb
- 
+A minimal working example can be accessed under [https://github.com/nicococo/scRNA/blob/master/notebooks/example.ipynb][example_notebook]
+
+
+[example_notebook]: https://github.com/nicococo/scRNA/blob/master/notebooks/example.ipynb
