@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
-import pdb
 
 
 class AbstractClustering(object, metaclass=ABCMeta):
@@ -26,7 +25,7 @@ class AbstractClustering(object, metaclass=ABCMeta):
         self.gene_filter_list = list()
         self.data_transf = lambda x: x
         self.gene_ids = gene_ids
-        self.data = data
+        self.data = np.array(data, dtype=np.float)
         self.num_transcripts, self.num_cells = data.shape
         if self.gene_ids is None:
             #print('No gene ids provided.')
