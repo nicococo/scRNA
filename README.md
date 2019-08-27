@@ -114,3 +114,8 @@ In addition there is a summarizing .png figure of all accs and a t-SNE plot with
 Command line output shows a number of results: unsupervised and supervised (if no ground truth labels 
 are given this will remain 0.) accuracy measures.
 
+Example Application
+---------------
+
+A minimal working example can be accessed under notebooks/example.ipynb
+ 
