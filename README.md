@@ -9,6 +9,11 @@ This software package is developed by Nico Goernitz, Bettina Mieth, Marina Vidov
 
 ![Travis-CI](https://travis-ci.org/nicococo/scRNA.svg?branch=master)
 
+#### Publication
+This framework and website are part of a publication currently under peer-review at Nature Scientific Reports. Links to the published paper and online supplementary material will be included here once available.
+
+Abstract: In many research areas scientists are interested in clustering objects within small datasets while making use of prior knowledge from large reference datasets. We propose a method to apply the machine learning concept of transfer learning to unsupervised clustering problems and show its effectiveness in the field of single-cell RNA sequencing (scRNA-Seq). The goal of scRNA-Seq experiments is often the definition and cataloguing of cell types from the transcriptional output of individual cells. To improve the clustering of small disease- or tissue-specific datasets, for which the identification of rare cell types is often problematic, we propose a transfer learning method to utilize large and well-annotated reference datasets, such as those produced by the Human Cell Atlas. Our approach modifies the dataset of interest while incorporating key information from the larger reference dataset via Non-negative Matrix Factorization (NMF). The modified dataset is subsequently provided to a clustering algorithm. We empirically evaluate the benefits of our approach on simulated scRNA-Seq data as well as on publicly available datasets. Finally, we present results for the analysis of a recently published small dataset and find improved clustering when transferring knowledge from a large reference dataset. 
+
 #### News
 * (2019.08) Added Python 3 support (scRNA no longer supports Python 2)
 * (2019.08) Finalized version
@@ -121,3 +126,30 @@ A minimal working example can be accessed under [https://github.com/nicococo/scR
 
 
 [example_notebook]: https://github.com/nicococo/scRNA/blob/master/notebooks/example.ipynb
+
+
+Replicating experiments 
+---------------
+Here, we present the information that is essential to fully reproduce the experiments of our study published at 'link to paper'.
+
+Links to scripts reproducing all experiments of the paper: 
+* Script for reproducing [experiments on generated datasets](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_generated_data.py)
+* Script for reproducing [experiments on subsampled Tasic data with labels from the original publication](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_tasic.py)
+* Script for reproducing [experiments on subsampled Tasic data with NMF labels](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_tasic_NMF_labels.py)
+* Script for reproducing [experiments on Hockley data with Usoskin as source data](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley.py)
+* Script for reproducing [robustness experiments on Hockley data with Usoskin as source data](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley_robustness.py)
+* Script for reproducing [robustness experiments on Hockley data with usoskin as source data and pre-processing through Seurats batch effect removal method](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley_robustness_seurat.py)
+ - include link to the corresponding R Script!
+* Script for reproducing [robustness experiments on Hockley data with usoskin as source data and pre-processing through MAGIC imputation](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley_robustness_magic.py)
+- include link to the corresponding Matlab Script!
+
+Links to scripts producing figures of the paper. 
+* Plot scripts of [Figure 2](https://github.com/nicococo/scRNA/blob/master/scripts/plots/main_plots_generated_data.py)
+* Plot scripts of [Figure 3](https://github.com/nicococo/scRNA/blob/master/scripts/plots/main_plots_tasic.py)
+* Plot scripts of [Figure 4](https://github.com/nicococo/scRNA/blob/master/scripts/plots/main_plots_hockley.py)
+ 
+Links to scripts producing table 1 of the paper.
+* [Without preprocessing](https://github.com/nicococo/scRNA/blob/master/scripts/plots/evaluate_hockley_robustness.py)
+* [With pre-processing](https://github.com/nicococo/scRNA/blob/master/scripts/plots/evaluate_hockley_robustness_magic_seurat.py)
+
+Include a section designated to parameter selection where we also reference where to find the pre-processing parameter settings of the generated datasets and the Tasic, Hockley and Usoskin datasets (Supplementary Sections 2.1, 3.1 and 4.1). Details on all other parameters of the respective datasets are also described and linked to the corresponding sections of the supplementary online material (Supplementary Sections 2.2, 3.2 and 4.2).
