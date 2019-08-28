@@ -149,9 +149,9 @@ Links to scripts reproducing all experiments of the paper:
 * Script for reproducing [experiments on Hockley data with Usoskin as source data](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley.py)
 * Script for reproducing [robustness experiments on Hockley data with Usoskin as source data](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley_robustness.py)
 * Script for reproducing [robustness experiments on Hockley data with usoskin as source data and pre-processing through Seurats batch effect removal method](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley_robustness_seurat.py)
- - include link to the corresponding R Script!
+  - [corresponding R script](https://github.com/nicococo/scRNA/blob/master/scripts/R/seurat_cca_hockley_usoskin.R)
 * Script for reproducing [robustness experiments on Hockley data with usoskin as source data and pre-processing through MAGIC imputation](https://github.com/nicococo/scRNA/blob/master/scripts/experiments/main_wrapper_hockley_robustness_magic.py)
-- include link to the corresponding Matlab Script!
+  - [corresponding Matlab script](https://github.com/nicococo/scRNA/blob/master/scripts/matlab/magic_hockley_usoskin.m)
 
 Links to scripts producing figures of the paper. 
 * Plot scripts of [Figure 2](https://github.com/nicococo/scRNA/blob/master/scripts/plots/main_plots_generated_data.py)
