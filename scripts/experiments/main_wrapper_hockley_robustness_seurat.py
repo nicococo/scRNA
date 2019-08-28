@@ -1,3 +1,13 @@
+###################################################
+###						###
+###   Robustness Experiment on Hockley data     ###
+###   Pre-processing through Seurat batch effect removal   ###
+###  written by Bettina Mieth, Nico Görnitz,    ###
+###   Marina Vidovic and Alex Gutteridge        ###
+###                                             ###
+###################################################
+
+# Please change all directories to yours!
 import sys
 sys.path.append('/home/bmieth/scRNAseq/implementations')
 import logging
@@ -54,16 +64,16 @@ def consensus_clustering_here(consensus, n_components=5):
     # labels = spc.fcluster(hclust, n_components, criterion='maxclust')
     return labels
 	
-
+# Running times
 now1 = datetime.datetime.now()
 print("Current date and time:")
 print(now1.strftime("%Y-%m-%d %H:%M"))
 
-# Data location
-fname_data_target = '/home/bmieth/scRNAseq/data/Jim/Jim_after_Seurat.tsv'
+# Data location - Please change directories to yours!
+fname_data_target = '/home/bmieth/scRNAseq/data/Jim/Jim_after_Seurat.tsv'  # Seurat pre-processing is done externally beforehand!
 fname_gene_names_target = '/home/bmieth/scRNAseq/data/Jim/Jim_gene_names_after_Seurat.tsv'
 fname_cell_names_target = '/home/bmieth/scRNAseq/data/Jim/Jim_cell_names_after_Seurat.tsv'
-fname_data_source = '/home/bmieth/scRNAseq/data/usoskin/Usoskin_after_Seurat.tsv'
+fname_data_source = '/home/bmieth/scRNAseq/data/usoskin/Usoskin_after_Seurat.tsv'  # Seurat pre-processing is done externally beforehand!
 fname_gene_names_source = '/home/bmieth/scRNAseq/data/usoskin/Usoskin_gene_names_after_Seurat.tsv'
 fname_cell_ids_source = '/home/bmieth/scRNAseq/data/usoskin/Usoskin_cell_names_after_Seurat.tsv'
 fname_labels_source = '/home/bmieth/scRNAseq/data/usoskin/Usoskin_labels_only.xlsx'
@@ -71,33 +81,35 @@ fname_labels_source = '/home/bmieth/scRNAseq/data/usoskin/Usoskin_labels_only.xl
 # Result file
 fname_final = '/home/bmieth/scRNAseq/results/jims_data/multiple_reps/jimtarget_usoskinsource_seurat_k7_1000reps.npz'
 
-# Parameters
-reps = 1000
+# Robustness experiment parameters
+reps = 1000 # Number of replication
 
-mixes = np.arange(0,0.75,0.05)   # np.arange(0,0.7,0.05) 
+# Pre-processing parameters for gene and cell filter
 min_expr_genes = 0
 non_zero_threshold_source = -1
 non_zero_threshold_target = -1
 perc_consensus_genes_source = 1
 perc_consensus_genes_target = 1
+
+# Number of clusters to obtain
 num_cluster = 7
 
-labels_level_ind = 3 # 1,2,3 level for source labels
+# Source labels are taken at which level of the original Usoskin publication 
+labels_level_ind = 3 # 1,2,3 
 
+# NMF parameters
 nmf_alpha = 10.0
 nmf_l1 = 0.75
 nmf_max_iter = 4000
 nmf_rel_err = 1e-3
 
+# Transfer learning parameters
+mixes = np.arange(0,0.75,0.05)   # range of mixture parameters to use for transfer learning 
+
 # List of accuracy functions to be used
 acc_funcs = list()
 acc_funcs.append(partial(acc_ari, use_strat=False))
 acc_funcs.append(partial(acc_kta, mode=0))
-##acc_funcs.append(acc_transferability)
-#acc_funcs.append(partial(acc_silhouette, metric='euclidean'))
-#acc_funcs.append(partial(acc_silhouette, metric='pearson'))
-#acc_funcs.append(partial(acc_silhouette, metric='spearman'))
-#acc_funcs.append(acc_classification)
 
 # Read source data
 data_source = pd.read_csv(fname_data_source, sep='\t', header=None).values
@@ -140,6 +152,7 @@ gene_inds = sc.gene_filter(data_source, perc_consensus_genes=perc_consensus_gene
 data_source = data_source[gene_inds, :]
 gene_names_source = gene_names_source[gene_inds,:]
 data_source = sc.data_transformation_log2(data_source)
+# data is now filtered and transformed, don't do it again:
 cell_filter_fun = partial(sc.cell_filter, num_expr_genes=0, non_zero_threshold=-1)
 gene_filter_fun = partial(sc.gene_filter, perc_consensus_genes=1, non_zero_threshold=-1)
 data_transf_fun = sc.no_data_transformation
@@ -147,11 +160,8 @@ print("source data dimensions after preprocessing: genes x cells: ", data_source
 
 # Read target data
 data_target = pd.read_csv(fname_data_target, sep='\t', header=None).values
-## reverse log2 for now
-#data_target = np.power(2,data_target)-1
 gene_names_target = pd.read_csv(fname_gene_names_target, sep='\t', header=None).values
 cell_names_target = pd.read_csv(fname_cell_names_target, sep='\t', header=None).values
-
 
 # Preprocessing target data
 print("Target data dimensions before preprocessing: genes x cells", data_target.shape)
@@ -165,7 +175,7 @@ gene_names_target = gene_names_target[gene_inds,:]
 data_target = sc.data_transformation_log2(data_target)
 print("Target data dimensions after preprocessing: genes x cells: ", data_target.shape)
 
-# Find gene subset
+# Find gene subset of genes that appear in both source and target
 gene_intersection = list(set(x[0] for x in gene_names_target).intersection(set(x[0] for x in gene_names_source)))
 
 # Adjust source and target data to only include overlapping genes
@@ -180,17 +190,18 @@ gene_names_source = gene_names_source[data_source_indices]
 print("Target data dimensions after taking source intersection: genes x cells: ", data_target.shape)
 print("source data dimensions after taking target intersection: genes x cells: ", data_source.shape)
 
+# Specify dataset sizes
 genes = len(gene_intersection)  # number of genes
 n_src = data_source.shape[1]
 n_trg = data_target.shape[1]
 
 # List of methods to be applied
 methods = list()
-# original SC3 (SC3 on target data)
+# original SC3 (SC3 on target data, TargetCluster)
 methods.append(partial(method_sc3_ours))
-# combined baseline SC3 (SC3 on combined source and target data)
+# combined baseline SC3 (SC3 on combined source and target data, ConcatenateCluster)
 methods.append(partial(method_sc3_combined_ours))
-# transfer via mixing (Transfer learning via mixing source and target before SC3)
+# transfer via mixing (Transfer learning via mixing source and target before SC3, TransferCluster)
 # Experiment for all mixture_parameters
 for m in mixes:
     methods.append(partial(method_transfer_ours, mix=m, calc_transferability=False))	
@@ -206,12 +217,11 @@ trg_labels = np.zeros((n_trg, len(methods)))
 trg_labels_reps = np.zeros((n_trg, len(methods), reps))
 
 # Use perfect number of latent states for nmf and sc3
-#src_labels = np.array(src_labels, dtype=np.int)
 src_lbl_set = np.unique(src_labels)
 n_trg_cluster = num_cluster
 n_src_cluster = src_lbl_set.size
 
-## Train source once per repetition
+## Train source
 source_nmf = NmfClustering_initW(data_source, np.arange(data_source.shape[0]), num_cluster=n_src_cluster, labels=src_labels)
 source_nmf.apply(k=n_src_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_iter, rel_err=nmf_rel_err)
 
@@ -219,6 +229,7 @@ source_nmf.apply(k=n_src_cluster, alpha=nmf_alpha, l1=nmf_l1, max_iter=nmf_max_i
 source_aris = metrics.adjusted_rand_score(src_labels[source_nmf.remain_cell_inds], source_nmf.cluster_labels)
 print('SOURCE ARI = ', source_aris)
 
+# Multiple replications loop
 # MTL/DA mixing parameter loop
 for r in range(reps):
 	res_desc = list()
@@ -230,10 +241,13 @@ for r in range(reps):
 		source_nmf.add_cell_filter(lambda x: np.arange(x.shape[1]).tolist())
 		source_nmf.add_gene_filter(lambda x: np.arange(x.shape[0]).tolist())
 		source_nmf.set_data_transformation(lambda x: x)
+		
+	        # Run method			
 		desc, target_nmf, data_for_SC3,trg_lbls_pred = methods[m](source_nmf, data_target.copy(), num_cluster=n_trg_cluster)
 		trg_labels[:,m] = trg_lbls_pred
 		res_desc.append(desc)
-
+	        
+		# Evaluate results
 		print("Evaluation of target results")
 		accs_desc = list()
 		if m >= 2:
@@ -250,10 +264,13 @@ for r in range(reps):
 		perc_done = round(np.true_divide(exp_counter, num_exps)*100, 4)
 		print(('{0}% of experiments done.'.format(perc_done)))
 		exp_counter += 1
+		
+		# Identify optimal mixture parameter		
 		if m >= 2:
 		    opt_mix_ind = np.argmax(accs[1, 2:])
 		    opt_mix_aris = accs[0, int(opt_mix_ind+2)]
 	
+        # Save results	
 	res[r, :, :] = accs
 	res_opt_mix_ind[r] = opt_mix_ind
 	res_opt_mix_aris[r] = opt_mix_aris
@@ -262,32 +279,21 @@ for r in range(reps):
 	trg_labels_reps[:,1,r]=trg_labels[:,1]
 	trg_labels_reps[:,2,r]=trg_labels[:, opt_mix_ind+2] 
 
-# building consensus matrices
+# building consensus matrices (This analysis is not in the final paper)
 consensus_mat_sc3 = build_consensus_here(trg_labels_reps[:,0,:].T)
 consensus_mat_sc3_comb = build_consensus_here(trg_labels_reps[:,1,:].T)
 consensus_mat_sc3_mix = build_consensus_here(trg_labels_reps[:,2,:].T)
 
-# consensus clustering
+# consensus clustering (This analysis is not in the final paper)
 cons_clustering_sc3 = consensus_clustering_here(consensus_mat_sc3, n_components=n_trg_cluster)
 cons_clustering_sc3_comb = consensus_clustering_here(consensus_mat_sc3_comb, n_components=n_trg_cluster)
 cons_clustering_sc3_mix = consensus_clustering_here(consensus_mat_sc3_mix, n_components=n_trg_cluster)
-	
-#cnt = 0.
-#consensus = np.zeros((n_trg, n_trg))
-#for cluster in self.intermediate_clustering_list:
-#	for t in range(len(transf)):
-#		_, deigv = transf[t]
-#		labels = list()
-#		for d in range_inds:
-#			labels.append(cluster(deigv[:, 0:d].reshape((deigv.shape[0], d))))
-#			if self.consensus_mode == 0:
-#				consensus += build_consensus_here(np.array(labels[-1]))
-#				cnt += 1.
-#consensus /= cnt
 
+# Save results
 np.savez(fname_final, methods=methods, acc_funcs=acc_funcs, res=res, accs_desc=accs_desc, trg_labels = trg_labels, data_target = data_target, method_desc=res_desc, source_aris=source_aris, min_expr_genes=min_expr_genes, non_zero_threshold_target=non_zero_threshold_target, non_zero_threshold_source=non_zero_threshold_source, perc_consensus_genes_source=perc_consensus_genes_source, perc_consensus_genes_target=perc_consensus_genes_target, num_cluster=num_cluster, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err, genes=genes, n_src=n_src, n_trg=n_trg, mixes=mixes, res_opt_mix_ind=res_opt_mix_ind, res_opt_mix_aris=res_opt_mix_aris, labels_source = src_labels, gene_intersection=gene_intersection, cell_names_source=cell_ids_source, cell_names_target=cell_names_target, gene_names_target=gene_names_target, gene_names_source=gene_names_source, cons_clustering_sc3=cons_clustering_sc3, cons_clustering_sc3_comb=cons_clustering_sc3_comb, cons_clustering_sc3_mix=cons_clustering_sc3_mix, reps=reps, trg_labels_reps=trg_labels_reps)
 #np.savez(fname_final, methods=methods, acc_funcs=acc_funcs, res=res, accs_desc=accs_desc, trg_labels = trg_labels, data_target = data_target, method_desc=res_desc, source_aris=source_aris, min_expr_genes=min_expr_genes, non_zero_threshold_target=non_zero_threshold_target, non_zero_threshold_source=non_zero_threshold_source, perc_consensus_genes_source=perc_consensus_genes_source, perc_consensus_genes_target=perc_consensus_genes_target, num_cluster=num_cluster, nmf_alpha=nmf_alpha, nmf_l1=nmf_l1, nmf_max_iter=nmf_max_iter, nmf_rel_err=nmf_rel_err, genes=genes, n_src=n_src, n_trg=n_trg, mixes=mixes, res_opt_mix_ind=res_opt_mix_ind, res_opt_mix_aris=res_opt_mix_aris, labels_source = src_labels, gene_intersection=gene_intersection, cell_names_source=cell_ids_source, cell_names_target=cell_names_target, gene_names_target=gene_names_target, gene_names_source=gene_names_source, cons_clustering_sc3=cons_clustering_sc3, cons_clustering_sc3_comb=cons_clustering_sc3_comb,  reps=reps, trg_labels_reps=trg_labels_reps)
 
+# Print running times
 now2 = datetime.datetime.now()
 print("Current date and time:")
 print(now2.strftime("%Y-%m-%d %H:%M"))
