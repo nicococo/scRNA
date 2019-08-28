@@ -15,8 +15,9 @@ This framework and website are part of a publication currently under peer-review
 Abstract: In many research areas scientists are interested in clustering objects within small datasets while making use of prior knowledge from large reference datasets. We propose a method to apply the machine learning concept of transfer learning to unsupervised clustering problems and show its effectiveness in the field of single-cell RNA sequencing (scRNA-Seq). The goal of scRNA-Seq experiments is often the definition and cataloguing of cell types from the transcriptional output of individual cells. To improve the clustering of small disease- or tissue-specific datasets, for which the identification of rare cell types is often problematic, we propose a transfer learning method to utilize large and well-annotated reference datasets, such as those produced by the Human Cell Atlas. Our approach modifies the dataset of interest while incorporating key information from the larger reference dataset via Non-negative Matrix Factorization (NMF). The modified dataset is subsequently provided to a clustering algorithm. We empirically evaluate the benefits of our approach on simulated scRNA-Seq data as well as on publicly available datasets. Finally, we present results for the analysis of a recently published small dataset and find improved clustering when transferring knowledge from a large reference dataset. 
 
 #### News
-* (2019.08) Information on the experimental results presented in our paper (_under review_) can be accessed in the Section "Replicating experiments"  
-* (2019.08) We added example application using Jupyter notebooks (cf. Section "Example application")
+* (2019.08) Information on the experimental results presented in our paper (_under review_) can be accessed 
+in the Section ["Replicating experiments"](#replicating-experiments)  
+* (2019.08) We added example application using Jupyter notebooks (cf. Section ["Example application"](#example-application))
 * (2019.08) Added Python 3 support (scRNA no longer supports Python 2)
 * (2019.08) Finalized version
 * (2017.02) Added Travis-CI
