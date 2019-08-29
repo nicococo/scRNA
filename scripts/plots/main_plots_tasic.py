@@ -19,7 +19,7 @@ import pandas as pd
 from scipy import stats
 
 
-def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting):
+def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting, source_label_setting):
     # Setting up plot
     ind_src = 0
     plt.figure(fig_num)
@@ -42,10 +42,7 @@ def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc,
     # Plot our method (TransferCluster)
     ari = np.mean(res_opt_mix_aris[ind_src, :, :], axis=0)
     ste = stats.sem(res_opt_mix_aris[ind_src, :, :], axis=0, ddof=0)
-    if overlap_setting==0:
-        markers, caps, bars = plt.errorbar(percs, ari, fmt='-b', yerr=ste, linewidth=2.0)
-    else:
-        markers, caps, bars = plt.errorbar(percs, ari, fmt='-b', yerr=ste, linewidth=2.0)
+    markers, caps, bars = plt.errorbar(percs, ari, fmt='-b', yerr=ste, linewidth=2.0)
 
     [bar.set_alpha(0.5) for bar in bars]
     [cap.set_alpha(0.5) for cap in caps]
@@ -53,6 +50,10 @@ def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc,
         plt.title('Complete overlap', fontsize=22, x=0.5, y=0.93)
     else:
         plt.title('Incomplete overlap', fontsize=22, x=0.5, y=0.93)	
+    if source_label_setting == 0:
+        plt.text( x=0.15, y=0.88, s='Ground truth labels from NMF clustering', fontsize= 14)
+    else:
+        plt.text( x=0.15, y=0.88, s='Ground truth labels from original publication', fontsize= 14)
     plt.text( x=0.15, y=0.88, s='Ground truth labels from NMF clustering', fontsize= 14)
     plt.xlabel('Target cells', fontsize=16)
     plt.ylabel('ARI', fontsize=16)
@@ -64,43 +65,78 @@ def plot_main_opt_mix(fig_num, res, res_opt_mix_ind,res_opt_mix_aris, accs_desc,
 
 if __name__ == "__main__":
     # Figure direction to save to
-    fname_plot ='/home/bmieth/scRNAseq/results/mouse_data_final/main_results_mouse'
+    fname_plot ='/home/bmieth/scRNAseq/results/mouse_data_final/main_results_mouse_all_four'
     # Location of experimental results - change to yours
-    foo_com = np.load('/home/bmieth/scRNAseq/results/mouse_data_final/main_results_mouse.npz')
-    foo_incom = np.load('/home/bmieth/scRNAseq/results/mouse_data_final/main_results_mouse.npz')
+    foo_com_orig = np.load('/home/bmieth/scRNAseq/results/mouse_data_final/main_results_mouse_18clusters_completeoverlap.npz')
+    foo_incom_orig = np.load('/home/bmieth/scRNAseq/results/mouse_data_final/main_results_mouse_18clusters_incompleteoverlap.npz')
+    foo_com_NMF = np.load('/home/bmieth/scRNAseq/results/mouse_data_NMF_final/main_results_mouse_NMFlabels_18cluster_completeoverlap.npz')
+    foo_incom_NMF = np.load('/home/bmieth/scRNAseq/results/mouse_data_NMF_final/main_results_mouse_NMFlabels_18cluster_incompleteoverlap.npz')
 
-    # Load data
-    res = foo_com['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
-    res_opt_mix_ind = foo_com['res_opt_mix_ind']
-    res_opt_mix_aris = foo_com['res_opt_mix_aris']
-    accs_desc = foo_com['accs_desc']
-    method_desc = foo_com['method_desc']
-    percs = foo_com['percs']
-    genes = foo_com['genes']
-    n_src = foo_com['n_src']
-    n_trg = foo_com['n_trg']
-    mixes = foo_incom['mixes']
+    # Load data complete overlap + NMF labels
+    res = foo_com_NMF['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
+    res_opt_mix_ind = foo_com_NMF['res_opt_mix_ind']
+    res_opt_mix_aris = foo_com_NMF['res_opt_mix_aris']
+    accs_desc = foo_com_NMF['accs_desc']
+    method_desc = foo_com_NMF['method_desc']
+    percs = foo_com_NMF['percs']
+    genes = foo_com_NMF['genes']
+    n_src = foo_com_NMF['n_src']
+    n_trg = foo_com_NMF['n_trg']
+    mixes = foo_com_NMF['mixes']
     
-    #  Plot figure of complete overlap
-    fig = plt.figure(figsize=(14,8))
-    plt.subplot(1,2,1)
-    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting = 0)
+    #  Plot figure of complete overlap + NMF labels
+    fig = plt.figure(figsize=(16,16))
+    plt.subplot(2,2,1)
+    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting = 0, source_label_setting = 0)	
+    
+    # Load data incomplete overlap + NMF labels
+    res = foo_incom_NMF['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
+    res_opt_mix_ind = foo_incom_NMF['res_opt_mix_ind']
+    res_opt_mix_aris = foo_incom_NMF['res_opt_mix_aris']
+    accs_desc = foo_incom_NMF['accs_desc']
+    method_desc = foo_incom_NMF['method_desc']
+    percs = foo_incom_NMF['percs']
+    genes = foo_incom_NMF['genes']
+    n_src = foo_incom_NMF['n_src']
+    n_trg = foo_incom_NMF['n_trg']
+    mixes = foo_incom_NMF['mixes']
+
+    #  Plot figure of incomplete overlap + NMF labels
+    plt.subplot(2,2,2)
+    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting = 1, source_label_setting = 0)
+
+    # Load data complete overlap + real labels
+    res = foo_com_orig['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
+    res_opt_mix_ind = foo_com_orig['res_opt_mix_ind']
+    res_opt_mix_aris = foo_com_orig['res_opt_mix_aris']
+    accs_desc = foo_com_orig['accs_desc']
+    method_desc = foo_com_orig['method_desc']
+    percs = foo_com_orig['percs']
+    genes = foo_com_orig['genes']
+    n_src = foo_com_orig['n_src']
+    n_trg = foo_com_orig['n_trg']
+    mixes = foo_com_orig['mixes']
+    
+    #  Plot figure of complete overlap + real labels
+    plt.subplot(2,2,3)
+    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting = 0, source_label_setting = 1)
+    
+    # Load data incomplete overlap + real labels
+    res = foo_incom_orig['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
+    res_opt_mix_ind = foo_incom_orig['res_opt_mix_ind']
+    res_opt_mix_aris = foo_incom_orig['res_opt_mix_aris']
+    accs_desc = foo_incom_orig['accs_desc']
+    method_desc = foo_incom_orig['method_desc']
+    percs = foo_incom_orig['percs']
+    genes = foo_incom_orig['genes']
+    n_src = foo_incom_orig['n_src']
+    n_trg = foo_incom_orig['n_trg']
+    mixes = foo_incom_orig['mixes']
+
+    #  Plot figure of incomplete overlap + real labels
+    plt.subplot(2,2,4)
+    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting = 1, source_label_setting = 1)
+    plt.savefig(fname_plot+'.jpg')	
 	
-    res = foo_incom['res']  # n_src x genes x common x acc_funcs x reps x percs x methods
-    res_opt_mix_ind = foo_incom['res_opt_mix_ind']
-    res_opt_mix_aris = foo_incom['res_opt_mix_aris']
-    accs_desc = foo_incom['accs_desc']
-    method_desc = foo_incom['method_desc']
-    percs = foo_incom['percs']
-    genes = foo_incom['genes']
-    n_src = foo_incom['n_src']
-    n_trg = foo_incom['n_trg']
-    mixes = foo_incom['mixes']
-
-    #  Plot figure of incomplete overlap
-    plt.subplot(1,2,2)
-    plot_main_opt_mix(1,res, res_opt_mix_ind,res_opt_mix_aris, accs_desc, method_desc, percs, genes, n_src, n_trg, mixes, overlap_setting = 1)
-    plt.savefig(fname_plot+'.jpg')
-
 print('Done')
 
