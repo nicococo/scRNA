@@ -1,8 +1,8 @@
-scRNA sequencing transfer learning
+scRNA - Transfer learning for clustering single-cell RNA-Seq data
 =====
-Python framework for single-cell RNA-seq clustering with special 
-focus on transfer learning. This package contains methods for 
-generating artificial data, clustering, and transfering knowledge
+A Python framework for single-cell RNA-Seq clustering with special focus on transfer learning. 
+
+This package contains methods for generating artificial data, clustering, and transfering knowledge
 from a source to a target dataset.
 
 This software package is developed by Nico Goernitz, Bettina Mieth, Marina Vidovic, and Alex Gutteridge. 
@@ -10,9 +10,9 @@ This software package is developed by Nico Goernitz, Bettina Mieth, Marina Vidov
 ![Travis-CI](https://travis-ci.org/nicococo/scRNA.svg?branch=master)
 
 #### Publication
-The python framework and this website are part of a publication currently under peer-review at Nature Scientific Reports. Links to the published paper and online supplementary material will be included here once available.
+The Python framework and this website are part of a publication currently under peer-review at Nature Scientific Reports. Links to the published paper and online supplementary material will be included here once available.
 
-Abstract: In many research areas scientists are interested in clustering objects within small datasets while making use of prior knowledge from large reference datasets. We propose a method to apply the machine learning concept of transfer learning to unsupervised clustering problems and show its effectiveness in the field of single-cell RNA sequencing (scRNA-Seq). The goal of scRNA-Seq experiments is often the definition and cataloguing of cell types from the transcriptional output of individual cells. To improve the clustering of small disease- or tissue-specific datasets, for which the identification of rare cell types is often problematic, we propose a transfer learning method to utilize large and well-annotated reference datasets, such as those produced by the Human Cell Atlas. Our approach modifies the dataset of interest while incorporating key information from the larger reference dataset via Non-negative Matrix Factorization (NMF). The modified dataset is subsequently provided to a clustering algorithm. We empirically evaluate the benefits of our approach on simulated scRNA-Seq data as well as on publicly available datasets. Finally, we present results for the analysis of a recently published small dataset and find improved clustering when transferring knowledge from a large reference dataset. 
+**Abstract:** In many research areas scientists are interested in clustering objects within small datasets while making use of prior knowledge from large reference datasets. We propose a method to apply the machine learning concept of transfer learning to unsupervised clustering problems and show its effectiveness in the field of single-cell RNA sequencing (scRNA-Seq). The goal of scRNA-Seq experiments is often the definition and cataloguing of cell types from the transcriptional output of individual cells. To improve the clustering of small disease- or tissue-specific datasets, for which the identification of rare cell types is often problematic, we propose a transfer learning method to utilize large and well-annotated reference datasets, such as those produced by the Human Cell Atlas. Our approach modifies the dataset of interest while incorporating key information from the larger reference dataset via Non-negative Matrix Factorization (NMF). The modified dataset is subsequently provided to a clustering algorithm. We empirically evaluate the benefits of our approach on simulated scRNA-Seq data as well as on publicly available datasets. Finally, we present results for the analysis of a recently published small dataset and find improved clustering when transferring knowledge from a large reference dataset. 
 
 #### News
 * (2019.08) Information on the experimental results presented in our paper (_under review_) can be accessed 
@@ -172,7 +172,7 @@ For evaluating the robustness experiments producing table 1 of the paper go to:
 
 Parameter Selection 
 ---------------
-All pre-processing parameters of the experiments presented in the paper can either be found in the corresponding scripts (above) or in the supplementary material (for the generated datasets in Supplementary Sections 2.1, for the Tasic data in Supplementary Sections 3.1 and for the Hockley and Usoskin datasets in Supplementary Sections 4.1. Details on all other parameters of the respective datasets can also be found in the scripts or in to the corresponding sections of the supplementary online material (Supplementary Sections 2.2, 3.2 and 4.2, respectively).
+All pre-processing parameters of the experiments presented in the paper can be found in the corresponding scripts (above) and in the online supplementary material (for the generated datasets in Supplementary Sections 2.1, for the Tasic data in Supplementary Sections 3.1 and for the Hockley and Usoskin datasets in Supplementary Sections 4.1. Details on all other parameters of the respective datasets can also be found in the scripts or in the corresponding sections of the supplementary online material (Supplementary Sections 2.2, 3.2 and 4.2, respectively).
 
 
 Data availability 
